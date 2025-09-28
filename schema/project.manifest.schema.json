@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://devops.local/schemas/project.manifest.v1.json",
+  "title": "Project Manifest",
+  "description": "Declarative project metadata for observability and governance",
+  "type": "object",
+  "required": ["apiVersion", "project"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "devops.v1"
+    },
+    "project": {
+      "type": "object",
+      "required": ["id", "name", "org", "tier", "kind", "owners"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z]+:[a-z0-9-]+/[a-z0-9-]+$",
+          "description": "Unique project identifier (provider:org/name)"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "org": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["prod", "staging", "sandbox", "dev"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["app", "lib", "ml", "data", "infra", "docs"]
+        },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["language"],
+      "properties": {
+        "language": {
+          "type": "string",
+          "enum": ["node", "python", "go", "rust", "java", "multi"]
+        },
+        "miseProfiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]+@[0-9.]+"
+          }
+        }
+      }
+    },
+    "repo": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "defaultBranch": {
+          "type": "string",
+          "default": "main"
+        },
+        "protectedBranches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signedCommitsRequired": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "properties": {
+        "minCoverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.8
+        },
+        "linters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "licensesAllow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sbom": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "properties": {
+        "slo": {
+          "type": "object",
+          "properties": {
+            "ciSuccessRate": {
+              "type": "string",
+              "pattern": "^[><=]+[0-9.]+$"
+            },
+            "p95LocalBuildSec": {
+              "type": "string",
+              "pattern": "^[><=]+[0-9.]+$"
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "enableBusiness": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "alerts": {
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "packageManagers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["npm", "pip", "cargo", "go", "mix", "gem", "maven"]
+          }
+        },
+        "updatePolicy": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly"],
+          "default": "weekly"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "secretRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^secret://gopass/.*"
+          }
+        },
+        "owaspLevel": {
+          "type": "string",
+          "enum": ["L1", "L2", "L3"]
+        }
+      }
+    },
+    "dashboard": {
+      "type": "object",
+      "properties": {
+        "panels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "buildHealth",
+              "coverage",
+              "deps",
+              "repoStatus",
+              "obsLatency",
+              "sloCompliance"
+            ]
+          },
+          "default": ["buildHealth", "coverage", "deps"]
+        }
+      }
+    }
+  }
+}

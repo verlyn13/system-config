@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://devops.local/schemas/observer.output.v1.json",
+  "title": "Observer Output",
+  "description": "Standardized output format for all project observers",
+  "type": "object",
+  "required": [
+    "apiVersion",
+    "run_id",
+    "timestamp",
+    "project_id",
+    "observer",
+    "summary",
+    "metrics",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "obs.v1"
+    },
+    "run_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUIDv7 for this observation run"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z]+:[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "Project identifier from manifest"
+    },
+    "observer": {
+      "type": "string",
+      "enum": ["repo", "deps", "build", "quality", "security", "sbom", "data"],
+      "description": "Observer type"
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Human-readable summary"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Observer-specific metrics",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "number" },
+          { "type": "string" },
+          { "type": "boolean" }
+        ]
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "warn", "fail"],
+      "description": "Overall status assessment"
+    },
+    "links": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "type": "string",
+          "format": "uri"
+        },
+        "ci": {
+          "type": "string",
+          "format": "uri"
+        },
+        "trace": {
+          "type": "string",
+          "format": "uri"
+        },
+        "dashboard": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "audit_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "MCP audit UUID if executed via tool"
+    },
+    "trace_id": {
+      "type": "string",
+      "description": "OpenTelemetry trace ID"
+    },
+    "span_id": {
+      "type": "string",
+      "description": "OpenTelemetry span ID"
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object"
+        }
+      },
+      "description": "Error details if observation failed"
+    }
+  }
+}
