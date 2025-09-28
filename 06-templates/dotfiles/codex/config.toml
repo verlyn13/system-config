@@ -1,0 +1,40 @@
+model           = "gpt-5"
+model_provider  = "openai"
+approval_policy = "on-request"
+sandbox_mode    = "workspace-write"
+retain_data     = false
+log_level       = "info"
+
+api_key_cmd = ["gopass", "show", "-o", "openai/api_key"]
+preferred_auth_method = "apikey"
+
+[budget]
+session = 3.00
+daily  = 40.00
+
+[profiles.speed]
+model = "gpt-5-mini"
+
+[profiles.deep]
+model                  = "gpt-5"
+model_reasoning_effort = "high"
+
+[profiles.agent]
+model           = "gpt-5-mini"
+approval_policy = "never"
+sandbox_mode    = "workspace-write"
+
+[profiles.maint]
+model           = "gpt-5"
+approval_policy = "on-request"
+
+[mcp_servers.context]
+command = "context7"
+args    = ["--stdio"]
+enabled = true
+timeout = "30s"
+
+[mcp_servers.graphiti_memory]
+command = "graphiti-memory"
+args    = ["--stdio"]
+enabled = true

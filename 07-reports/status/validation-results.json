@@ -1,0 +1,287 @@
+{
+  "timestamp": "/Users/verlyn13/Development/personal/system-setup-update",
+  "results": [
+    {
+      "category": "Prerequisites",
+      "check": "macOS Version",
+      "level": "success",
+      "message": "macOS 26.0 meets requirements",
+      "details": null
+    },
+    {
+      "category": "Prerequisites",
+      "check": "Architecture",
+      "level": "success",
+      "message": "Architecture arm64 is supported",
+      "details": null
+    },
+    {
+      "category": "Prerequisites",
+      "check": "Xcode CLT",
+      "level": "success",
+      "message": "Xcode Command Line Tools installed",
+      "details": null
+    },
+    {
+      "category": "Homebrew",
+      "check": "Installation",
+      "level": "success",
+      "message": "Homebrew 4.6.13",
+      "details": null
+    },
+    {
+      "category": "Homebrew",
+      "check": "Outdated Packages",
+      "level": "warning",
+      "message": "1 packages need updating",
+      "details": {
+        "packages": [
+          "temurin"
+        ]
+      }
+    },
+    {
+      "category": "Homebrew",
+      "check": "Installation",
+      "level": "critical",
+      "message": "Homebrew not installed or not in PATH",
+      "details": null
+    },
+    {
+      "category": "Chezmoi",
+      "check": "Installation",
+      "level": "success",
+      "message": "chezmoi version v2.65.2, commit 57705baac6b3977053d67963f75aa68540b5636a, built at 2025-09-23T20:56:02Z, built by Homebrew",
+      "details": null
+    },
+    {
+      "category": "Chezmoi",
+      "check": "Uncommitted Changes",
+      "level": "warning",
+      "message": "2 files have uncommitted changes",
+      "details": {
+        "files": [
+          "MM .config/fish/config.fish",
+          " R 30-macos-settings.sh"
+        ]
+      }
+    },
+    {
+      "category": "Chezmoi",
+      "check": "Managed Files",
+      "level": "info",
+      "message": "Managing 46 files",
+      "details": null
+    },
+    {
+      "category": "Shell",
+      "check": "Current Shell",
+      "level": "info",
+      "message": "Using Zsh (Fish recommended)",
+      "details": null
+    },
+    {
+      "category": "Tools",
+      "check": "Git",
+      "level": "success",
+      "message": "Version 2.51.0",
+      "details": null
+    },
+    {
+      "category": "Tools",
+      "check": "Mise",
+      "level": "success",
+      "message": "Version 2025.9.18",
+      "details": null
+    },
+    {
+      "category": "Tools",
+      "check": "Node",
+      "level": "success",
+      "message": "Version 24.9.0",
+      "details": null
+    },
+    {
+      "category": "Tools",
+      "check": "Python3",
+      "level": "success",
+      "message": "Version 3.13.7",
+      "details": null
+    },
+    {
+      "category": "Tools",
+      "check": "Code",
+      "level": "success",
+      "message": "Version 1.103.0",
+      "details": null
+    },
+    {
+      "category": "Tools",
+      "check": "Docker",
+      "level": "success",
+      "message": "Version 28.3.3",
+      "details": null
+    },
+    {
+      "category": "Config Files",
+      "check": "Git configuration",
+      "level": "success",
+      "message": "Exists",
+      "details": null
+    },
+    {
+      "category": "Config Files",
+      "check": "SSH configuration",
+      "level": "success",
+      "message": "Exists with correct permissions (644)",
+      "details": null
+    },
+    {
+      "category": "Config Files",
+      "check": "Fish configuration",
+      "level": "success",
+      "message": "Exists",
+      "details": null
+    },
+    {
+      "category": "Config Files",
+      "check": "iTerm2 preferences",
+      "level": "success",
+      "message": "Exists",
+      "details": null
+    },
+    {
+      "category": "Config Files",
+      "check": "Mise configuration",
+      "level": "success",
+      "message": "Exists",
+      "details": null
+    },
+    {
+      "category": "Documentation",
+      "check": "Coverage",
+      "level": "info",
+      "message": "89.7% of documents have metadata (26/29)",
+      "details": null
+    },
+    {
+      "category": "Documentation",
+      "check": "Active Docs",
+      "level": "info",
+      "message": "13 documents are marked as active",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_business-org",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_business_org",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_hetzner_user",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_documentation",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_personal",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_hubofwyn",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_hetzner",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_work",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_mac",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_business",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_hetzner_root",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": "SSH Key id_ed25519_scope",
+      "level": "success",
+      "message": "Correct permissions (600)",
+      "details": null
+    },
+    {
+      "category": "Security",
+      "check": ".env Files",
+      "level": "warning",
+      "message": "Found 14 .env files in Development",
+      "details": null
+    },
+    {
+      "category": "Performance",
+      "check": "Spotlight Exclusion",
+      "level": "info",
+      "message": "Development directory not excluded from Spotlight",
+      "details": null
+    },
+    {
+      "category": "Policies",
+      "check": "Compliance",
+      "level": "info",
+      "message": "Policy validation framework is active",
+      "details": null
+    }
+  ]
+}

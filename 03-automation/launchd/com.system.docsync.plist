@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.system.docsync</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/verlyn13/Development/personal/system-setup-update/03-automation/scripts/doc-sync-engine.py</string>
+    </array>
+
+    <!-- Run every 4 hours -->
+    <key>StartInterval</key>
+    <integer>14400</integer>
+
+    <!-- Also run when specific paths change -->
+    <key>WatchPaths</key>
+    <array>
+        <string>/Users/verlyn13/.local/share/chezmoi</string>
+        <string>/Users/verlyn13/.config</string>
+        <string>/opt/homebrew</string>
+    </array>
+
+    <!-- Environment Variables -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/verlyn13</string>
+    </dict>
+
+    <!-- Logging -->
+    <key>StandardOutPath</key>
+    <string>/Users/verlyn13/Library/Logs/docsync.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/verlyn13/Library/Logs/docsync-error.log</string>
+
+    <!-- Run conditions -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Nice value (lower priority) -->
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <!-- Working Directory -->
+    <key>WorkingDirectory</key>
+    <string>/Users/verlyn13/Development/personal/system-setup-update</string>
+
+    <!-- Throttle if failing -->
+    <key>ThrottleInterval</key>
+    <integer>300</integer>
+</dict>
+</plist>

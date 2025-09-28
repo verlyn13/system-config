@@ -1,0 +1,5 @@
+
+# Claude project configuration
+.claude/logs/
+.claude/cache/
+.claude/*.log

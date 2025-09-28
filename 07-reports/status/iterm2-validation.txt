@@ -1,0 +1,8 @@
+iTerm2 Validation Report
+Generated: Fri Sep 26 09:04:07 AKDT 2025
+========================
+Successes: 20
+Warnings: 0
+Issues: 0
+
+Run this script again after restarting iTerm2 to verify changes.

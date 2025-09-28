@@ -1,0 +1,145 @@
+# Document Labels and Tags System
+# Used for categorizing and organizing documentation
+
+categories:
+  setup:
+    description: "Step-by-step installation guides"
+    color: "#0969da"
+    icon: "🔧"
+  configuration:
+    description: "Detailed configuration for tools"
+    color: "#1a7f37"
+    icon: "⚙️"
+  automation:
+    description: "Executable automation scripts"
+    color: "#8250df"
+    icon: "🤖"
+  policy:
+    description: "System requirements and rules"
+    color: "#d1242f"
+    icon: "📋"
+  reference:
+    description: "Supplementary information"
+    color: "#0550ae"
+    icon: "📚"
+  template:
+    description: "Reusable configurations"
+    color: "#fb8500"
+    icon: "📝"
+  report:
+    description: "System state and progress"
+    color: "#57606a"
+    icon: "📊"
+
+components:
+  # Core Tools
+  homebrew:
+    category: setup
+    tags: [package-manager, core]
+  chezmoi:
+    category: setup
+    tags: [dotfiles, configuration-management]
+  fish:
+    category: configuration
+    tags: [shell, cli]
+  mise:
+    category: setup
+    tags: [version-management, languages]
+
+  # Terminal Emulators
+  iterm2:
+    category: configuration
+    tags: [terminal, macos]
+  warp:
+    category: configuration
+    tags: [terminal, ai-powered]
+  alacritty:
+    category: configuration
+    tags: [terminal, gpu-accelerated]
+
+  # Editors
+  vscode:
+    category: configuration
+    tags: [editor, ide]
+  neovim:
+    category: configuration
+    tags: [editor, terminal-based]
+  sublime:
+    category: configuration
+    tags: [editor, lightweight]
+
+  # Development Tools
+  git:
+    category: configuration
+    tags: [vcs, essential]
+  docker:
+    category: configuration
+    tags: [containers, virtualization]
+  ssh:
+    category: configuration
+    tags: [security, remote-access]
+
+status_values:
+  draft:
+    description: "Work in progress"
+    color: "#6e7781"
+  active:
+    description: "Current and maintained"
+    color: "#1a7f37"
+  deprecated:
+    description: "Outdated, scheduled for removal"
+    color: "#d1242f"
+  archived:
+    description: "Historical reference only"
+    color: "#57606a"
+
+priority_levels:
+  critical:
+    description: "Must be completed first"
+    order: 1
+    color: "#d1242f"
+  high:
+    description: "Important for system function"
+    order: 2
+    color: "#fb8500"
+  medium:
+    description: "Enhances productivity"
+    order: 3
+    color: "#0969da"
+  low:
+    description: "Nice to have"
+    order: 4
+    color: "#57606a"
+
+tags:
+  # OS/Platform
+  macos:
+    description: "macOS specific"
+  linux:
+    description: "Linux compatible"
+  cross-platform:
+    description: "Works everywhere"
+
+  # Architecture
+  arm64:
+    description: "Apple Silicon"
+  x86_64:
+    description: "Intel architecture"
+
+  # Feature Areas
+  productivity:
+    description: "Productivity enhancement"
+  security:
+    description: "Security related"
+  performance:
+    description: "Performance optimization"
+  automation:
+    description: "Automation capability"
+
+  # Requirement Level
+  essential:
+    description: "Core requirement"
+  optional:
+    description: "Optional enhancement"
+  experimental:
+    description: "Experimental feature"
