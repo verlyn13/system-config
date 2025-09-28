@@ -37,6 +37,13 @@ git_exec() {
     timeout "$TIMEOUT" git -C "$PROJECT_PATH" "$@" 2>/dev/null || echo ""
 }
 
+# Redact potential credentials from URLs (user:pass@ or token@)
+redact_url() {
+    local url="$1"
+    # Remove userinfo if present: scheme://userinfo@host -> scheme://host
+    echo "$url" | sed -E 's#^(https?://)[^/@]+@#\1#'
+}
+
 # Get repository status
 get_repo_status() {
     local branch=$(git_exec branch --show-current)
@@ -62,6 +69,8 @@ get_repo_status() {
 
     # Get remote URL
     local repo_url=$(git_exec config --get remote.origin.url || echo "")
+    # Redact any embedded credentials
+    repo_url=$(redact_url "$repo_url")
 
     echo "{
         \"branch\": \"$branch\",

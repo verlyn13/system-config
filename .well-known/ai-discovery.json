@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ai-discovery.schema/openapi-v1.json",
+  "name": "ds-go",
+  "description": "Local DS server for configuration-approved tasks and workflows.",
+  "version": "1.0.0",
+  "endpoints": {
+    "capabilities": "/v1/capabilities",
+    "openapi": "/openapi.yaml",
+    "docs": "/API.md",
+    "quickstart": "/QUICKSTART.md"
+  },
+  "mcp": {
+    "config": "/examples/agents/mcp-config.yaml"
+  }
+}

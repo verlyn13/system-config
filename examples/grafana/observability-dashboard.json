@@ -1,0 +1,25 @@
+{
+  "title": "Project Observability",
+  "version": 1,
+  "panels": [
+    {
+      "type": "table",
+      "title": "Last 20 Observer Runs",
+      "target": "http://localhost:7171/api/projects/${project_id}/status?limit=20",
+      "note": "Bind project_id via dashboard variable"
+    },
+    {
+      "type": "stat",
+      "title": "Aggregated Status",
+      "target": "http://localhost:7171/api/projects/${project_id}/health",
+      "mapping": {"path": "overall"}
+    },
+    {
+      "type": "heatmap",
+      "title": "Observer Latency p95 (ms)",
+      "target": "http://localhost:7171/api/projects/${project_id}/health",
+      "mapping": {"path": "observers"}
+    }
+  ]
+}
+

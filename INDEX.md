@@ -118,6 +118,10 @@ Supporting information and guides.
 | [Migration Guide](05-reference/migration.md) | Guide | Migrating from other setups |
 | [Rollback Procedures](05-reference/rollback.md) | Guide | How to rollback changes |
 | [FAQ](05-reference/faq.md) | Reference | Frequently asked questions |
+| [Project Manifests](docs/projects.md) | Reference | Manifest spec + examples |
+| [Observability Platform](docs/observability.md) | Reference | Observers, contracts, endpoints |
+| [MCP Integration](docs/mcp-integration.md) | Reference | Server resources/tools wiring |
+| [Repository Roles](docs/repositories.md) | Reference | Authoritative vs. legacy usage |
 
 ### 06 - Templates
 Reusable configuration templates.
@@ -134,10 +138,15 @@ Current system state and progress tracking.
 #### Current Status
 | Report | Last Updated | Purpose |
 |--------|--------------|---------|
-| [Implementation Status](07-reports/status/implementation-status.md) | 2025-09-26 | Phase tracking |
+| [Implementation Status](07-reports/status/implementation-status.md) | 2025-09-28 | Phase tracking |
 | [Progress Report](07-reports/status/PROGRESS-REPORT.md) | 2025-09-26 | Detailed progress |
 | [Setup Completion](07-reports/status/SETUP-COMPLETION-REPORT.md) | 2025-09-26 | Completion status |
 | [Compliance Report](07-reports/status/compliance-report.md) | 2025-09-26 | Policy compliance |
+
+#### Observability
+- [Observability Platform Delivery (2025-09-28)](07-reports/observability-platform-implementation-2025-09-28.md) — Components delivered, usage, and next steps
+ - [HTTP Bridge (Read-only)](scripts/http-bridge.js) — Local dashboard API
+ - [Grafana Dashboard (example JSON)](examples/grafana/observability-dashboard.json)
 
 ---
 

@@ -12,6 +12,27 @@ readonly RUN_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
 readonly TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 readonly TIMEOUT=30
 
+# Safety: Validate path is within allowed roots
+validate_path() {
+    local path="$1"
+    local allowed_roots=(
+        "$HOME/Development/personal"
+        "$HOME/Development/work"
+        "$HOME/Development/business"
+        "$HOME/workspace/projects"
+    )
+
+    local realpath=$(realpath "$path")
+    for root in "${allowed_roots[@]}"; do
+        if [[ "$realpath" == "$root"* ]]; then
+            return 0
+        fi
+    done
+
+    echo "Error: Path not in allowed roots: $path" >&2
+    exit 1
+}
+
 # Detect package manager
 detect_package_manager() {
     if [[ -f "$PROJECT_PATH/package.json" ]]; then
@@ -92,7 +113,7 @@ check_pip() {
     local vuln_total=0
     local vuln_critical=0
     if command -v pip-audit &>/dev/null; then
-        local audit_json=$(pip-audit --format json 2>/dev/null || echo '[]')
+        local audit_json=$(timeout "$TIMEOUT" pip-audit --format json 2>/dev/null || echo '[]')
         vuln_total=$(echo "$audit_json" | jq 'length')
         vuln_critical=$(echo "$audit_json" | jq '[.[] | select(.severity == "CRITICAL")] | length')
     fi
@@ -113,14 +134,14 @@ check_cargo() {
     # Check for outdated crates
     local outdated_count=0
     if command -v cargo-outdated &>/dev/null; then
-        outdated_count=$(cargo outdated --format json 2>/dev/null | jq '.dependencies | length' || echo "0")
+        outdated_count=$(timeout "$TIMEOUT" cargo outdated --format json 2>/dev/null | jq '.dependencies | length' || echo "0")
     fi
 
     # Check for security vulnerabilities
     local vuln_total=0
     local vuln_critical=0
     if command -v cargo-audit &>/dev/null; then
-        local audit_json=$(cargo audit --json 2>/dev/null || echo '{"vulnerabilities": {"count": 0}}')
+        local audit_json=$(timeout "$TIMEOUT" cargo audit --json 2>/dev/null || echo '{"vulnerabilities": {"count": 0}}')
         vuln_total=$(echo "$audit_json" | jq '.vulnerabilities.count // 0')
     fi
 
@@ -150,6 +171,7 @@ determine_status() {
 
 # Main execution
 main() {
+    validate_path "$PROJECT_PATH"
     local start_time=$(date +%s%3N)
 
     # Detect or use specified package manager

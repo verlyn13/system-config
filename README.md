@@ -12,6 +12,8 @@ priority: critical
 # macOS M3 Max Development Environment Setup
 ## 🚀 Holistic, Context-Aware System Configuration with Living Documentation
 
+> Repository roles: This repo (`system-setup-update`) is the authoritative system configuration and observability source on this machine. If you also have a `system-setup` repo present locally, consider it a legacy snapshot used for reference only. All scripts, policies, registries, and dashboard wiring should point here.
+
 [![Documentation Sync](https://github.com/verlyn13/system-setup-update/actions/workflows/documentation-sync.yml/badge.svg)](https://github.com/verlyn13/system-setup-update/actions/workflows/documentation-sync.yml)
 [![System Validation](https://github.com/verlyn13/system-setup-update/actions/workflows/validation.yml/badge.svg)](https://github.com/verlyn13/system-setup-update/actions/workflows/validation.yml)
 
@@ -29,6 +31,10 @@ This repository implements a **self-aware documentation system** that:
 - 📊 **Reports** discrepancies and health metrics
 - 🤖 **Updates** documentation when configuration changes
 - ✅ **Ensures** documentation accuracy through CI/CD
+
+Repository Roles
+- Authoritative: `system-setup-update` (this repo) — active, source of truth
+- Legacy: `system-setup` — historical snapshot; do not modify or wire automation to it
 
 ### 📚 Navigation
 
