@@ -156,8 +156,8 @@ function ensureCanonicalAppend(projectId, line) {
 }
 
 function projectCode(projectId) {
-  // Return the project ID as the code (already a short hash)
-  return projectId;
+  // Filesystem-safe encoding for project directories
+  return String(projectId).replace(/[:/]/g, '__');
 }
 
 function migrateProjectObservations(projectId) {
@@ -927,6 +927,14 @@ const server = http.createServer(async (req, res) => {
             }
           });
           watchers.set(obsFile, watcher);
+        } else if (fs.existsSync(dir)) {
+          const watcherD = fs.watch(dir, { persistent: false }, (evt, filename) => {
+            if (filename === 'observations.ndjson') {
+              const { items } = getObsLines(p.id, 1);
+              if (items.length) writeEvent('ProjectObsCompleted', items[0]);
+            }
+          });
+          watchers.set(dir + ':obs', watcherD);
         }
       } catch {}
       try {
@@ -942,6 +950,28 @@ const server = http.createServer(async (req, res) => {
             }
           });
           watchers.set(eventsFile, watcherE);
+        } else if (fs.existsSync(dir)) {
+          const watcherED = fs.watch(dir, { persistent: false }, (evt, filename) => {
+            if (filename === 'events.ndjson') {
+              try {
+                const lines = fs.readFileSync(eventsFile, 'utf-8').trim().split('\n');
+                const last = lines[lines.length - 1];
+                const obj = JSON.parse(last);
+                if (obj && obj.type === 'SLOBreach') writeEvent('SLOBreach', obj);
+              } catch {}
+            }
+          });
+          watchers.set(dir + ':events', watcherED);
+        }
+      } catch {}
+    }
+
+    // Optional: immediately replay the latest observation for fast validation
+    if (query.replay_last === '1') {
+      try {
+        for (const p of projects) {
+          const { items } = getObsLines(p.id, 1);
+          if (items.length) writeEvent('ProjectObsCompleted', items[0]);
         }
       } catch {}
     }

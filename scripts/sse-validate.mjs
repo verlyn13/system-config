@@ -33,7 +33,7 @@ function compileValidators() {
 
 async function sseValidate() {
   const { vLine, vBreach } = compileValidators();
-  const url = new URL('/api/events/stream', BRIDGE);
+  const url = new URL('/api/events/stream?replay_last=1', BRIDGE);
   const headers = { Accept: 'text/event-stream' };
   if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
   const ctrl = new AbortController();
@@ -42,6 +42,21 @@ async function sseValidate() {
     const res = await fetch(url, { headers, signal: ctrl.signal });
     if (!res.ok || !res.body) throw new Error('SSE connection failed');
     const reader = res.body.getReader();
+    // Optionally trigger an observer run to produce an event after connection
+    if ((process.env.SSE_TRIGGER_OBSERVER || '0') === '1') {
+      try {
+        const projRes = await fetch(new URL('/api/projects', BRIDGE), { headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {} });
+        const pj = await projRes.json();
+        const pid = pj?.projects?.[0]?.id;
+        if (pid) {
+          await fetch(new URL('/api/tools/project_obs_run', BRIDGE), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}) },
+            body: JSON.stringify({ project_id: pid, observer: 'manifest' })
+          }).catch(()=>{});
+        }
+      } catch {}
+    }
     let buf = '';
     while (true) {
       const { value, done } = await reader.read();
@@ -81,4 +96,3 @@ async function sseValidate() {
 }
 
 sseValidate();
-
