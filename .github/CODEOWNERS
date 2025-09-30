@@ -1,0 +1,23 @@
+# Global ownership
+* @verlyn13
+
+# Critical configuration files require extra review
+/.github/ @verlyn13
+/04-policies/ @verlyn13
+/contracts/ @verlyn13
+/schema/ @verlyn13
+
+# Contract freeze protection - Stage 1 complete
+/openapi.yaml @verlyn13
+/contracts/VERSION @verlyn13
+/.redocly.yaml @verlyn13
+
+# Environment and automation
+/06-templates/ @verlyn13
+/scripts/ @verlyn13
+/03-automation/ @verlyn13
+
+# Documentation that affects compliance
+/docs/guides/ @verlyn13
+/README.md @verlyn13
+/CLAUDE.md @verlyn13

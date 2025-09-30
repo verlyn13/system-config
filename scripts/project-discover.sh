@@ -21,8 +21,10 @@ const ROOTS = [
   path.join(process.env.HOME, 'Development/business-org')
 ];
 
-function generateId(p) {
-  return crypto.createHash('sha1').update(p).digest('hex').slice(0, 12);
+function canonicalId(p) {
+  const ws = path.basename(path.dirname(p)).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  const name = path.basename(p).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  return `local:${ws}/${name}`;
 }
 
 function detectProject(dir) {
@@ -62,7 +64,7 @@ function detectProject(dir) {
   if (detectors.length === 0) return null;
 
   return {
-    id: generateId(dir),
+    id: canonicalId(dir),
     name: path.basename(dir),
     path: dir,
     workspace: path.basename(path.dirname(dir)),

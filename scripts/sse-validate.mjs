@@ -7,7 +7,7 @@ import addFormats from 'ajv-formats';
 
 const BRIDGE = process.env.OBS_BRIDGE_URL || 'http://127.0.0.1:7171';
 const TOKEN = process.env.BRIDGE_TOKEN || '';
-const TIMEOUT_MS = Number(process.env.SSE_VALIDATE_TIMEOUT_MS || 8000);
+const TIMEOUT_MS = Number(process.env.SSE_VALIDATE_TIMEOUT_MS || 5000);
 
 function loadJSON(p) { return JSON.parse(fs.readFileSync(p, 'utf-8')); }
 
@@ -75,14 +75,14 @@ async function sseValidate() {
         try {
           const obj = JSON.parse(ev.data);
           if (ev.event === 'ProjectObsCompleted') {
-            if (!vLine(obj)) { console.error('ProjectObsCompleted invalid', vLine.errors); process.exit(1); }
+            if (!vLine(obj)) { console.error('ProjectObsCompleted invalid', vLine.errors); clearTimeout(to); await reader.cancel(); process.exit(1); }
             console.log('ProjectObsCompleted valid');
-            clearTimeout(to); return;
+            clearTimeout(to); await reader.cancel(); process.exit(0);
           }
           if (ev.event === 'SLOBreach') {
-            if (!vBreach(obj)) { console.error('SLOBreach invalid', vBreach.errors); process.exit(1); }
+            if (!vBreach(obj)) { console.error('SLOBreach invalid', vBreach.errors); clearTimeout(to); await reader.cancel(); process.exit(1); }
             console.log('SLOBreach valid');
-            clearTimeout(to); return;
+            clearTimeout(to); await reader.cancel(); process.exit(0);
           }
         } catch {}
       }

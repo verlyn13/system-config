@@ -2,7 +2,7 @@
 # Use latest Dockerfile syntax for BuildKit features
 
 # Multi-stage build for optimal image size
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 
 # Install curl for healthchecks
 RUN apk add --no-cache curl

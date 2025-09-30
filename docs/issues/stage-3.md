@@ -16,9 +16,9 @@ Owners: @AgentA @AgentB @AgentC @AgentD
 - [x] Stage 2 complete (typed clients/adapters integrated, no contract drift)
 
 ## Agent A — Bridge/Contracts
-- [ ] Provide SSE validator script (scripts/sse-validate.mjs) and guide (docs/guides/sse-validation.md)
-- [ ] Ensure SSE emits `ProjectObsCompleted` and `SLOBreach` (already implemented)
-- [ ] Optional: add SSE smoke in CI (off by default, enable via `SSE_SMOKE=1`)
+- [x] Provide SSE validator script (scripts/sse-validate.mjs) and guide (docs/guides/sse-validation.md)
+- [x] Ensure SSE emits `ProjectObsCompleted` and `SLOBreach` (already implemented)
+- [x] Optional: add SSE smoke in CI (off by default, enable via `SSE_SMOKE=1`)
 
 ## Agent B — DS CLI
 - [ ] Ensure DS emits relevant events or integrates with Bridge SSE if applicable (optional)
@@ -40,4 +40,3 @@ OBS_BRIDGE_URL=http://127.0.0.1:7171 node scripts/sse-validate.mjs
 ## Acceptance
 - [ ] Bridge SSE payloads validate against schemas
 - [ ] Dashboard validates SSE before rendering and logs drift
-

@@ -2,7 +2,7 @@
 // Read-only HTTP bridge for local dashboard access
 // Serves: /api/telemetry-info, /api/projects, /api/projects/:id/status, /api/health, /api/events/stream
 // Also serves discovery endpoints: /api/discovery/registry, /api/discovery/schemas
-// No external deps; Node >=18 recommended
+// No external deps; Node >=24 recommended
 
 const http = require('http');
 const url = require('url');
@@ -52,13 +52,16 @@ const OBS_DIR = path.join(DATA_DIR, 'observations');
 const SYS_REGISTRY = path.join(HOME, '.config', 'system', 'registry.yaml');
 const ALT_OBS_DIR = path.join(HOME, 'Library', 'Application Support', 'devops.mcp', 'observations');
 
-function sendJSON(res, code, obj) {
+function sendJSON(res, code, obj, extraHeaders = null) {
   const data = JSON.stringify(obj);
   const headers = {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(data),
     'Cache-Control': 'no-store',
   };
+  if (extraHeaders && typeof extraHeaders === 'object') {
+    for (const [k, v] of Object.entries(extraHeaders)) headers[k] = v;
+  }
   if (process.env.BRIDGE_CORS === '1' || process.env.BRIDGE_CORS === 'true') {
     headers['Access-Control-Allow-Origin'] = '*';
     headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, If-None-Match';
@@ -375,7 +378,7 @@ const server = http.createServer(async (req, res) => {
     const sys = tryLoadSystemRegistryJSON();
     const ds = getServiceURL('ds');
     const mcp = getServiceURL('mcp');
-    return sendJSON(res, 200, {
+    const payload = {
       ds: ds ? {
         url: ds,
         well_known: new URL('/.well-known/obs-bridge.json', ds).toString(),
@@ -392,7 +395,14 @@ const server = http.createServer(async (req, res) => {
       registry: sys,
       ds_token_present: !!process.env.DS_TOKEN,
       ts: Date.now()
-    });
+    };
+    // Compute weak ETag from registry mtime and URLs
+    let mtime = 0;
+    try { if (fs.existsSync(SYS_REGISTRY)) mtime = fs.statSync(SYS_REGISTRY).mtimeMs|0; } catch {}
+    const etag = `W/"svc-${mtime.toString(36)}-${(ds||'').length + (mcp||'').length}"`;
+    const inm = req.headers['if-none-match'] || '';
+    if (inm && inm === etag) { res.writeHead(304); return res.end(); }
+    return sendJSON(res, 200, payload, { 'Cache-Control': 'public, max-age=15, must-revalidate', 'ETag': etag });
   }
 
   if (pathname === '/api/discovery/registry') {
@@ -611,7 +621,14 @@ const server = http.createServer(async (req, res) => {
       status: rollupStatus(p.id),
       aggregate: rollup.aggregate(p.id, 200, reg)
     }));
-    return sendJSON(res, 200, { projects: items, count: items.length, generated_at: new Date().toISOString() });
+    const payload = { projects: items, count: items.length, generated_at: new Date().toISOString() };
+    // Compute weak ETag from registry mtime and count
+    let mtime = 0, size = 0;
+    try { if (fs.existsSync(REGISTRY)) { const st = fs.statSync(REGISTRY); mtime = st.mtimeMs|0; size = st.size|0; } } catch {}
+    const etag = `W/"proj-${mtime.toString(36)}-${size.toString(36)}-${items.length}"`;
+    const inm = req.headers['if-none-match'] || '';
+    if (inm && inm === etag) { res.writeHead(304); return res.end(); }
+    return sendJSON(res, 200, payload, { 'Cache-Control': 'public, max-age=10, must-revalidate', 'ETag': etag });
   }
 
   // Compatibility obs routes for dashboard

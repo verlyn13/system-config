@@ -1,0 +1,26 @@
+# ~/.zshrc (chezmoi): safe hooks for mise + direnv
+
+# Interactive shell check
+if [[ $- != *i* ]]; then
+  return
+fi
+
+# Homebrew (optional, macOS)
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+# mise activation
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
+# direnv hook (opt-out with DIRENV_DISABLE=1)
+if [[ -z "${DIRENV_DISABLE:-}" ]]; then
+  if command -v direnv >/dev/null 2>&1; then
+    export DIRENV_LOG_FORMAT=""
+    eval "$(direnv hook zsh)"
+  fi
+fi

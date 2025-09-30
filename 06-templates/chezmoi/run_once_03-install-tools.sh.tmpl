@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[chezmoi] Configuring mise settings and installing tools"
+
+# Ensure mise is available
+if ! command -v mise >/dev/null 2>&1; then
+  echo "mise not found, installing via Homebrew..."
+  if command -v brew >/dev/null 2>&1; then
+    brew install mise
+  else
+    echo "Homebrew not found. Please install mise manually."
+    exit 1
+  fi
+fi
+
+# Ensure global mise config exists (managed by chezmoi template)
+mkdir -p "$HOME/.config/mise"
+
+# Set idiomatic version files to avoid deprecation warnings
+mise settings add idiomatic_version_file_enable_tools node || true
+mise settings add idiomatic_version_file_enable_tools python || true
+mise settings add idiomatic_version_file_enable_tools ruby || true
+
+# Trust development directories to avoid prompts
+mise settings trusted_config_paths add "~/Development/**" || true
+mise settings trusted_config_paths add "~/workspace/**" || true
+
+# Install commonly configured tools
+mise install || true
+
+echo "[chezmoi] mise setup complete"
+

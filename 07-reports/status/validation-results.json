@@ -26,16 +26,33 @@
       "category": "Homebrew",
       "check": "Installation",
       "level": "success",
-      "message": "Homebrew 4.6.13",
+      "message": "Homebrew 4.6.15",
       "details": null
     },
     {
       "category": "Homebrew",
       "check": "Outdated Packages",
       "level": "warning",
-      "message": "1 packages need updating",
+      "message": "18 packages need updating",
       "details": {
         "packages": [
+          "awscli",
+          "fish",
+          "gcc",
+          "harfbuzz",
+          "lefthook",
+          "leptonica",
+          "libunistring",
+          "mise",
+          "nx",
+          "openssl@3",
+          "pandoc",
+          "php",
+          "pipx",
+          "python@3.11",
+          "trivy",
+          "unixodbc",
+          "usage",
           "temurin"
         ]
       }
@@ -58,11 +75,14 @@
       "category": "Chezmoi",
       "check": "Uncommitted Changes",
       "level": "warning",
-      "message": "2 files have uncommitted changes",
+      "message": "5 files have uncommitted changes",
       "details": {
         "files": [
-          "MM .config/fish/config.fish",
-          " R 30-macos-settings.sh"
+          "MM .config/fish/conf.d/50-gopass-biometric.fish",
+          "MM .config/mise/config.toml",
+          " R 30-macos-settings.sh",
+          "DA install.sh",
+          " M workspace/dotfiles/Brewfile.dev"
         ]
       }
     },
@@ -70,28 +90,42 @@
       "category": "Chezmoi",
       "check": "Managed Files",
       "level": "info",
-      "message": "Managing 46 files",
+      "message": "Managing 51 files",
       "details": null
     },
     {
       "category": "Shell",
       "check": "Current Shell",
-      "level": "info",
-      "message": "Using Zsh (Fish recommended)",
+      "level": "success",
+      "message": "Fish shell is active",
+      "details": null
+    },
+    {
+      "category": "Shell",
+      "check": "Fish Config",
+      "level": "success",
+      "message": "Fish configuration exists",
+      "details": null
+    },
+    {
+      "category": "Shell",
+      "check": "Mise Integration",
+      "level": "success",
+      "message": "Mise is integrated with Fish",
       "details": null
     },
     {
       "category": "Tools",
       "check": "Git",
       "level": "success",
-      "message": "Version 2.51.0",
+      "message": "Version 2.50.1",
       "details": null
     },
     {
       "category": "Tools",
       "check": "Mise",
       "level": "success",
-      "message": "Version 2025.9.18",
+      "message": "Version 2025.9.20",
       "details": null
     },
     {
@@ -105,7 +139,7 @@
       "category": "Tools",
       "check": "Python3",
       "level": "success",
-      "message": "Version 3.13.7",
+      "message": "Version 3.9.6",
       "details": null
     },
     {
@@ -161,14 +195,14 @@
       "category": "Documentation",
       "check": "Coverage",
       "level": "info",
-      "message": "89.7% of documents have metadata (26/29)",
+      "message": "38.0% of documents have metadata (82/216)",
       "details": null
     },
     {
       "category": "Documentation",
       "check": "Active Docs",
       "level": "info",
-      "message": "13 documents are marked as active",
+      "message": "56 documents are marked as active",
       "details": null
     },
     {
@@ -266,7 +300,7 @@
       "category": "Security",
       "check": ".env Files",
       "level": "warning",
-      "message": "Found 14 .env files in Development",
+      "message": "Found 15 .env files in Development",
       "details": null
     },
     {
@@ -277,10 +311,45 @@
       "details": null
     },
     {
+      "category": "Performance",
+      "check": "Shell Startup",
+      "level": "warning",
+      "message": "Slow Fish startup: 595ms (target < 150ms)",
+      "details": null
+    },
+    {
       "category": "Policies",
       "check": "Compliance",
       "level": "info",
       "message": "Policy validation framework is active",
+      "details": null
+    },
+    {
+      "category": "Repo Env",
+      "check": ".envrc Structure",
+      "level": "success",
+      "message": "uses embedded use_mise() and avoids external eval",
+      "details": null
+    },
+    {
+      "category": "Repo Env",
+      "check": "mise trust",
+      "level": "warning",
+      "message": ".mise.toml not trusted",
+      "details": null
+    },
+    {
+      "category": "Multi-Repo Env",
+      "check": ".envrc Compliance",
+      "level": "success",
+      "message": "38/38 repos have robust .envrc",
+      "details": null
+    },
+    {
+      "category": "Multi-Repo Env",
+      "check": "mise trust",
+      "level": "info",
+      "message": "0/38 repos with .mise.toml are trusted",
       "details": null
     }
   ]

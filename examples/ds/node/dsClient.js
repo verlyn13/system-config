@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Minimal DS client for dashboard/server examples (Node >=18)
+// Minimal DS client for dashboard/server examples (Node >=24)
 const DS = process.env.DS_BASE_URL || 'http://127.0.0.1:7777';
 const TOKEN = process.env.DS_TOKEN || '';
 
@@ -19,4 +19,3 @@ async function get(path){
     process.exit(1);
   }
 })();
-

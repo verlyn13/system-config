@@ -427,21 +427,27 @@ start();
         exit 1
 end
 
-# Create .envrc for direnv
+# Create .envrc for direnv (robust mise integration)
 echo "# Direnv configuration
 # Automatically load project environment
 
-# Load mise environment
+# Load mise integration and activate tools (no external calls)
+use_mise() {
+  direnv_load mise direnv exec
+}
 use mise
 
 # Project-specific environment variables
 export PROJECT_NAME=\"$project_name\"
 export PROJECT_TYPE=\"$project_type\"
 
-# Load .env if it exists
-if [ -f .env ]; then
-  dotenv
-fi
+# Add local bins
+PATH_add bin
+PATH_add node_modules/.bin
+
+# Load env files if present
+dotenv_if_exists .env.local
+dotenv_if_exists .env
 " > .envrc
 
 direnv allow .

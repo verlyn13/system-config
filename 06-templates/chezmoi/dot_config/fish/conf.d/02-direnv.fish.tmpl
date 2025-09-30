@@ -1,0 +1,10 @@
+# Enable direnv hook in interactive shells only
+if status is-interactive
+    # Allow opt-out if troubleshooting
+    if not set -q DIRENV_DISABLE
+        if type -q direnv
+            set -gx DIRENV_LOG_FORMAT ""
+            direnv hook fish | source
+        end
+    end
+end

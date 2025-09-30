@@ -1,0 +1,32 @@
+name: Stage 4 — UX & Prefetch Smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prefetch-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Start Bridge
+        env:
+          BRIDGE_CORS: '1'
+          BRIDGE_STRICT: '1'
+        run: |
+          nohup node scripts/http-bridge.js > bridge.log 2>&1 &
+          for i in {1..30}; do curl -sf http://127.0.0.1:7171/api/health && break || sleep 1; done
+      - name: Validate Prefetch & ETags
+        env:
+          OBS_BRIDGE_URL: http://127.0.0.1:7171
+        run: |
+          node scripts/prefetch-validate.mjs
+      - name: Show Bridge Logs (on failure)
+        if: failure()
+        run: |
+          echo '--- bridge.log ---'
+          tail -n 300 bridge.log || true

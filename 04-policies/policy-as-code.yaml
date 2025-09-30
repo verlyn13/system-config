@@ -226,7 +226,6 @@ repositories:
   legacy:
     patterns: ["system-setup"]
     description: "Legacy import/snapshot. Treat as read-only archive to prevent drift."
-      - "security_check"
 
   failure_action: "log_and_alert"
 

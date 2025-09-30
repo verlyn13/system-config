@@ -89,6 +89,8 @@ run = "go run ."
         return False
 
     mise_path.write_text(config)
+    # Trust the new config to avoid prompts
+    run_command("mise trust .mise.toml", repo_path)
     return True
 
 def add_envrc(repo_path):
@@ -102,19 +104,23 @@ def add_envrc(repo_path):
     content = """# direnv configuration
 # Generated: 2025-09-26
 
-# Load mise environment
+# Load mise integration and activate tools (no external calls)
+use_mise() {
+  direnv_load mise direnv exec
+}
 use mise
 
 # Project-specific environment variables
-# export API_KEY="your-key-here"
-# export DATABASE_URL="postgresql://localhost/dbname"
+# export API_KEY=\"your-key-here\"
+# export DATABASE_URL=\"postgresql://localhost/dbname\"
 
 # Add local bin to PATH
 PATH_add bin
 PATH_add node_modules/.bin
 
-# Load .env file if it exists
-[ -f .env ] && dotenv .env
+# Load env files if present (safe)
+dotenv_if_exists .env.local
+dotenv_if_exists .env
 """
 
     envrc_path.write_text(content)

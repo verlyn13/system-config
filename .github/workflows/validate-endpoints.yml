@@ -12,7 +12,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Start Bridge
         run: |
           nohup node scripts/http-bridge.js > bridge.log 2>&1 &
@@ -21,6 +21,10 @@ jobs:
         run: |
           npm install ajv@^8.17.1
           npm install ajv-formats@^3.0.1
+      - name: Ensure at least one project exists (discover if needed)
+        run: |
+          curl -sf http://127.0.0.1:7171/api/discover || true
+          curl -sf http://127.0.0.1:7171/api/projects | jq '.count'
       - name: Validate Discovery and Endpoints (Smoke Test)
         run: |
           # Test basic health
@@ -42,10 +46,11 @@ jobs:
         run: |
           echo "Running typed endpoint validation..."
           node scripts/validate-endpoints.js
-      - name: SSE Smoke Validation (optional)
-        if: env.SSE_SMOKE == '1'
+      - name: SSE Smoke Validation
         env:
           OBS_BRIDGE_URL: http://127.0.0.1:7171
+          SSE_VALIDATE_TIMEOUT_MS: '10000'
+          SSE_TRIGGER_OBSERVER: '1'
         run: |
           echo "Running SSE validation..."
           node scripts/sse-validate.mjs

@@ -1,0 +1,88 @@
+name: Repository Governance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/settings.yml'
+      - '.github/CODEOWNERS'
+      - '.github/workflows/repository-governance.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/settings.yml'
+      - '.github/CODEOWNERS'
+
+jobs:
+  validate-governance:
+    name: Validate Repository Governance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate settings.yml
+        run: |
+          # Check if settings.yml is valid YAML
+          python3 -c "
+          import yaml
+          import sys
+          try:
+              with open('.github/settings.yml', 'r') as f:
+                  yaml.safe_load(f)
+              print('✓ settings.yml is valid YAML')
+          except Exception as e:
+              print(f'✗ settings.yml validation failed: {e}')
+              sys.exit(1)
+          "
+
+      - name: Validate CODEOWNERS
+        run: |
+          # Check CODEOWNERS syntax
+          if [ -f .github/CODEOWNERS ]; then
+            echo "✓ CODEOWNERS file exists"
+            # Basic syntax check - each line should have pattern and owner
+            grep -v '^#' .github/CODEOWNERS | grep -v '^$' | while read line; do
+              if [[ ! "$line" =~ ^[[:space:]]*[^[:space:]]+[[:space:]]+@[^[:space:]]+.*$ ]]; then
+                echo "✗ Invalid CODEOWNERS line: $line"
+                exit 1
+              fi
+            done
+            echo "✓ CODEOWNERS syntax is valid"
+          else
+            echo "✗ CODEOWNERS file missing"
+            exit 1
+          fi
+
+  check-branch-protection:
+    name: Check Branch Protection Readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required status checks
+        run: |
+          echo "Checking if all required status checks exist as workflows..."
+          required_checks=(
+            "Validate JSON Schemas"
+            "Lint OpenAPI"
+            "System Validation"
+            "Convention Checks"
+            "Contract Validation"
+          )
+
+          for check in "${required_checks[@]}"; do
+            if grep -r "name: $check" .github/workflows/ > /dev/null; then
+              echo "✓ Found workflow: $check"
+            else
+              echo "⚠ Missing workflow: $check"
+            fi
+          done
+
+          echo "Note: Settings will be applied via Probot after merge to main"

@@ -73,6 +73,8 @@ class SystemValidator:
         self.validate_security()
         self.validate_performance()
         self.validate_policies()
+        self.validate_repo_env()
+        self.validate_multirepo_env()
 
         # Analyze results
         return self.analyze_results()
@@ -428,6 +430,93 @@ class SystemValidator:
         except Exception as e:
             self.add_result("Policies", "Policy File", ValidationLevel.ERROR,
                            f"Could not parse policy file: {e}")
+
+    def validate_repo_env(self) -> None:
+        """Validate repo-local env (.envrc) and mise trust status"""
+        print(f"\n{Colors.CYAN}🧪 Validating Repo Env (.envrc/mise trust)...{Colors.RESET}")
+        repo_envrc = self.repo_root / '.envrc'
+        if not repo_envrc.exists():
+            self.add_result("Repo Env", ".envrc", ValidationLevel.ERROR, ".envrc not found in repo root")
+        else:
+            try:
+                content = repo_envrc.read_text()
+                has_use_mise_fn = 'use_mise()' in content and 'direnv_load mise direnv exec' in content
+                uses_use_mise = 'use mise' in content
+                eval_mise = '$(mise direnv)' in content
+                if has_use_mise_fn and uses_use_mise and not eval_mise:
+                    self.add_result("Repo Env", ".envrc Structure", ValidationLevel.SUCCESS,
+                                    "uses embedded use_mise() and avoids external eval")
+                else:
+                    msg = []
+                    if not has_use_mise_fn: msg.append('missing use_mise()')
+                    if not uses_use_mise: msg.append('missing "use mise"')
+                    if eval_mise: msg.append('contains eval "$(mise direnv)"')
+                    self.add_result("Repo Env", ".envrc Structure", ValidationLevel.WARNING,
+                                    ", ".join(msg) or "non-standard structure")
+            except Exception as e:
+                self.add_result("Repo Env", ".envrc Read", ValidationLevel.ERROR, f"failed to read: {e}")
+
+        # Check mise trust status for this repo
+        try:
+            out = subprocess.check_output(['bash', '-lc', 'mise trust --show'], text=True, cwd=self.repo_root)
+            trusted = any('.mise.toml' in line and ('trusted' in line or 'mise trusted' in line) for line in out.splitlines())
+            if trusted:
+                self.add_result("Repo Env", "mise trust", ValidationLevel.SUCCESS, ".mise.toml trusted")
+            else:
+                self.add_result("Repo Env", "mise trust", ValidationLevel.WARNING, ".mise.toml not trusted")
+        except Exception as e:
+            self.add_result("Repo Env", "mise trust", ValidationLevel.INFO, f"unable to check trust: {e}")
+
+    def validate_multirepo_env(self) -> None:
+        """Validate .envrc structure and mise trust across discovered repositories"""
+        print(f"\n{Colors.CYAN}🧪 Validating Multi‑Repo Env (.envrc/mise trust)...{Colors.RESET}")
+        # Load registry written by observers/bridge if present
+        registry = Path.home() / '.local' / 'share' / 'devops-mcp' / 'project-registry.json'
+        if not registry.exists():
+            self.add_result("Multi-Repo Env", "Registry", ValidationLevel.INFO, "Registry not found; skipping multi-repo checks")
+            return
+        try:
+            data = json.loads(registry.read_text())
+            projects = data.get('projects', [])
+        except Exception as e:
+            self.add_result("Multi-Repo Env", "Registry Parse", ValidationLevel.ERROR, f"Failed to parse registry: {e}")
+            return
+
+        checked = 0
+        ok_envrc = 0
+        ok_trust = 0
+        for p in projects:
+            repo_path = Path(p.get('path', ''))
+            if not repo_path or not repo_path.exists():
+                continue
+            checked += 1
+            # .envrc check
+            try:
+                envrc = repo_path / '.envrc'
+                if envrc.exists():
+                    content = envrc.read_text(errors='ignore')
+                    if ('use_mise()' in content and 'direnv_load mise direnv exec' in content and 'use mise' in content and '$(mise direnv)' not in content):
+                        ok_envrc += 1
+                # mise trust check (only if .mise.toml exists)
+                if (repo_path / '.mise.toml').exists():
+                    out = subprocess.check_output(['bash', '-lc', 'mise trust --show'], text=True, cwd=str(repo_path))
+                    if '.mise.toml' in out and 'trusted' in out:
+                        ok_trust += 1
+            except Exception:
+                pass
+
+        self.add_result(
+            "Multi-Repo Env",
+            ".envrc Compliance",
+            ValidationLevel.SUCCESS if ok_envrc == checked or checked == 0 else ValidationLevel.WARNING,
+            f"{ok_envrc}/{checked} repos have robust .envrc"
+        )
+        self.add_result(
+            "Multi-Repo Env",
+            "mise trust",
+            ValidationLevel.SUCCESS if ok_trust > 0 else ValidationLevel.INFO,
+            f"{ok_trust}/{checked} repos with .mise.toml are trusted"
+        )
 
     def add_result(self, category: str, check: str, level: ValidationLevel,
                    message: str, details: Dict[str, Any] = None) -> None:

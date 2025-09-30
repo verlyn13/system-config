@@ -1,0 +1,40 @@
+# Global mise configuration for development environment (chezmoi-managed)
+
+[tools]
+node = "24"
+bun = "latest"
+python = "3.13"
+go = "latest"
+rust = "stable"
+java = "temurin-17"
+uv = "latest"
+
+[settings]
+# Keep experimental features enabled for task runner and direnv integration
+experimental = true
+# Trust common development roots so mise doesn't prompt repeatedly
+trusted_config_paths = [
+  "~/Development/**",
+  "~/workspace/**"
+]
+# Prefer mise-native files over legacy managers by default
+legacy_version_file = false
+# Silence future deprecation by explicitly enabling idiomatic files
+# (.nvmrc, .node-version, .python-version, etc.) for these tools
+idiomatic_version_file_enable_tools = ["node", "python", "ruby"]
+# Keep plugin autoupdate checks reasonable and builds snappy
+plugin_autoupdate_last_check_duration = "7d"
+jobs = 8
+
+[env]
+MISE_FISH_AUTO_ACTIVATE = "1"
+MISE_LOG_LEVEL = "info"
+MISE_EXPERIMENTAL = "1"
+EDITOR = "nvim"
+VISUAL = "nvim"
+MAKEFLAGS = "-j10"
+CARGO_BUILD_JOBS = "10"
+NODE_OPTIONS = "--max-old-space-size=8192"
+BUN_INSTALL = "~/.bun"
+GOPATH = "~/.local/share/go/workspace"
+
