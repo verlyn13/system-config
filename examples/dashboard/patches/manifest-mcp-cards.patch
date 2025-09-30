@@ -1,0 +1,141 @@
+diff --git a/server/index.js b/server/index.js
+index 6666666..7777777 100644
+--- a/server/index.js
++++ b/server/index.js
+@@
+ app.get('/api/obs/projects/:id/manifest', async (req, res) => {
+   const id = req.params.id;
+   const r = await fetch(`${BRIDGE}/api/projects/${encodeURIComponent(id)}/manifest`, { headers: proxyHeaders() });
+   const body = await r.text();
+   res.status(r.status).type('application/json').send(body);
+ });
+
+ app.get('/api/mcp/self-status', async (req, res) => {
+   const svc = await fetch(`${BRIDGE}/api/discovery/services`, { headers: proxyHeaders() }).then(r=>r.json());
+   if (!svc.mcp?.self_status) return res.status(404).json({ error: 'mcp not configured' });
+   const s = await fetch(svc.mcp.self_status, { headers: proxyHeaders() });
+   res.status(s.status).type('application/json').send(await s.text());
+ });
+
+diff --git a/src/components/ManifestCard.jsx b/src/components/ManifestCard.jsx
+new file mode 100644
+index 0000000..1111111 100644
+--- /dev/null
++++ b/src/components/ManifestCard.jsx
+@@
+ +import React, { useEffect, useState } from 'react';
+ +
+ +function toYAML(obj, indent = 0) {
+ +  const sp = '  '.repeat(indent);
+ +  if (obj === null) return 'null';
+ +  if (typeof obj !== 'object') return JSON.stringify(obj);
+ +  if (Array.isArray(obj)) return obj.map(v => `${sp}- ${toYAML(v, indent + 1).replace(/^\s+/, '')}`).join('\n');
+ +  return Object.entries(obj).map(([k, v]) => {
+ +    if (v && typeof v === 'object') return `${sp}${k}:\n${toYAML(v, indent + 1)}`;
+ +    return `${sp}${k}: ${toYAML(v, 0)}`;
+ +  }).join('\n');
+ +}
+ +
+ +export default function ManifestCard({ projectId }){
+ +  const [data, setData] = useState(null);
+ +  const [mode, setMode] = useState('yaml');
+ +  useEffect(() => {
+ +    (async () => {
+ +      try { setData(await (await fetch(`/api/obs/projects/${encodeURIComponent(projectId)}/manifest`)).json()); } catch {}
+ +    })();
+ +  }, [projectId]);
+ +  if (!data) return null;
+ +  const valid = data.valid !== false;
+ +  return (
+ +    <div style={{border:'1px solid #e5e7eb', borderRadius:8, padding:12, margin:'12px 0'}}>
+ +      <div style={{display:'flex', justifyContent:'space-between'}}>
+ +        <strong>Manifest Validation</strong>
+ +        <div>
+ +          <button onClick={()=>setMode('yaml')} disabled={mode==='yaml'}>YAML</button>
+ +          <button onClick={()=>setMode('json')} disabled={mode==='json'} style={{marginLeft:8}}>JSON</button>
+ +        </div>
+ +      </div>
+ +      <div style={{marginTop:8}}>
+ +        <div><b>Status:</b> {valid ? 'valid' : 'invalid'}</div>
+ +        {!valid && <pre style={{color:'#dc2626'}}>{JSON.stringify(data.errors, null, 2)}</pre>}
+ +        <pre style={{maxHeight:260, overflow:'auto', background:'#f9fafb', padding:8}}>
+ +          {mode === 'yaml' ? toYAML(data.manifest || {}) : JSON.stringify(data.manifest || {}, null, 2)}
+ +        </pre>
+ +      </div>
+ +    </div>
+ +  );
+ +}
+
+diff --git a/src/components/McpStatusCard.jsx b/src/components/McpStatusCard.jsx
+new file mode 100644
+index 0000000..1111111 100644
+--- /dev/null
++++ b/src/components/McpStatusCard.jsx
+@@
+ +import React, { useEffect, useState } from 'react';
+ +
+ +export default function McpStatusCard(){
+ +  const [s, setS] = useState(null);
+ +  useEffect(() => { (async () => { try { setS(await (await fetch('/api/mcp/self-status')).json()); } catch {} })(); }, []);
+ +  if (!s) return null;
+ +  return (
+ +    <div style={{border:'1px solid #e5e7eb', borderRadius:8, padding:12, margin:'12px 0'}}>
+ +      <strong>MCP Server</strong>
+ +      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:8}}>
+ +        <div>
+ +          <div><b>Contract:</b> {s.contractVersion || ''}</div>
+ +          <div><b>Schema:</b> {s.schemaVersion || ''}</div>
+ +          <div><b>Status:</b> {s.ok ? 'ok' : 'n/a'}</div>
+ +        </div>
+ +        <div>
+ +          <div><b>Time:</b> {s.timestamp || ''}</div>
+ +        </div>
+ +      </div>
+ +    </div>
+ +  );
+ +}
+
+diff --git a/src/components/ProjectDetail.jsx b/src/components/ProjectDetail.jsx
+index 6666666..8888888 100644
+--- a/src/components/ProjectDetail.jsx
++++ b/src/components/ProjectDetail.jsx
+@@
+ import IntegrationCard from './IntegrationCard';
+ +import ManifestCard from './ManifestCard';
+@@
+   return (
+     <div>
+       <h2>Project {id}</h2>
+       <IntegrationCard projectId={id} />
+ +     <ManifestCard projectId={id} />
+       <ObserversView items={items} />
+     </div>
+   );
+ }
+
+diff --git a/src/components/Documentation.jsx b/src/components/Documentation.jsx
+index 2222222..3333333 100644
+--- a/src/components/Documentation.jsx
++++ b/src/components/Documentation.jsx
+@@
+ import DsStatusCard from './DsStatusCard';
+ +import McpStatusCard from './McpStatusCard';
+@@
+ export default function Documentation(){
+   return (
+     <div>
+       <h2>Documentation</h2>
+       <DsStatusCard />
+ +     <McpStatusCard />
+       <div>
+         <h3>Contracts & OpenAPI</h3>
+         <ul>
+           <li><a href="/api/obs/openapi.yaml">Bridge OpenAPI</a></li>
+           <li><a href="/api/obs/discovery/openapi">Bridge Discovery OpenAPI</a></li>
+           <li><a href="/api/discovery/schemas">Bridge Schemas</a></li>
+         </ul>
+       </div>
+     </div>
+   );
+ }
+

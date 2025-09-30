@@ -53,20 +53,8 @@ main() {
 
   local end_time=$(date +%s%3N)
   local latency=$((end_time - start_time))
-
-  cat <<EOF
-{
-  "apiVersion": "obs.v1",
-  "run_id": "$RUN_ID",
-  "timestamp": "$TIMESTAMP",
-  "project_id": "$PROJECT_ID",
-  "observer": "quality",
-  "summary": "$summary",
-  "metrics": {"issues": $issues, "latency_ms": $latency},
-  "status": "$status"
-}
-EOF
+  jq -nc --arg run "$RUN_ID" --arg ts "$TIMESTAMP" --arg pid "$PROJECT_ID" --arg sum "$summary" --arg st "$status" --argjson issues "$issues" --argjson lat "$latency" \
+    '{apiVersion:"obs.v1",run_id:$run,timestamp:$ts,project_id:$pid,observer:"quality",summary:$sum,metrics:{issues:$issues,latency_ms:$lat},status:$st}'
 }
 
 main
-

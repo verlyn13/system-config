@@ -1,0 +1,71 @@
+# Redocly OpenAPI Configuration
+# Stage 1 Contract Freeze - v1.1.0
+
+extends:
+  - recommended
+
+rules:
+  # Required rules for contract compliance
+  operation-operationId: error
+  operation-summary: error
+  operation-description: warn
+  tag-description: warn
+  info-contact: warn
+  info-license: warn
+
+  # Path and parameter rules
+  path-parameters-defined: error
+  path-declaration-must-exist: error
+  path-not-include-query: error
+  parameter-description: warn
+
+  # Request/Response rules
+  request-mime-type: warn
+  response-mime-type: warn
+  response-contains-header:
+    severity: warn
+    headers:
+      - Content-Type
+
+  # Schema rules
+  no-invalid-media-type-examples: error
+  no-undefined-server-variable: error
+
+  # Security rules
+  security-defined: warn
+  operation-2xx-response: error
+
+features.openapi:
+  # Reference to local JSON schemas
+  jsonSchemasPath: ./schema
+
+  # Generate request/response examples
+  generateCodeSamples: true
+
+  # Validate examples against schemas
+  validateExamples: strict
+
+theme:
+  colors:
+    primary:
+      main: '#2563eb'
+    success:
+      main: '#10b981'
+    error:
+      main: '#ef4444'
+
+  typography:
+    fontSize: '14px'
+    code:
+      fontSize: '13px'
+
+apis:
+  bridge@v1.1.0:
+    root: ./openapi.yaml
+
+# Linting exceptions (if needed)
+decorators:
+  # Example: Ignore specific paths
+  # filter-out:
+  #   property: paths
+  #   value: '/internal/*'

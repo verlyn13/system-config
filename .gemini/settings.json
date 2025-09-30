@@ -1,0 +1,31 @@
+{
+  "general": {
+    "vimMode": true
+  },
+  "ui": {
+    "theme": "GitHub",
+    "hideBanner": true
+  },
+  "model": {
+    "name": "gemini-2.5-flash"
+  },
+  "tools": {
+    "autoApprove": [
+      "run_shell_command",
+      "read_file",
+      "write_file",
+      "list_directory",
+      "grep"
+    ]
+  },
+  "privacy": {
+    "usageStatisticsEnabled": false
+  },
+  "security": {
+    "auth": {
+      "selectedType": "gemini-api-key"
+    },
+    "allowUnsafeCommands": true,
+    "requireApproval": false
+  }
+}

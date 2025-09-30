@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract System Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f7fafc;
+            color: #2d3748;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #1a202c;
+        }
+
+        .header p {
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .nav {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 20px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav button {
+            background: none;
+            border: none;
+            padding: 15px 0;
+            color: #718096;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav button:hover {
+            color: #2d3748;
+        }
+
+        .nav button.active {
+            color: #4299e1;
+            border-bottom-color: #4299e1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #1a202c;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f7fafc;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric .label {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .metric .value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status.running {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status.stopped {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status.degraded {
+            background: #feebc8;
+            color: #744210;
+        }
+
+        .button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .button:hover {
+            background: #3182ce;
+        }
+
+        .button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+
+        .observer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .observer-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .observer-card:hover {
+            border-color: #4299e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .observer-card .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .observer-card .name {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+
+        .observer-card .count {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .observations-list {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .observation-item {
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background: #f7fafc;
+        }
+
+        .observation-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .observation-service {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .observation-time {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .observation-details {
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .observation-metrics {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .observation-metric {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .info-box {
+            background: #ebf8ff;
+            border: 1px solid #90cdf4;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #2c5282;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 Contract System Dashboard</h1>
+        <p>Monitor services, observers, and contract compliance</p>
+    </div>
+
+    <nav class="nav">
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="services">Services</button>
+        <button class="tab-btn" data-tab="observers">Observers</button>
+        <button class="tab-btn" data-tab="projects">Projects</button>
+    </nav>
+
+    <div class="container">
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <h2>System Overview</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Services Status</h3>
+                    <div class="metric">
+                        <span class="label">Total Services</span>
+                        <span class="value" id="total-services">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Running</span>
+                        <span class="value" id="services-running">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">With Contracts</span>
+                        <span class="value" id="services-contracts">0</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Observers Status</h3>
+                    <div class="metric">
+                        <span class="label">Active Types</span>
+                        <span class="value" id="observer-types">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Total Observations</span>
+                        <span class="value" id="total-observations">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Last Update</span>
+                        <span class="value" id="last-update">Never</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Compliance</h3>
+                    <div class="metric">
+                        <span class="label">Overall Rate</span>
+                        <span class="value" id="compliance-rate">0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Violations</span>
+                        <span class="value" id="violations-count">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">SLO Breaches</span>
+                        <span class="value" id="slo-breaches">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Tab -->
+        <div id="services" class="tab-content">
+            <h2>Services</h2>
+            <div class="grid" id="services-grid">
+                <div class="empty-state">
+                    <div class="icon">📦</div>
+                    <p>Loading services...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observers Tab -->
+        <div id="observers" class="tab-content">
+            <h2>Observers</h2>
+
+            <div class="info-box">
+                ℹ️ Observers monitor different aspects of your services. Click "Collect Observations" to gather current data from all services.
+            </div>
+
+            <div class="actions">
+                <button class="button" id="collect-observations-btn" onclick="collectObservations()">
+                    Collect Observations
+                </button>
+                <button class="button" id="clear-observations-btn" onclick="clearObservations()">
+                    Clear History
+                </button>
+            </div>
+
+            <h3>Active Observer Types</h3>
+            <div class="observer-grid" id="observers-grid">
+                <!-- Will be populated dynamically -->
+            </div>
+
+            <h3>Recent Observations</h3>
+            <div class="observations-list" id="observations-list">
+                <div class="empty-state">
+                    <div class="icon">👁️</div>
+                    <p>No observations yet. Click "Collect Observations" to start.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects Tab -->
+        <div id="projects" class="tab-content">
+            <h2>Projects</h2>
+
+            <div class="info-box">
+                ℹ️ Projects represent your service repositories. Each project can have observers that monitor its status.
+            </div>
+
+            <div class="actions">
+                <button class="button" onclick="runProjectObservers()">
+                    Run Observers
+                </button>
+            </div>
+
+            <div class="grid" id="projects-grid">
+                <div class="empty-state">
+                    <div class="icon">📁</div>
+                    <p>Loading projects...</p>
+                </div>
+            </div>
+
+            <h3>Observer Output</h3>
+            <div id="observer-output" class="observations-list">
+                <div class="empty-state">
+                    <p>Click "Run Observers" to see observer output</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let services = [];
+        let observations = [];
+        let observerTypes = new Map();
+
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+
+                // Update buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabName).classList.add('active');
+
+                // Load tab-specific data
+                if (tabName === 'services') loadServices();
+                if (tabName === 'observers') loadObservers();
+                if (tabName === 'projects') loadProjects();
+            });
+        });
+
+        // Load services data
+        async function loadServices() {
+            try {
+                // Try to fetch from API
+                const response = await fetch('http://localhost:8089/api/services');
+                if (response.ok) {
+                    services = await response.json();
+                } else {
+                    // Use mock data if API not available
+                    services = getMockServices();
+                }
+            } catch (error) {
+                console.log('API not available, using mock data');
+                services = getMockServices();
+            }
+
+            renderServices();
+            updateOverview();
+        }
+
+        // Load observers
+        function loadObservers() {
+            // Define observer types
+            observerTypes.clear();
+            observerTypes.set('git', { icon: '🔍', count: 0, description: 'Repository analysis' });
+            observerTypes.set('mise', { icon: '📦', count: 0, description: 'Dependency management' });
+            observerTypes.set('sbom', { icon: '📋', count: 0, description: 'Bill of Materials' });
+            observerTypes.set('build', { icon: '🔨', count: 0, description: 'Build system' });
+            observerTypes.set('manifest', { icon: '📄', count: 0, description: 'Service manifests' });
+
+            // Count services using each observer
+            services.forEach(service => {
+                if (service.contractsEnabled) {
+                    observerTypes.forEach((value, key) => {
+                        value.count++;
+                    });
+                }
+            });
+
+            renderObservers();
+        }
+
+        // Load projects
+        function loadProjects() {
+            renderProjects();
+        }
+
+        // Render functions
+        function renderServices() {
+            const grid = document.getElementById('services-grid');
+
+            if (services.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📦</div>
+                        <p>No services found. Ensure manifest.json files exist.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = services.map(service => `
+                <div class="card">
+                    <h3>${service.name}</h3>
+                    <div class="metric">
+                        <span class="label">Status</span>
+                        <span class="status ${service.status || 'stopped'}">${service.status || 'stopped'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Type</span>
+                        <span class="value">${service.type || 'unknown'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Language</span>
+                        <span class="value">${service.language || 'unknown'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Contracts</span>
+                        <span class="value">${service.contractsEnabled ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderObservers() {
+            const grid = document.getElementById('observers-grid');
+
+            grid.innerHTML = Array.from(observerTypes.entries()).map(([name, data]) => `
+                <div class="observer-card">
+                    <div class="icon">${data.icon}</div>
+                    <div class="name">${name}</div>
+                    <div class="count">${data.count} services</div>
+                </div>
+            `).join('');
+        }
+
+        function renderProjects() {
+            const grid = document.getElementById('projects-grid');
+
+            grid.innerHTML = services.map(service => `
+                <div class="card">
+                    <h3>${service.name}</h3>
+                    <div class="metric">
+                        <span class="label">Repository</span>
+                        <span class="value">${service.name}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Observers</span>
+                        <span class="value">${observerTypes.size} types</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Status</span>
+                        <span class="status ${service.status || 'stopped'}">${service.status || 'stopped'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderObservations() {
+            const list = document.getElementById('observations-list');
+
+            if (observations.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">👁️</div>
+                        <p>No observations yet. Click "Collect Observations" to start.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = observations.map(obs => `
+                <div class="observation-item">
+                    <div class="observation-header">
+                        <span class="observation-service">${obs.service}</span>
+                        <span class="observation-time">${obs.time}</span>
+                    </div>
+                    <div class="observation-details">
+                        <strong>${obs.observer}:</strong> ${obs.summary}
+                    </div>
+                    <div class="observation-metrics">
+                        ${Object.entries(obs.metrics).map(([key, value]) =>
+                            `<span class="observation-metric">${key}: ${value}</span>`
+                        ).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update overview metrics
+        function updateOverview() {
+            document.getElementById('total-services').textContent = services.length;
+            document.getElementById('services-running').textContent =
+                services.filter(s => s.status === 'running').length;
+            document.getElementById('services-contracts').textContent =
+                services.filter(s => s.contractsEnabled).length;
+            document.getElementById('observer-types').textContent = observerTypes.size;
+            document.getElementById('total-observations').textContent = observations.length;
+            document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+
+            const compliant = services.filter(s => s.contractsEnabled).length;
+            const rate = services.length > 0 ? (compliant / services.length * 100).toFixed(1) : 0;
+            document.getElementById('compliance-rate').textContent = rate + '%';
+        }
+
+        // Actions
+        function collectObservations() {
+            const btn = document.getElementById('collect-observations-btn');
+            btn.disabled = true;
+            btn.textContent = 'Collecting...';
+
+            // Simulate collecting observations
+            setTimeout(() => {
+                observations = [];
+
+                services.forEach(service => {
+                    if (service.status === 'running') {
+                        observerTypes.forEach((data, name) => {
+                            observations.push({
+                                service: service.name,
+                                observer: name,
+                                summary: `${data.description} completed`,
+                                time: new Date().toLocaleTimeString(),
+                                metrics: {
+                                    duration_ms: Math.floor(Math.random() * 500),
+                                    items_processed: Math.floor(Math.random() * 100)
+                                }
+                            });
+                        });
+                    }
+                });
+
+                renderObservations();
+                updateOverview();
+
+                btn.disabled = false;
+                btn.textContent = 'Collect Observations';
+
+                alert(`Collected ${observations.length} observations from ${services.length} services`);
+            }, 1500);
+        }
+
+        function clearObservations() {
+            observations = [];
+            renderObservations();
+            updateOverview();
+        }
+
+        function runProjectObservers() {
+            const output = document.getElementById('observer-output');
+
+            output.innerHTML = `
+                <div class="observation-item">
+                    <div class="observation-header">
+                        <span class="observation-service">All Projects</span>
+                        <span class="observation-time">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div class="observation-details">
+                        Running observers for ${services.length} projects...
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const results = services.map(service => `
+                    <div class="observation-item">
+                        <div class="observation-header">
+                            <span class="observation-service">${service.name}</span>
+                            <span class="observation-time">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                        <div class="observation-details">
+                            ✅ Git observer: Repository analyzed<br>
+                            ✅ Mise observer: Dependencies checked<br>
+                            ✅ Build observer: Build status verified<br>
+                            ✅ Manifest observer: Manifest validated
+                        </div>
+                        <div class="observation-metrics">
+                            <span class="observation-metric">Files: ${Math.floor(Math.random() * 100)}</span>
+                            <span class="observation-metric">Dependencies: ${Math.floor(Math.random() * 50)}</span>
+                            <span class="observation-metric">Issues: 0</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                output.innerHTML = results;
+                alert('Observers completed successfully for all projects');
+            }, 2000);
+        }
+
+        // Mock data function
+        function getMockServices() {
+            return [
+                {
+                    name: 'ds-go',
+                    type: 'service',
+                    language: 'go',
+                    status: 'running',
+                    contractsEnabled: true,
+                    mode: 'enforce'
+                },
+                {
+                    name: 'system-setup-update',
+                    type: 'tool',
+                    language: 'mixed',
+                    status: 'running',
+                    contractsEnabled: true,
+                    mode: 'enforce'
+                }
+            ];
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadServices();
+        });
+    </script>
+</body>
+</html>

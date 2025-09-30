@@ -1,0 +1,103 @@
+{
+  "apiVersion": "registry.v1",
+  "kind": "SystemConfigurationRegistry",
+  "metadata": {
+    "name": "core-system-registry",
+    "description": "Central registry of all system services and their configurations",
+    "version": "1.0.0",
+    "lastUpdated": "2025-09-28T00:00:00Z"
+  },
+  "spec": {
+    "services": {
+      "dashboard": {
+        "name": "System Compliance Dashboard",
+        "type": "dashboard",
+        "location": "/contracts/dashboard",
+        "port": 8089,
+        "url": "http://localhost:8089",
+        "configFile": "config.json",
+        "manifestFile": "manifest.json",
+        "startCommand": "./start-dashboard.sh",
+        "description": "Central dashboard for system compliance and observability"
+      },
+      "opa": {
+        "name": "Open Policy Agent",
+        "type": "policy-engine",
+        "location": "/contracts/policies",
+        "port": 8181,
+        "url": "http://localhost:8181",
+        "configFile": "opa-config.yaml",
+        "startCommand": "opa run --server",
+        "description": "Policy enforcement engine"
+      },
+      "mcp-system-monitor": {
+        "name": "MCP System Monitor",
+        "type": "mcp-server",
+        "location": "/mcp-servers/system-monitor",
+        "port": null,
+        "url": "stdio://system-monitor",
+        "configFile": "package.json",
+        "startCommand": "node index.js",
+        "description": "Model Context Protocol server for system monitoring"
+      }
+    },
+    "repositories": {
+      "ds-go": {
+        "name": "DS Go Service",
+        "path": "~/Development/personal/ds-go",
+        "manifestFile": "manifest.json",
+        "contractsEnabled": true,
+        "observers": ["git", "mise", "build"]
+      },
+      "system-setup-update": {
+        "name": "System Setup & Configuration",
+        "path": "~/Development/personal/system-setup-update",
+        "manifestFile": "manifest.json",
+        "contractsEnabled": true,
+        "observers": ["git", "mise", "manifest"]
+      },
+      "devops-mcp": {
+        "name": "DevOps MCP Server",
+        "path": "~/Development/personal/devops-mcp",
+        "manifestFile": "manifest.json",
+        "contractsEnabled": false,
+        "observers": []
+      },
+      "system-dashboard": {
+        "name": "System Dashboard Project",
+        "path": "~/Development/personal/system-dashboard",
+        "manifestFile": "manifest.json",
+        "contractsEnabled": false,
+        "observers": []
+      }
+    },
+    "endpoints": {
+      "dashboard": {
+        "ui": "http://localhost:8089",
+        "api": "http://localhost:8089/api",
+        "health": "http://localhost:8089/health",
+        "stream": "http://localhost:8089/api/stream"
+      },
+      "opa": {
+        "api": "http://localhost:8181/v1",
+        "health": "http://localhost:8181/health",
+        "data": "http://localhost:8181/v1/data",
+        "policies": "http://localhost:8181/v1/policies"
+      }
+    },
+    "contracts": {
+      "schemas": "/contracts/schemas",
+      "policies": "/contracts/policies",
+      "enforcement": "/contracts/enforcement",
+      "validation": {
+        "observation": "obs.line.v1.json",
+        "manifest": "manifest.v1.json",
+        "slo_breach": "slo_breach.v1.json"
+      }
+    }
+  },
+  "status": {
+    "verified": true,
+    "message": "This is the single source of truth for system configuration"
+  }
+}

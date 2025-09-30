@@ -1,0 +1,28 @@
+contracts:
+  - changed-files:
+      - any-glob-to-any-file: ["schema/**", "openapi/**", "**/openapi.yaml"]
+
+discovery:
+  - changed-files:
+      - any-glob-to-any-file: ["**/http-bridge.js", "**/http-bridge.mjs", "schema/service.discovery.v1.json"]
+
+tools:
+  - changed-files:
+      - any-glob-to-any-file: ["scripts/**obs*_*.js", "scripts/**obs*_*.mjs", "**/tools/**"]
+
+sse:
+  - changed-files:
+      - any-glob-to-any-file: ["scripts/sse-*.js", "scripts/**sse**.js", "**/events/**"]
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/workflows/**", "scripts/validate-endpoints.js", "scripts/ds-validate.mjs"]
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "README.md"]
+
+scripts:
+  - changed-files:
+      - any-glob-to-any-file: ["scripts/**"]
+

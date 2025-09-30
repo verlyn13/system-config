@@ -32,8 +32,24 @@ See `schema/observer.output.schema.json` for full contract. One JSON object per 
 - `GET /api/projects/:id/status?limit=100&cursor=...`
 - `GET /api/health`
 - `GET /api/events/stream` (SSE; heartbeat + tail of latest entries)
+- `GET /api/discover` (triggers discovery using scripts/project-discover.sh)
+- `GET /api/obs/validate` (bridge-level validation: presence of registry and observations)
+- `POST /api/tools/project_obs_run` (run observer(s), append NDJSON)
+- `GET /api/migrate/obs[?project_id=...]` (consolidate per-observer files into canonical observations.ndjson)
 
 Start: `node scripts/http-bridge.js` (default port 7171)
+
+Auto-discovery: When `BRIDGE_AUTO_DISCOVER` is not `0/false`, the bridge will attempt to run `scripts/project-discover.sh` if the registry cache is missing/empty.
+
+Migration: Use `scripts/migrate-observations.js` or `GET /api/migrate/obs` to consolidate per-observer `*.ndjson` into a canonical `observations.ndjson` per project.
+
+Strict mode: Set `BRIDGE_STRICT=1` to enable stricter self-status reporting and SSE validation behavior.
+
+## SSE (Server-Sent Events)
+
+- Events: `ProjectObsCompleted` and `SLOBreach` only.
+- Validation: Bridge validates `ProjectObsCompleted` against ObserverLine schema before emission; `SLOBreach` validated against slobreach schema.
+- Clients should connect to `/api/events/stream` and validate payloads via schemas for strict typing.
 
 ## MCP Integration
 

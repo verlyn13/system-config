@@ -1,178 +1,147 @@
 #!/bin/bash
-# Project Discovery - Finds all projects with manifests
-# Outputs registry JSON and updates cache
-
+# Simple project discovery that writes to shared MCP/Bridge location
 set -euo pipefail
 
-# Configuration
-readonly ALLOWED_ROOTS=(
-    "$HOME/Development/personal"
-    "$HOME/Development/work"
-    "$HOME/Development/business"
-    "$HOME/workspace/projects"
-)
-readonly MAX_DEPTH=3
-readonly MANIFEST_FILE="project.manifest.yaml"
-readonly REGISTRY_PATH="$HOME/.local/share/devops-mcp/project-registry.json"
-readonly SCHEMA_PATH="$(dirname "$0")/../schema/project.manifest.schema.json"
+# Shared registry location
+readonly REGISTRY_FILE="$HOME/.local/share/devops-mcp/project-registry.json"
+mkdir -p "$(dirname "$REGISTRY_FILE")"
 
-# Ensure output directory exists
-mkdir -p "$(dirname "$REGISTRY_PATH")"
+# Use the existing test script logic that we know works
+cat > /tmp/discover.js << 'EOF'
+#!/usr/bin/env node
 
-# Validate manifest against schema
-validate_manifest() {
-    local manifest_path="$1"
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
-    if command -v ajv &>/dev/null; then
-        # Use ajv if available for JSON schema validation
-        # First convert YAML to JSON
-        local json_content=$(yq eval -o=json "$manifest_path" 2>/dev/null)
-        if [[ -z "$json_content" ]]; then
-            return 1
-        fi
+const ROOTS = [
+  path.join(process.env.HOME, 'Development/personal'),
+  path.join(process.env.HOME, 'Development/work'),
+  path.join(process.env.HOME, 'Development/business'),
+  path.join(process.env.HOME, 'Development/business-org')
+];
 
-        echo "$json_content" | ajv validate -s "$SCHEMA_PATH" --strict=false &>/dev/null
-        return $?
-    else
-        # Basic validation - just check required fields
-        local has_version=$(yq eval '.apiVersion' "$manifest_path" 2>/dev/null)
-        local has_id=$(yq eval '.project.id' "$manifest_path" 2>/dev/null)
-
-        if [[ "$has_version" == "devops.v1" ]] && [[ -n "$has_id" ]]; then
-            return 0
-        else
-            return 1
-        fi
-    fi
+function generateId(p) {
+  return crypto.createHash('sha1').update(p).digest('hex').slice(0, 12);
 }
 
-# Find projects recursively
-find_projects() {
-    local root="$1"
-    local depth="${2:-0}"
+function detectProject(dir) {
+  const detectors = [];
+  let kind = 'generic';
 
-    if [[ "$depth" -ge "$MAX_DEPTH" ]]; then
-        return
-    fi
+  try {
+    if (fs.existsSync(path.join(dir, '.git'))) detectors.push('git');
+    if (fs.existsSync(path.join(dir, 'package.json'))) {
+      detectors.push('node');
+      kind = 'node';
+    }
+    if (fs.existsSync(path.join(dir, 'go.mod'))) {
+      detectors.push('go');
+      kind = detectors.includes('node') ? 'mix' : 'go';
+    }
+    if (fs.existsSync(path.join(dir, 'pyproject.toml')) ||
+        fs.existsSync(path.join(dir, 'requirements.txt'))) {
+      detectors.push('python');
+      kind = kind === 'generic' ? 'python' : 'mix';
+    }
+    if (fs.existsSync(path.join(dir, 'Cargo.toml'))) {
+      detectors.push('rust');
+      kind = kind === 'generic' ? 'rust' : 'mix';
+    }
+    if (fs.existsSync(path.join(dir, 'mise.toml')) ||
+        fs.existsSync(path.join(dir, '.mise.toml'))) {
+      detectors.push('mise');
+    }
+    if (fs.existsSync(path.join(dir, 'project.manifest.yaml'))) {
+      detectors.push('manifest');
+    }
+  } catch {
+    return null;
+  }
 
-    # Check for manifest in current directory
-    local manifest_path="$root/$MANIFEST_FILE"
-    if [[ -f "$manifest_path" ]]; then
-        if validate_manifest "$manifest_path"; then
-            local project_id=$(yq eval '.project.id' "$manifest_path")
-            local project_name=$(yq eval '.project.name' "$manifest_path")
-            local project_tier=$(yq eval '.project.tier' "$manifest_path")
-            local project_kind=$(yq eval '.project.kind' "$manifest_path")
-            local project_org=$(yq eval '.project.org' "$manifest_path")
+  if (detectors.length === 0) return null;
 
-            # Convert full manifest to JSON for registry
-            local manifest_json=$(yq eval -o=json "$manifest_path" | jq -c .)
-
-            echo "{
-                \"id\": \"$project_id\",
-                \"name\": \"$project_name\",
-                \"tier\": \"$project_tier\",
-                \"kind\": \"$project_kind\",
-                \"org\": \"$project_org\",
-                \"path\": \"$root\",
-                \"manifest_path\": \"$manifest_path\",
-                \"manifest\": $manifest_json,
-                \"discovered_at\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"
-            }"
-        else
-            echo "Warning: Invalid manifest at $manifest_path" >&2
-        fi
-    fi
-
-    # Recurse into subdirectories
-    for dir in "$root"/*; do
-        if [[ -d "$dir" ]] && [[ ! -L "$dir" ]]; then
-            # Skip hidden directories and node_modules
-            local basename=$(basename "$dir")
-            if [[ "$basename" != "."* ]] && [[ "$basename" != "node_modules" ]]; then
-                find_projects "$dir" $((depth + 1))
-            fi
-        fi
-    done
+  return {
+    id: generateId(dir),
+    name: path.basename(dir),
+    path: dir,
+    workspace: path.basename(path.dirname(dir)),
+    kind,
+    detectors
+  };
 }
 
-# Main execution
-main() {
-    echo "🔍 Discovering projects in allowed roots..." >&2
+function discoverProjects() {
+  const projects = [];
 
-    # Collect all projects
-    local projects="["
-    local first=true
+  for (const root of ROOTS) {
+    if (!fs.existsSync(root)) continue;
 
-    for root in "${ALLOWED_ROOTS[@]}"; do
-        if [[ -d "$root" ]]; then
-            echo "  Scanning: $root" >&2
+    try {
+      const dirs = fs.readdirSync(root, { withFileTypes: true });
 
-            while IFS= read -r project_json; do
-                if [[ -n "$project_json" ]]; then
-                    if [[ "$first" == true ]]; then
-                        projects="$projects$project_json"
-                        first=false
-                    else
-                        projects="$projects,$project_json"
-                    fi
-                fi
-            done < <(find_projects "$root")
-        fi
-    done
+      for (const dir of dirs) {
+        if (!dir.isDirectory()) continue;
+        if (dir.name.startsWith('.')) continue;
+        if (['node_modules', 'vendor', 'dist', 'build'].includes(dir.name)) continue;
 
-    projects="$projects]"
+        const fullPath = path.join(root, dir.name);
+        const project = detectProject(fullPath);
 
-    # Create registry object
-    local registry=$(cat <<EOF
-{
-    "version": "1.0.0",
-    "generated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-    "discovery": {
-        "roots": $(printf '%s\n' "${ALLOWED_ROOTS[@]}" | jq -R . | jq -s .),
-        "max_depth": $MAX_DEPTH
-    },
-    "projects": $projects
+        if (project) {
+          projects.push(project);
+        }
+      }
+    } catch (e) {
+      console.error(`Error scanning ${root}:`, e.message);
+    }
+  }
+
+  return projects;
 }
-EOF
-)
 
-    # Save to registry file
-    echo "$registry" | jq . > "$REGISTRY_PATH"
+// Main
+const projects = discoverProjects();
 
-    # Output summary
-    local project_count=$(echo "$registry" | jq '.projects | length')
-    local by_tier=$(echo "$registry" | jq '.projects | group_by(.tier) | map({tier: .[0].tier, count: length})')
-    local by_kind=$(echo "$registry" | jq '.projects | group_by(.kind) | map({kind: .[0].kind, count: length})')
+// Calculate stats
+const byKind = {};
+const byWorkspace = {};
 
-    cat <<EOF
-{
-    "discovered": $project_count,
-    "registry_path": "$REGISTRY_PATH",
-    "by_tier": $by_tier,
-    "by_kind": $by_kind,
-    "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+for (const p of projects) {
+  byKind[p.kind] = (byKind[p.kind] || 0) + 1;
+  byWorkspace[p.workspace] = (byWorkspace[p.workspace] || 0) + 1;
 }
+
+const registry = {
+  version: '2.0.0',
+  generated: new Date().toISOString(),
+  discovered: projects.length,
+  projects: projects,
+  stats: {
+    total: projects.length,
+    byKind: Object.entries(byKind).map(([kind, count]) => ({ kind, count })),
+    byWorkspace: Object.entries(byWorkspace).map(([workspace, count]) => ({ workspace, count }))
+  }
+};
+
+// Output for the shell script
+console.log(JSON.stringify(registry, null, 2));
 EOF
 
-    echo "✅ Discovery complete: $project_count projects found" >&2
-}
+# Run the Node.js script
+echo "🔍 Running project discovery..." >&2
+RESULT=$(node /tmp/discover.js)
 
-# Check dependencies
-check_dependencies() {
-    if ! command -v yq &>/dev/null; then
-        echo "Error: yq is required for YAML parsing" >&2
-        echo "Install with: brew install yq" >&2
-        exit 1
-    fi
+# Save to registry
+echo "$RESULT" > "$REGISTRY_FILE"
 
-    if ! command -v jq &>/dev/null; then
-        echo "Error: jq is required for JSON processing" >&2
-        echo "Install with: brew install jq" >&2
-        exit 1
-    fi
-}
+# Extract summary
+DISCOVERED=$(echo "$RESULT" | jq '.discovered')
+echo "✅ Discovery complete: $DISCOVERED projects found" >&2
+echo "   Registry: $REGISTRY_FILE" >&2
 
-# Run checks and main
-check_dependencies
-main
+# Output summary JSON for HTTP bridge (to stdout for consumption)
+echo "$RESULT" | jq '{discovered: .discovered, registry_path: "'$REGISTRY_FILE'", stats: .stats}'
+
+# Clean up
+rm -f /tmp/discover.js

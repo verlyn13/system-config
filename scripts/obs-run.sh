@@ -150,11 +150,15 @@ save_observation() {
 
     local output_file="$project_dir/observations.ndjson"
 
-    # Append to NDJSON file
-    echo "$observation" >> "$output_file"
-
-    # Also save latest observation
-    echo "$observation" | jq . > "$project_dir/latest.json"
+    # Append to NDJSON file (compact)
+    if command -v jq >/dev/null 2>&1; then
+        echo "$observation" | jq -c . >> "$output_file"
+        echo "$observation" | jq . > "$project_dir/latest.json"
+    else
+        # Fallback: remove newlines to approximate compact JSON
+        echo "$observation" | tr -d '\n' >> "$output_file"
+        echo "$observation" > "$project_dir/latest.json"
+    fi
 }
 
 # Run observers for a single project

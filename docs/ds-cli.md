@@ -21,8 +21,9 @@ ds serve --addr 127.0.0.1:7777
 
 Discovery endpoints (served by ds):
 - `GET /v1/capabilities` (standard discovery)
-- `/.well-known/ai-discovery.json` (AI discovery manifest)
-- `/openapi.yaml` (OpenAPI 3.0 spec)
+- `/.well-known/obs-bridge.json` (AI discovery manifest)
+- `/openapi.yaml` (OpenAPI 3.0+ spec)
+- `GET /api/self-status` (MCP parity; includes nowMs)
 
 Docs (when hosted by ds):
 - `/API.md` – full API reference
@@ -45,4 +46,9 @@ Docs (when hosted by ds):
 ## Dashboard
 
 The dashboard agent can discover DS automatically when the server is running on `127.0.0.1:7777` using `GET /v1/capabilities` or `/.well-known/ai-discovery.json`.
+ 
+## Contract Requirements
 
+- All core DS responses include a top-level `schema_version` (e.g., `"ds.v1"`) for strict typing.
+- `nowMs` and other timestamps are epoch milliseconds where applicable (`/api/self-status`, envelope=true, etc.).
+- Token auth: Bearer token is supported across all endpoints when configured.

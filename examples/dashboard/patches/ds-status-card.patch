@@ -1,0 +1,82 @@
+diff --git a/server/index.js b/server/index.js
+index 5555555..6666666 100644
+--- a/server/index.js
++++ b/server/index.js
+@@
+ app.get('/api/ds/health', async (req, res) => {
+   const r = await fetch(`${BRIDGE}/api/discovery/services`, { headers: proxyHeaders() });
+   const svc = await r.json();
+   if (!svc.ds?.health) return res.status(404).json({ error: 'ds not configured' });
+   const h = await fetch(svc.ds.health, { headers: proxyHeaders() });
+   const body = await h.text();
+   res.status(h.status).type('application/json').send(body);
+ });
+@@
+ app.get('/api/ds/well-known', async (req, res) => {
+   const r = await fetch(`${BRIDGE}/api/discovery/services`, { headers: proxyHeaders() });
+   const svc = await r.json();
+   if (!svc.ds?.well_known) return res.status(404).json({ error: 'ds not configured' });
+   const w = await fetch(svc.ds.well_known, { headers: proxyHeaders() });
+   res.status(w.status).type('application/json').send(await w.text());
+ });
+
+diff --git a/src/components/DsStatusCard.jsx b/src/components/DsStatusCard.jsx
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/components/DsStatusCard.jsx
+@@
+ +import React, { useEffect, useState } from 'react';
+ +
+ +export default function DsStatusCard(){
+ +  const [h, setH] = useState(null);
+ +  const [wk, setWk] = useState(null);
+ +  useEffect(() => {
+ +    (async () => {
+ +      try { setH(await (await fetch('/api/ds/health')).json()); } catch {}
+ +      try { setWk(await (await fetch('/api/ds/well-known')).json()); } catch {}
+ +    })();
+ +  }, []);
+ +  return (
+ +    <div style={{border:'1px solid #e5e7eb', borderRadius:8, padding:12, margin:'12px 0'}}>
+ +      <strong>DS CLI</strong>
+ +      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:8}}>
+ +        <div>
+ +          <div><b>Health:</b> {h?.ok ? 'ok' : 'n/a'}</div>
+ +          <div><b>Version:</b> {h?.version || ''}</div>
+ +          <div><b>Uptime:</b> {h?.uptime_sec || 0}s</div>
+ +        </div>
+ +        <div>
+ +          <div><b>OpenAPI:</b> <a href={wk?.endpoints?.openapi || '#'}>openapi</a></div>
+ +          <div><b>Capabilities:</b> <a href={wk?.endpoints?.capabilities || '#'}>capabilities</a></div>
+ +        </div>
+ +      </div>
+ +    </div>
+ +  );
+ +}
+
+diff --git a/src/components/Documentation.jsx b/src/components/Documentation.jsx
+index 1111111..2222222 100644
+--- a/src/components/Documentation.jsx
++++ b/src/components/Documentation.jsx
+@@
+ import React from 'react';
+ +import DsStatusCard from './DsStatusCard';
+@@
+ export default function Documentation(){
+   return (
+     <div>
+       <h2>Documentation</h2>
+ +     <DsStatusCard />
+       <div>
+         <h3>Contracts & OpenAPI</h3>
+         <ul>
+           <li><a href="/api/obs/openapi.yaml">Bridge OpenAPI</a></li>
+           <li><a href="/api/obs/discovery/openapi">Bridge Discovery OpenAPI</a></li>
+           <li><a href="/api/discovery/schemas">Bridge Schemas</a></li>
+         </ul>
+       </div>
+     </div>
+   );
+ }
+

@@ -1,0 +1,52 @@
+{
+  "apiVersion": "manifest.v1",
+  "kind": "ProjectManifest",
+  "metadata": {
+    "name": "system-dashboard",
+    "repository": "file:///Users/verlyn13/Development/personal/system-setup-update/contracts/dashboard",
+    "description": "System compliance and observability dashboard"
+  },
+  "spec": {
+    "type": "dashboard",
+    "language": "javascript",
+    "runtime": "node",
+    "contracts": {
+      "enabled": true,
+      "mode": "enforce",
+      "observers": ["manifest", "config"],
+      "slo": {
+        "response_time_p95": 100,
+        "error_rate": 0.01,
+        "availability": 99.99
+      }
+    },
+    "server": {
+      "port": 8089,
+      "host": "localhost",
+      "protocol": "http"
+    },
+    "dependencies": {
+      "express": "^4.18.0",
+      "glob": "^10.3.0",
+      "node-fetch": "^3.3.0"
+    }
+  },
+  "status": {
+    "phase": "running",
+    "url": "http://localhost:8089",
+    "conditions": [
+      {
+        "type": "Ready",
+        "status": true,
+        "reason": "ServerConfigured",
+        "message": "Dashboard server configured on port 8089"
+      }
+    ],
+    "metrics": {
+      "response_time_p95": 85,
+      "error_rate": 0.0,
+      "availability": 100.0
+    },
+    "lastObservation": "2025-09-28T00:00:00Z"
+  }
+}

@@ -1,0 +1,367 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://system.local/schemas/project-integration.v1.json",
+  "title": "Project Integration Schema",
+  "description": "Complete schema for project discovery, observation, and dashboard integration",
+  "type": "object",
+  "required": ["version", "discovery", "observation", "integration"],
+
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+
+    "discovery": {
+      "type": "object",
+      "description": "Project discovery contract",
+      "required": ["source", "registry", "projects"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["mcp_tool", "http_bridge", "filesystem"],
+          "description": "Discovery source"
+        },
+        "registry": {
+          "type": "object",
+          "required": ["path", "format", "version"],
+          "properties": {
+            "path": {
+              "type": "string",
+              "const": "~/.local/share/devops-mcp/project-registry.json"
+            },
+            "format": {
+              "type": "string",
+              "const": "json"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$"
+            }
+          }
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/project"
+          }
+        }
+      }
+    },
+
+    "observation": {
+      "type": "object",
+      "description": "Observer execution contract",
+      "required": ["observers", "output", "storage"],
+      "properties": {
+        "observers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["git", "mise", "build", "sbom", "repo", "deps", "quality"]
+          }
+        },
+        "output": {
+          "type": "object",
+          "required": ["format", "schema"],
+          "properties": {
+            "format": {
+              "type": "string",
+              "const": "ndjson"
+            },
+            "schema": {
+              "type": "string",
+              "const": "observer.output.v1"
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "required": ["base_path", "structure"],
+          "properties": {
+            "base_path": {
+              "type": "string",
+              "const": "~/.local/share/devops-mcp/observations"
+            },
+            "structure": {
+              "type": "string",
+              "pattern": "^\\{project_id\\}/\\{observer\\}\\.ndjson$"
+            }
+          }
+        }
+      }
+    },
+
+    "integration": {
+      "type": "object",
+      "description": "Service integration points",
+      "required": ["mcp_server", "http_bridge", "dashboard"],
+      "properties": {
+        "mcp_server": {
+          "$ref": "#/definitions/mcp_server"
+        },
+        "http_bridge": {
+          "$ref": "#/definitions/http_bridge"
+        },
+        "dashboard": {
+          "$ref": "#/definitions/dashboard"
+        }
+      }
+    },
+
+    "flow": {
+      "type": "object",
+      "description": "Data flow specification",
+      "properties": {
+        "discovery_flow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "trigger:scheduled|manual|startup",
+            "scan:workspaces",
+            "detect:project_markers",
+            "write:registry",
+            "notify:bridge"
+          ]
+        },
+        "observation_flow": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "select:project",
+            "choose:observers",
+            "execute:parallel",
+            "collect:results",
+            "write:ndjson",
+            "emit:events"
+          ]
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "project": {
+      "type": "object",
+      "required": ["id", "name", "path", "workspace", "kind", "detectors"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{12}$",
+          "description": "SHA1 hash of project path (12 chars)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Project directory name"
+        },
+        "path": {
+          "type": "string",
+          "description": "Absolute filesystem path"
+        },
+        "workspace": {
+          "type": "string",
+          "enum": ["personal", "work", "business", "business-org", "hubofwyn", "experiments"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["node", "go", "python", "rust", "mix", "generic"]
+        },
+        "detectors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["git", "node", "go", "python", "rust", "mise", "manifest", "make", "docker"]
+          }
+        }
+      }
+    },
+
+    "mcp_server": {
+      "type": "object",
+      "required": ["tools", "resources", "events"],
+      "properties": {
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "input", "output"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "input": {
+                "type": "object"
+              },
+              "output": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["uri", "mimeType"],
+            "properties": {
+              "uri": {
+                "type": "string",
+                "pattern": "^devops://"
+              },
+              "mimeType": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "http_bridge": {
+      "type": "object",
+      "required": ["port", "endpoints", "authentication"],
+      "properties": {
+        "port": {
+          "type": "integer",
+          "const": 7171
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["method", "path", "description"],
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": ["GET", "POST"]
+              },
+              "path": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "authentication": {
+          "type": "object",
+          "properties": {
+            "required": {
+              "type": "boolean",
+              "const": false
+            },
+            "note": {
+              "type": "string",
+              "const": "Local-only system, no auth required"
+            }
+          }
+        }
+      }
+    },
+
+    "dashboard": {
+      "type": "object",
+      "required": ["port", "api_base", "features"],
+      "properties": {
+        "port": {
+          "type": "integer",
+          "default": 3000
+        },
+        "api_base": {
+          "type": "string",
+          "const": "http://localhost:7171/api"
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "project_list",
+              "project_detail",
+              "observer_control",
+              "real_time_events",
+              "health_monitoring",
+              "manual_discovery"
+            ]
+          }
+        }
+      }
+    }
+  },
+
+  "examples": [
+    {
+      "version": "1.0.0",
+      "discovery": {
+        "source": "mcp_tool",
+        "registry": {
+          "path": "~/.local/share/devops-mcp/project-registry.json",
+          "format": "json",
+          "version": "2.0.0"
+        },
+        "projects": [
+          {
+            "id": "72f3db5d08f6",
+            "name": "system-setup-update",
+            "path": "/Users/verlyn13/Development/personal/system-setup-update",
+            "workspace": "personal",
+            "kind": "generic",
+            "detectors": ["git"]
+          }
+        ]
+      },
+      "observation": {
+        "observers": ["git", "mise", "build", "sbom"],
+        "output": {
+          "format": "ndjson",
+          "schema": "observer.output.v1"
+        },
+        "storage": {
+          "base_path": "~/.local/share/devops-mcp/observations",
+          "structure": "{project_id}/{observer}.ndjson"
+        }
+      },
+      "integration": {
+        "mcp_server": {
+          "tools": [
+            {
+              "name": "project_discover",
+              "input": {"maxDepth": 2},
+              "output": {"count": 37, "projects": []}
+            }
+          ],
+          "resources": [
+            {
+              "uri": "devops://self_status",
+              "mimeType": "application/json"
+            }
+          ]
+        },
+        "http_bridge": {
+          "port": 7171,
+          "endpoints": [
+            {
+              "method": "GET",
+              "path": "/api/projects",
+              "description": "List all projects"
+            }
+          ],
+          "authentication": {
+            "required": false,
+            "note": "Local-only system, no auth required"
+          }
+        },
+        "dashboard": {
+          "port": 3000,
+          "api_base": "http://localhost:7171/api",
+          "features": ["project_list", "observer_control", "real_time_events"]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+diff --git a/src/lib/bridgeAdapter.js b/src/lib/bridgeAdapter.js
+index 1111111..2222222 100644
+--- a/src/lib/bridgeAdapter.js
++++ b/src/lib/bridgeAdapter.js
+@@
+ // Adapter that prefers a generated TS client (if present), else falls back to bridgeClient
+ import * as fallback from './bridgeClient';
+ 
+ let generated;
+ try {
+   // Adjust the import path if you generated the client elsewhere
+   // The generator script uses examples/dashboard/generated/bridge-client by default
+   generated = await import('../../generated/bridge-client');
+ } catch {
+   generated = null;
+ }
+ 
+ function getApi() {
+   if (!generated) return null;
+   const basePath = import.meta.env.VITE_API_URL || '';
+   // The generated client may export DefaultApi or Api; adjust if needed
+   const { DefaultApi, Configuration } = generated;
+   if (!DefaultApi) return null;
+   const config = new Configuration({ basePath });
+   return new DefaultApi(config);
+ }
+ 
+ const api = getApi();
+ 
+ export async function getServices() {
+   if (api?.apiDiscoveryServicesGet) {
+     const res = await api.apiDiscoveryServicesGet();
+     return res.data;
+   }
+   return fallback.getServices();
+ }
+ 
+ export async function getSchemasList() {
+   if (api?.apiDiscoverySchemasGet) {
+     const res = await api.apiDiscoverySchemasGet();
+     return res.data;
+   }
+   return fallback.getSchemasList();
+ }
+ 
+ export async function getSchema(name) {
+   if (api?.apiSchemasNameGet) {
+     const res = await api.apiSchemasNameGet({ name });
+     return res.data;
+   }
+   return fallback.getSchema(name);
+ }
+ 
+ export async function getRegistry() {
+   // No direct path in client; use fetch fallback
+   return fallback.getRegistry();
+ }
+ 
+ export async function getManifest(projectId) {
+   if (api?.apiProjectsIdManifestGet) {
+     const res = await api.apiProjectsIdManifestGet({ id: projectId });
+     return res.data;
+   }
+   return fallback.getManifest(projectId);
+ }
+ 
+ export async function getIntegration(projectId) {
+   if (api?.apiProjectsIdIntegrationGet) {
+     const res = await api.apiProjectsIdIntegrationGet({ id: projectId });
+     return res.data;
+   }
+   return fallback.getIntegration(projectId);
+ }
+ 
+ export async function obsValidate() {
+   if (api?.apiToolsObsValidatePost) {
+     const res = await api.apiToolsObsValidatePost();
+     return res.data;
+   }
+   return fallback.obsValidate();
+ }
+ 
+ export async function obsMigrate(body) {
+   if (api?.apiToolsObsMigratePost) {
+     const res = await api.apiToolsObsMigratePost({ requestBody: body });
+     return res.data;
+   }
+   return fallback.obsMigrate(body);
+ }
+

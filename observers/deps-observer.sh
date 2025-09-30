@@ -172,7 +172,7 @@ determine_status() {
 # Main execution
 main() {
     validate_path "$PROJECT_PATH"
-    local start_time=$(date +%s%3N)
+    local start_time=$(date +%s)
 
     # Detect or use specified package manager
     local pm="$PACKAGE_MANAGER"
@@ -181,22 +181,9 @@ main() {
     fi
 
     if [[ "$pm" == "unknown" ]]; then
-        cat <<EOF
-{
-    "apiVersion": "obs.v1",
-    "run_id": "$RUN_ID",
-    "timestamp": "$TIMESTAMP",
-    "project_id": "$PROJECT_ID",
-    "observer": "deps",
-    "summary": "No supported package manager found",
-    "metrics": {"error": 1},
-    "status": "fail",
-    "error": {
-        "code": "NO_PACKAGE_MANAGER",
-        "message": "Could not detect package manager"
-    }
-}
-EOF
+        jq -nc \
+          --arg run_id "$RUN_ID" --arg timestamp "$TIMESTAMP" --arg project_id "$PROJECT_ID" \
+          '{apiVersion:"obs.v1",run_id:$run_id,timestamp:$timestamp,project_id:$project_id,observer:"deps",summary:"No supported package manager found",metrics:{error:1},status:"fail",error:{code:"NO_PACKAGE_MANAGER",message:"Could not detect package manager"}}'
         exit 0
     fi
 
@@ -225,7 +212,7 @@ EOF
     local vuln_high=$(echo "$deps_info" | jq -r '.vuln_high // 0')
 
     # Calculate latency
-    local end_time=$(date +%s%3N)
+    local end_time=$(date +%s)
     local latency=$((end_time - start_time))
 
     # Determine status
@@ -238,26 +225,21 @@ EOF
     fi
 
     # Output NDJSON
-    cat <<EOF
-{
-    "apiVersion": "obs.v1",
-    "run_id": "$RUN_ID",
-    "timestamp": "$TIMESTAMP",
-    "project_id": "$PROJECT_ID",
-    "observer": "deps",
-    "summary": "$summary",
-    "metrics": {
-        "package_manager": "$pm",
-        "outdated": $outdated,
-        "outdated_major": $outdated_major,
-        "vulnerable": $vulnerable,
-        "vuln_critical": $vuln_critical,
-        "vuln_high": $vuln_high,
-        "latency_ms": $latency
-    },
-    "status": "$status"
-}
-EOF
+    jq -nc \
+      --arg run_id "$RUN_ID" \
+      --arg timestamp "$TIMESTAMP" \
+      --arg project_id "$PROJECT_ID" \
+      --arg observer "deps" \
+      --arg summary "$summary" \
+      --arg pm "$pm" \
+      --arg status "$status" \
+      --argjson outdated "$outdated" \
+      --argjson outdated_major "$outdated_major" \
+      --argjson vulnerable "$vulnerable" \
+      --argjson vuln_critical "$vuln_critical" \
+      --argjson vuln_high "$vuln_high" \
+      --argjson latency "$latency" \
+      '{apiVersion:"obs.v1",run_id:$run_id,timestamp:$timestamp,project_id:$project_id,observer:$observer,summary:$summary,metrics:{package_manager:$pm,outdated:$outdated,outdated_major:$outdated_major,vulnerable:$vulnerable,vuln_critical:$vuln_critical,vuln_high:$vuln_high,latency_ms:$latency},status:$status}'
 }
 
 # Run main function

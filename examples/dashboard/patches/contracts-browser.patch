@@ -1,0 +1,78 @@
+diff --git a/server/index.js b/server/index.js
+index 7777777..9999999 100644
+--- a/server/index.js
++++ b/server/index.js
+@@
+ app.get('/api/obs/discovery/schemas', async (req, res) => {
+   const r = await fetch(`${BRIDGE}/api/discovery/schemas`, { headers: proxyHeaders() });
+   const body = await r.text();
+   res.status(r.status).type('application/json').send(body);
+ });
+
+ app.get('/api/obs/schemas/:name', async (req, res) => {
+   const name = req.params.name;
+   const r = await fetch(`${BRIDGE}/api/schemas/${encodeURIComponent(name)}`, { headers: proxyHeaders() });
+   res.status(r.status).type('application/json').send(await r.text());
+ });
+
+diff --git a/src/components/Contracts.jsx b/src/components/Contracts.jsx
+new file mode 100644
+index 0000000..1111111 100644
+--- /dev/null
++++ b/src/components/Contracts.jsx
+@@
+ +import React, { useEffect, useState } from 'react';
+ +
+ +export default function Contracts(){
+ +  const [list, setList] = useState({ names: [], ids: [] });
+ +  const [name, setName] = useState('');
+ +  const [content, setContent] = useState('');
+ +  useEffect(() => { (async () => { try { setList(await (await fetch('/api/obs/discovery/schemas')).json()); } catch {} })(); }, []);
+ +  useEffect(() => { (async () => { if (!name) return; try { setContent(await (await fetch(`/api/obs/schemas/${encodeURIComponent(name)}`)).text()); } catch {} })(); }, [name]);
+ +  return (
+ +    <div style={{display:'grid', gridTemplateColumns:'280px 1fr', gap:12}}>
+ +      <div>
+ +        <h3>Schemas</h3>
+ +        <ul>
+ +          {list.names?.map(n => (
+ +            <li key={n}>
+ +              <button onClick={() => setName(n)} style={{background:'none', border:'none', color:'#2563eb', cursor:'pointer'}}>{n}</button>
+ +              {' '}<a href={`/api/obs/schemas/${encodeURIComponent(n)}`} target="_blank" rel="noreferrer">open raw</a>
+ +            </li>
+ +          ))}
+ +        </ul>
+ +      </div>
+ +      <div>
+ +        <h3>{name || 'Select a schema'}</h3>
+ +        <pre style={{maxHeight: '70vh', overflow:'auto', background:'#f9fafb', padding:8}}>{content}</pre>
+ +      </div>
+ +    </div>
+ +  );
+ +}
+
+diff --git a/src/App.jsx b/src/App.jsx
+index 8888888..aaaaaaa 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@
+ import Documentation from './components/Documentation';
+ +import Contracts from './components/Contracts';
+@@
+ export default function App(){
+   return (
+     <ContractsProvider>
+       <BrowserRouter>
+         <Routes>
+           <Route path="/" element={<>
+             <DiagnosticsPanel />
+             <Projects />
+           </>} />
+           <Route path="/projects/:id" element={<ProjectDetail />} />
+ +         <Route path="/contracts" element={<Contracts />} />
+           <Route path="/docs" element={<Documentation />} />
+         </Routes>
+       </BrowserRouter>
+     </ContractsProvider>
+   );
+ }
+

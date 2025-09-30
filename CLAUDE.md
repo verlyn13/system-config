@@ -107,6 +107,27 @@ Currently tracking 10 phases of setup:
 - **Phase 4**: ⏸️ Partial (mise version management)
 - **Phase 5-10**: ❌ Not started (Security, Containers, Android, Bootstrap, Templates, Optimization)
 
+## Gopass Secret Management
+
+For complete gopass usage instructions, see:
+- **Definitive Guide**: `docs/guides/GOPASS-DEFINITIVE-GUIDE.md`
+- **Quick Reference**: `~/.config/gopass/README-AGENTS.md`
+- **Passphrase**: Always `escapable diameter silk discover`
+
+## AI CLI Tools Configuration
+
+### Claude Code CLI
+- **Config**: `~/.config/fish/conf.d/10-claude.fish`
+- **Settings**: Subscription-based auth (no API key needed)
+- **Aliases**: `cc` (claude), `ccp` (plan mode), `ccplan` (opus model)
+
+### Gemini CLI
+- **Config**: `~/.config/fish/conf.d/11-gemini.fish`
+- **Settings**: `~/.gemini/settings.json`
+- **API Key**: Stored in gopass at `gemini/api-keys/development`
+- **Aliases**: `gc` (gemini), `gcp` (prompt mode), `gcflash` (fast model)
+- **Context**: Project-specific in `.gemini/GEMINI.md`
+
 ## Known Issues and Solutions
 
 ### PATH Configuration

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.local/schemas/obs.migrate.result.v1.json",
+  "title": "ObsMigrateResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok","results"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id","migrated"],
+        "properties": {
+          "id": { "type": "string" },
+          "migrated": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}
+

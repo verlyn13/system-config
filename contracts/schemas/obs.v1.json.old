@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://system.local/schemas/obs.v1.json",
+  "title": "Observation Schema",
+  "description": "Contract schema for system observations",
+  "type": "object",
+  "required": ["id", "timestamp", "observer", "subject", "operation", "outcome"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for the observation"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the observation"
+    },
+    "observer": {
+      "type": "string",
+      "enum": ["git", "mise", "sbom", "build", "manifest"],
+      "description": "External observer name (mapped from internal)"
+    },
+    "subject": {
+      "type": "object",
+      "required": ["type", "identifier"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["file", "directory", "process", "package", "repository", "system"],
+          "description": "Type of subject being observed"
+        },
+        "identifier": {
+          "type": "string",
+          "description": "Unique identifier for the subject"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional subject metadata"
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "required": ["type", "status"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of operation performed"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "failed", "blocked"],
+          "description": "Current status of the operation"
+        },
+        "details": {
+          "type": "object",
+          "description": "Operation-specific details"
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "required": ["success"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "Whether the operation succeeded"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message if operation failed"
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "duration_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Operation duration in milliseconds"
+            },
+            "retry_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of retry attempts"
+            }
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "path"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Type of artifact produced"
+              },
+              "path": {
+                "type": "string",
+                "description": "Path to the artifact"
+              },
+              "checksum": {
+                "type": "string",
+                "description": "SHA256 checksum of the artifact"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "service": {
+          "type": "string",
+          "enum": ["ds-go", "system-setup-update", "devops-mcp", "system-dashboard"],
+          "description": "Service generating the observation"
+        },
+        "environment": {
+          "type": "string",
+          "enum": ["development", "staging", "production"],
+          "description": "Environment where observation occurred"
+        },
+        "correlation_id": {
+          "type": "string",
+          "description": "ID for correlating related observations"
+        },
+        "parent_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Parent observation ID for nested operations"
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "description": "Quality metrics (internal use only)",
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Quality score percentage"
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "passed"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Quality check name"
+              },
+              "passed": {
+                "type": "boolean",
+                "description": "Whether the check passed"
+              },
+              "message": {
+                "type": "string",
+                "description": "Additional check information"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

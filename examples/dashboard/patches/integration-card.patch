@@ -1,0 +1,105 @@
+diff --git a/server/index.js b/server/index.js
+index 4444444..5555555 100644
+--- a/server/index.js
++++ b/server/index.js
+@@
+ const BRIDGE = process.env.OBS_BRIDGE_URL || 'http://127.0.0.1:7171';
+ const BRIDGE_TOKEN = process.env.BRIDGE_TOKEN || '';
+@@
+ app.get('/api/projects/:id/integration', async (req, res) => {
+   const id = req.params.id;
+   const r = await fetch(`${BRIDGE}/api/projects/${encodeURIComponent(id)}/integration`, { headers: proxyHeaders() });
+   const body = await r.text();
+   res.status(r.status).type('application/json').send(body);
+ });
+@@
+ app.post('/api/tools/project_obs_run', async (req, res) => {
+   const r = await fetch(`${BRIDGE}/api/tools/project_obs_run`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...proxyHeaders() }, body: JSON.stringify(req.body||{}) });
+   const body = await r.text();
+   res.status(r.status).type('application/json').send(body);
+ });
+
+diff --git a/src/lib/integration.js b/src/lib/integration.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/lib/integration.js
+@@
+ +export async function fetchIntegration(projectId) {
+ +  const r = await fetch(`/api/projects/${encodeURIComponent(projectId)}/integration`);
+ +  if (!r.ok) throw new Error(`integration ${r.status}`);
+ +  return r.json();
+ +}
+ +
+ +export async function runObservers(projectId, observers) {
+ +  const payload = observers && observers.length ? { project_id: projectId, observers } : { project_id: projectId };
+ +  const r = await fetch(`/api/tools/project_obs_run`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+ +  const data = await r.json();
+ +  if (!r.ok) throw new Error(`obs_run ${r.status}: ${JSON.stringify(data)}`);
+ +  return data;
+ +}
+
+diff --git a/src/components/IntegrationCard.jsx b/src/components/IntegrationCard.jsx
+new file mode 100644
+index 0000000..1111111 100644
+--- /dev/null
++++ b/src/components/IntegrationCard.jsx
+@@
+ +import React, { useEffect, useState } from 'react';
+ +import { fetchIntegration, runObservers } from '../lib/integration';
+ +
+ +function Status({ ok }){ return <span style={{color: ok? '#16a34a':'#dc2626'}}>{ok? 'online':'offline'}</span>; }
+ +
+ +export default function IntegrationCard({ projectId }){
+ +  const [data, setData] = useState(null);
+ +  const [running, setRunning] = useState(false);
+ +  const [error, setError] = useState('');
+ +  const refresh = async () => {
+ +    try { setData(await fetchIntegration(projectId)); } catch (e) { setError(String(e)); }
+ +  };
+ +  useEffect(() => { refresh(); }, [projectId]);
+ +  const trigger = async () => {
+ +    setRunning(true); setError('');
+ +    try { await runObservers(projectId); await refresh(); } catch (e) { setError(String(e)); } finally { setRunning(false); }
+ +  };
+ +  if (!data) return <div/>;
+ +  const services = data.services || {}; const health = data.health || {}; const obs = data.observers || {};
+ +  const types = Object.keys(obs);
+ +  return (
+ +    <div style={{border:'1px solid #e5e7eb', borderRadius:8, padding:12, margin:'12px 0'}}>
+ +      <div style={{display:'flex', justifyContent:'space-between'}}>
+ +        <strong>Integration</strong>
+ +        <button disabled={running} onClick={trigger}>{running? 'Running…' : 'Run Observers'}</button>
+ +      </div>
+ +      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:8}}>
+ +        <div>
+ +          <div><b>Overall:</b> {health.overall}</div>
+ +          <div><b>Observers:</b> {types.join(', ') || 'none'}</div>
+ +        </div>
+ +        <div>
+ +          <div><b>DS:</b> <Status ok={!!services.ds?.reachable} /> <small>{services.ds?.url||''}</small></div>
+ +          <div><b>MCP:</b> <Status ok={!!services.mcp?.reachable} /> <small>{services.mcp?.url||''}</small></div>
+ +        </div>
+ +      </div>
+ +      {error && <div style={{color:'#dc2626', marginTop:6}}>{error}</div>}
+ +    </div>
+ +  );
+ +}
+
+diff --git a/src/components/ProjectDetail.jsx b/src/components/ProjectDetail.jsx
+index 3333333..6666666 100644
+--- a/src/components/ProjectDetail.jsx
++++ b/src/components/ProjectDetail.jsx
+@@
+ import ObserversView from './ObserversView';
+ +import IntegrationCard from './IntegrationCard';
+@@
+   return (
+     <div>
+       <h2>Project {id}</h2>
+ +     <IntegrationCard projectId={id} />
+       <ObserversView items={items} />
+     </div>
+   );
+ }
+

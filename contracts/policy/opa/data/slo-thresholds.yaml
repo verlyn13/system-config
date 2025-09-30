@@ -1,0 +1,97 @@
+# SLO Thresholds Configuration
+# Service Level Objective definitions and breach detection
+
+version: v1.1.0
+updated: 2025-09-28
+
+# Global SLO thresholds
+global_slos:
+  # Response time thresholds (milliseconds)
+  response_time:
+    p50: 100
+    p95: 500
+    p99: 1000
+    critical: 5000
+
+  # Availability thresholds (percentage)
+  availability:
+    target: 99.9
+    warning: 99.5
+    critical: 99.0
+
+  # Error rate thresholds (percentage)
+  error_rate:
+    target: 0.1
+    warning: 1.0
+    critical: 5.0
+
+  # Contract validation time (milliseconds)
+  validation_time:
+    target: 50
+    warning: 100
+    critical: 500
+
+# Service-specific SLOs
+service_slos:
+  ds-go:
+    response_time:
+      p50: 50
+      p95: 200
+      p99: 500
+    error_rate:
+      target: 0.05
+      warning: 0.5
+      critical: 2.0
+
+  system-setup-update:
+    response_time:
+      p50: 200
+      p95: 1000
+      p99: 2000
+    validation_time:
+      target: 100
+      warning: 250
+      critical: 1000
+
+  devops-mcp:
+    availability:
+      target: 99.95
+      warning: 99.9
+      critical: 99.5
+    response_time:
+      p95: 300
+      p99: 1000
+
+  system-dashboard:
+    response_time:
+      p50: 150
+      p95: 750
+      p99: 1500
+    error_rate:
+      target: 0.2
+      warning: 1.5
+      critical: 5.0
+
+# Breach severity levels
+severity_levels:
+  info:
+    description: "Informational, no action required"
+    alert: false
+
+  warning:
+    description: "Performance degradation detected"
+    alert: true
+    escalation_minutes: 30
+
+  critical:
+    description: "SLO breach, immediate action required"
+    alert: true
+    escalation_minutes: 5
+    page: true
+
+  emergency:
+    description: "Multiple critical breaches"
+    alert: true
+    escalation_minutes: 0
+    page: true
+    incident: true

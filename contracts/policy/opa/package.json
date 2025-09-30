@@ -1,0 +1,30 @@
+{
+  "name": "contract-enforcement",
+  "version": "1.1.0",
+  "description": "OPA contract enforcement for system services",
+  "main": "src/opa-client.js",
+  "scripts": {
+    "test": "node scripts/test-contracts.sh",
+    "setup": "./scripts/setup-opa.sh",
+    "start-opa": "opa run --server --addr :8181 contracts.v1.rego data/"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "ajv": "^8.17.0",
+    "ajv-formats": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "keywords": [
+    "opa",
+    "contracts",
+    "validation",
+    "enforcement"
+  ],
+  "author": "",
+  "license": "MIT"
+}

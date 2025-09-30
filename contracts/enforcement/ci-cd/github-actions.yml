@@ -1,0 +1,388 @@
+name: Contract Enforcement CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  OPA_VERSION: "1.8.0"
+  NODE_VERSION: "24"
+  GO_VERSION: "1.23"
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  detect-service:
+    name: Detect Service Type
+    runs-on: ubuntu-latest
+    outputs:
+      service-type: ${{ steps.detect.outputs.service-type }}
+      service-name: ${{ steps.detect.outputs.service-name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: detect
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY)
+          SERVICE_TYPE="unknown"
+
+          case "$REPO_NAME" in
+            ds-go)
+              SERVICE_TYPE="go"
+              ;;
+            devops-mcp)
+              SERVICE_TYPE="node"
+              ;;
+            system-dashboard)
+              SERVICE_TYPE="react"
+              ;;
+            system-setup-update)
+              SERVICE_TYPE="system"
+              ;;
+            *)
+              # Try to detect from files
+              if [ -f "go.mod" ]; then
+                SERVICE_TYPE="go"
+              elif [ -f "package.json" ]; then
+                SERVICE_TYPE="node"
+              elif [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
+                SERVICE_TYPE="python"
+              fi
+              ;;
+          esac
+
+          echo "service-type=${SERVICE_TYPE}" >> $GITHUB_OUTPUT
+          echo "service-name=${REPO_NAME}" >> $GITHUB_OUTPUT
+          echo "Detected service: ${REPO_NAME} (type: ${SERVICE_TYPE})"
+
+  contract-validation:
+    name: Contract Validation
+    runs-on: ubuntu-latest
+    needs: detect-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup OPA
+        run: |
+          curl -L -o opa https://github.com/open-policy-agent/opa/releases/download/v${{ env.OPA_VERSION }}/opa_linux_amd64_static
+          chmod 755 opa
+          sudo mv opa /usr/local/bin/
+          opa version
+
+      - name: Check Observer Names
+        run: |
+          echo "🔍 Checking for internal observer names in code..."
+
+          # Find all source files
+          files=$(find . -type f \( -name "*.js" -o -name "*.ts" -o -name "*.go" -o -name "*.py" -o -name "*.jsx" -o -name "*.tsx" \) | grep -v node_modules | grep -v vendor | grep -v .git)
+
+          violations=0
+
+          for file in $files; do
+            # Check for internal observer 'repo'
+            if grep -E '"observer".*"repo"|'\''observer'\''.*'\''repo'\''|observer.*=.*"repo"' "$file" 2>/dev/null | grep -v '//\|#\|/\*'; then
+              echo "❌ Found internal observer 'repo' in $file"
+              echo "   Must use 'git' for external APIs"
+              ((violations++))
+            fi
+
+            # Check for internal observer 'deps'
+            if grep -E '"observer".*"deps"|'\''observer'\''.*'\''deps'\''|observer.*=.*"deps"' "$file" 2>/dev/null | grep -v '//\|#\|/\*'; then
+              echo "❌ Found internal observer 'deps' in $file"
+              echo "   Must use 'mise' for external APIs"
+              ((violations++))
+            fi
+
+            # Check for blocked observer 'quality'
+            if grep -E '"observer".*"quality"|'\''observer'\''.*'\''quality'\''|observer.*=.*"quality"' "$file" 2>/dev/null | grep -v '//\|#\|/\*'; then
+              echo "❌ Found blocked observer 'quality' in $file"
+              echo "   This observer must not be used in external APIs"
+              ((violations++))
+            fi
+          done
+
+          if [ $violations -gt 0 ]; then
+            echo "::error::Found $violations contract violations"
+            exit 1
+          fi
+
+          echo "✅ No internal observer names found in code"
+
+      - name: Validate JSON Schemas
+        if: hashFiles('**/*.json') != ''
+        run: |
+          echo "🔍 Validating JSON schemas..."
+
+          schema_files=$(find . -name "*.json" -path "*/schema*" -o -name "*schema*.json" | grep -v node_modules | grep -v vendor)
+
+          for file in $schema_files; do
+            if python3 -m json.tool "$file" > /dev/null 2>&1; then
+              echo "✅ Valid JSON: $file"
+            else
+              echo "❌ Invalid JSON: $file"
+              exit 1
+            fi
+          done
+
+      - name: Validate OPA Policies
+        if: hashFiles('**/*.rego') != ''
+        run: |
+          echo "🔍 Checking OPA policies..."
+
+          rego_files=$(find . -name "*.rego" | grep -v node_modules | grep -v vendor)
+
+          for file in $rego_files; do
+            # Check formatting
+            if opa fmt --diff "$file" | grep -q '^[-+]'; then
+              echo "⚠️ OPA policy needs formatting: $file"
+              echo "   Run: opa fmt -w $file"
+            fi
+
+            # Check for rego.v1 import
+            if ! grep -q "import rego.v1" "$file"; then
+              echo "❌ Missing 'import rego.v1' in $file"
+              echo "   OPA 1.8 requires rego.v1 import"
+              exit 1
+            fi
+
+            # Test policy compilation
+            if ! opa test -v "$file" 2>/dev/null; then
+              echo "⚠️ OPA policy has warnings: $file"
+            fi
+          done
+
+          echo "✅ OPA policies validated"
+
+      - name: Check Project ID Format
+        run: |
+          echo "🔍 Checking project_id format..."
+
+          files=$(find . -type f \( -name "*.js" -o -name "*.ts" -o -name "*.go" -o -name "*.py" \) | grep -v node_modules | grep -v vendor)
+
+          for file in $files; do
+            # Check for uppercase in project_id
+            if grep -E 'project_id.*[A-Z]' "$file" 2>/dev/null | grep -v '//\|#\|/\*'; then
+              echo "⚠️ Found uppercase in project_id: $file"
+              echo "   Project IDs must be lowercase (service:org/repo)"
+            fi
+
+            # Check for malformed project_id
+            if grep -E 'project_id.*"[^:]*/"' "$file" 2>/dev/null | grep -v '//\|#\|/\*'; then
+              echo "❌ Found malformed project_id in $file"
+              echo "   Format must be: service:org/repo"
+              exit 1
+            fi
+          done
+
+          echo "✅ Project ID formats valid"
+
+  service-specific-tests:
+    name: Service-Specific Tests
+    runs-on: ubuntu-latest
+    needs: [detect-service, contract-validation]
+    if: needs.detect-service.outputs.service-type != 'unknown'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        if: needs.detect-service.outputs.service-type == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Setup Node.js
+        if: contains(needs.detect-service.outputs.service-type, 'node') || needs.detect-service.outputs.service-type == 'react'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Python
+        if: needs.detect-service.outputs.service-type == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Run Go Contract Tests
+        if: needs.detect-service.outputs.service-type == 'go'
+        run: |
+          echo "🧪 Running Go contract tests..."
+
+          if [ -f "Makefile" ] && grep -q "test-contracts" "Makefile"; then
+            make test-contracts
+          elif [ -f "internal/contracts/validation_test.go" ]; then
+            go test ./internal/contracts/... -v
+          else
+            echo "⚠️ No contract tests found"
+          fi
+
+      - name: Run Node.js Contract Tests
+        if: contains(needs.detect-service.outputs.service-type, 'node') || needs.detect-service.outputs.service-type == 'react'
+        run: |
+          echo "🧪 Running Node.js contract tests..."
+
+          if [ -f "package.json" ]; then
+            npm ci
+
+            if grep -q '"test:contracts"' package.json; then
+              npm run test:contracts
+            elif [ -f "test/contracts.test.js" ] || [ -f "server/contracts/validator.test.js" ]; then
+              npm test -- --testPathPattern=contract
+            else
+              echo "⚠️ No contract tests found"
+            fi
+          fi
+
+      - name: Run Python Contract Tests
+        if: needs.detect-service.outputs.service-type == 'python'
+        run: |
+          echo "🧪 Running Python contract tests..."
+
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          elif [ -f "pyproject.toml" ]; then
+            pip install -e .
+          fi
+
+          if [ -f "tests/test_contracts.py" ]; then
+            python -m pytest tests/test_contracts.py -v
+          else
+            echo "⚠️ No contract tests found"
+          fi
+
+  slo-validation:
+    name: SLO Threshold Validation
+    runs-on: ubuntu-latest
+    needs: [detect-service, contract-validation]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate SLO Thresholds
+        run: |
+          echo "📊 Validating SLO thresholds for ${{ needs.detect-service.outputs.service-name }}..."
+
+          SERVICE="${{ needs.detect-service.outputs.service-name }}"
+
+          # Expected thresholds per service
+          case "$SERVICE" in
+            ds-go)
+              EXPECTED_P95="200"
+              EXPECTED_ERROR="0.05"
+              EXPECTED_AVAILABILITY="99.9"
+              ;;
+            devops-mcp)
+              EXPECTED_P95="300"
+              EXPECTED_ERROR="0.01"
+              EXPECTED_AVAILABILITY="99.95"
+              ;;
+            system-dashboard)
+              EXPECTED_P95="750"
+              EXPECTED_ERROR="0.2"
+              EXPECTED_AVAILABILITY="99.5"
+              ;;
+            *)
+              EXPECTED_P95="500"
+              EXPECTED_ERROR="0.1"
+              EXPECTED_AVAILABILITY="99.0"
+              ;;
+          esac
+
+          echo "Expected thresholds for $SERVICE:"
+          echo "  response_time_p95: ${EXPECTED_P95}ms"
+          echo "  error_rate: ${EXPECTED_ERROR}"
+          echo "  availability: ${EXPECTED_AVAILABILITY}%"
+
+          # Check if thresholds are defined in code
+          files=$(find . -type f \( -name "*.js" -o -name "*.go" -o -name "*.py" \) | grep -v node_modules | grep -v vendor)
+
+          found_thresholds=false
+          for file in $files; do
+            if grep -q "response_time_p95.*${EXPECTED_P95}" "$file" 2>/dev/null; then
+              found_thresholds=true
+              echo "✅ Found correct SLO thresholds in: $file"
+              break
+            fi
+          done
+
+          if [ "$found_thresholds" = false ]; then
+            echo "⚠️ SLO thresholds not found or incorrect"
+            echo "   Please ensure thresholds are properly configured"
+          fi
+
+  contract-report:
+    name: Contract Compliance Report
+    runs-on: ubuntu-latest
+    needs: [detect-service, contract-validation, service-specific-tests, slo-validation]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate Compliance Report
+        run: |
+          echo "📋 Contract Compliance Report"
+          echo "============================="
+          echo ""
+          echo "Service: ${{ needs.detect-service.outputs.service-name }}"
+          echo "Type: ${{ needs.detect-service.outputs.service-type }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+
+          # Check job statuses
+          if [ "${{ needs.contract-validation.result }}" == "success" ]; then
+            echo "✅ Contract Validation: PASSED"
+          else
+            echo "❌ Contract Validation: FAILED"
+          fi
+
+          if [ "${{ needs.service-specific-tests.result }}" == "success" ]; then
+            echo "✅ Service Tests: PASSED"
+          elif [ "${{ needs.service-specific-tests.result }}" == "skipped" ]; then
+            echo "⏭️ Service Tests: SKIPPED"
+          else
+            echo "❌ Service Tests: FAILED"
+          fi
+
+          if [ "${{ needs.slo-validation.result }}" == "success" ]; then
+            echo "✅ SLO Validation: PASSED"
+          else
+            echo "❌ SLO Validation: FAILED"
+          fi
+
+          echo ""
+          echo "============================="
+
+          # Set overall status
+          if [ "${{ needs.contract-validation.result }}" != "success" ] || \
+             [ "${{ needs.service-specific-tests.result }}" == "failure" ] || \
+             [ "${{ needs.slo-validation.result }}" != "success" ]; then
+            echo "❌ Overall: COMPLIANCE FAILED"
+            exit 1
+          else
+            echo "✅ Overall: COMPLIANCE PASSED"
+          fi
+
+      - name: Post PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const report = `## 📋 Contract Compliance Report
+
+            | Check | Status |
+            |-------|--------|
+            | Contract Validation | ${{ needs.contract-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+            | Service Tests | ${{ needs.service-specific-tests.result == 'success' && '✅ Passed' || needs.service-specific-tests.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |
+            | SLO Validation | ${{ needs.slo-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |
+
+            **Service:** ${{ needs.detect-service.outputs.service-name }}
+            **Type:** ${{ needs.detect-service.outputs.service-type }}
+
+            ${{ needs.contract-validation.result == 'success' && needs.slo-validation.result == 'success' ? '✅ **All contract checks passed!**' : '❌ **Contract compliance issues detected. Please review the CI logs.**' }}`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });

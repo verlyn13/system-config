@@ -62,18 +62,8 @@ main() {
     # Tool missing or failed; warn but do not fail hard
     local end_time=$(date +%s%3N)
     local latency=$((end_time - start_time))
-    cat <<EOF
-{
-  "apiVersion": "obs.v1",
-  "run_id": "$RUN_ID",
-  "timestamp": "$TIMESTAMP",
-  "project_id": "$PROJECT_ID",
-  "observer": "sbom",
-  "summary": "SBOM tool unavailable; skipped",
-  "metrics": {"packages": 0, "unique_licenses": 0, "critical_issues": 0, "latency_ms": $latency},
-  "status": "warn"
-}
-EOF
+    jq -nc --arg run "$RUN_ID" --arg ts "$TIMESTAMP" --arg pid "$PROJECT_ID" --argjson lat "$latency" \
+      '{apiVersion:"obs.v1",run_id:$run,timestamp:$ts,project_id:$pid,observer:"sbom",summary:"SBOM tool unavailable; skipped",metrics:{packages:0,unique_licenses:0,critical_issues:0,latency_ms:$lat},status:"warn"}'
     exit 0
   fi
 
@@ -85,20 +75,9 @@ EOF
   local latency=$((end_time - start_time))
   local status=$(determine_status "$critical")
   local summary="$packages packages, $uniq_lic licenses, $critical critical"
-
-  cat <<EOF
-{
-  "apiVersion": "obs.v1",
-  "run_id": "$RUN_ID",
-  "timestamp": "$TIMESTAMP",
-  "project_id": "$PROJECT_ID",
-  "observer": "sbom",
-  "summary": "$summary",
-  "metrics": {"packages": $packages, "unique_licenses": $uniq_lic, "critical_issues": $critical, "latency_ms": $latency},
-  "status": "$status"
-}
-EOF
+  jq -nc --arg run "$RUN_ID" --arg ts "$TIMESTAMP" --arg pid "$PROJECT_ID" --arg sum "$summary" \
+    --argjson packages "$packages" --argjson uniq "$uniq_lic" --argjson critical "$critical" --argjson lat "$latency" \
+    '{apiVersion:"obs.v1",run_id:$run,timestamp:$ts,project_id:$pid,observer:"sbom",summary:$sum,metrics:{packages:$packages,unique_licenses:$uniq,critical_issues:$critical,latency_ms:$lat},status:(if $critical>0 then "fail" else "ok" end)}'
 }
 
 main
-

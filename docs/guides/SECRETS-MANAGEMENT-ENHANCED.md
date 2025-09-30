@@ -1,7 +1,7 @@
 # Enhanced Secrets Management System
 **Created**: 2025-09-28
-**Status**: Implemented
-**Tools**: gopass + age + Fish functions
+**Status**: Implemented with Biometric Support
+**Tools**: gopass + age + Fish functions + Touch ID
 
 ## Overview
 This document describes the enhanced secrets management system that integrates gopass with project-specific workflows, providing secure, convenient access to credentials and sensitive data.
@@ -11,8 +11,9 @@ This document describes the enhanced secrets management system that integrates g
 ### 1. Base Layer: gopass + age
 - **gopass**: Password store with Git backing
 - **age**: Modern encryption (replacing GPG)
+- **Touch ID**: Biometric authentication for passphrase (macOS)
 - **Location**: `~/.local/share/gopass/stores/`
-- **Config**: `~/.config/gopass/config.yml`
+- **Config**: `~/.config/gopass/config`
 
 ### 2. Project Integration Layer
 Two Fish functions provide seamless project integration:
@@ -86,21 +87,25 @@ claude_project  # Load current project config
 
 ### Secure Workflows
 
-#### Development Workflow
+#### Development Workflow with Touch ID
 ```fish
 # 1. Enter project directory
 cd ~/Development/work/api-server
 
-# 2. Load project secrets
+# 2. Enable Touch ID for session (optional)
+gopass-enable-touchid
+
+# 3. Load project secrets
 project_secrets env
 # or use abbreviation: psenv
+# or with Touch ID: pst env
 
-# 3. Work with secrets available as env vars
+# 4. Work with secrets available as env vars
 npm run dev  # Has access to API_KEY, DB_PASSWORD, etc.
 
-# 4. Clean up when done
+# 5. Clean up when done
 project_secrets clean
-# or use abbreviation: psclean
+gopass-disable-touchid  # If session auth was enabled
 ```
 
 #### CI/CD Integration
@@ -255,9 +260,33 @@ for s in (gopass ls --flat)
 end
 ```
 
+## Biometric Authentication (Touch ID)
+
+**Status**: ✅ Implemented
+
+Touch ID integration provides passwordless access to gopass:
+
+### Quick Setup
+```fish
+# One-time setup
+gopass-setup-touchid
+
+# Use with Touch ID
+gpt show github/token  # Per-command auth
+gopass-enable-touchid  # Session-wide auth
+```
+
+### Available Commands
+- `gpt` - Gopass with Touch ID per command
+- `gopass-enable-touchid` - Enable for session
+- `gopass-disable-touchid` - Disable for session
+- `pst` - Project secrets with Touch ID
+
+See [GOPASS-BIOMETRIC-AUTHENTICATION.md](./GOPASS-BIOMETRIC-AUTHENTICATION.md) for full details.
+
 ## Future Enhancements
 
-1. **Biometric Authentication**: Touch ID integration
+1. ~~**Biometric Authentication**: Touch ID integration~~ ✅ Implemented
 2. **Team Sharing**: Multi-recipient age encryption
 3. **Rotation Automation**: Scheduled secret rotation
 4. **Audit Logging**: Track all secret access
@@ -267,10 +296,12 @@ end
 
 This enhanced system provides:
 - ✅ Secure storage with gopass + age
+- ✅ Biometric authentication with Touch ID
 - ✅ Project-specific secret namespaces
 - ✅ Automatic environment loading
 - ✅ Fish shell integration
 - ✅ Simple, memorable commands
 - ✅ Clean separation of concerns
+- ✅ Chezmoi template management
 
 The system maintains security while providing developer convenience, following the principle of "secure by default, convenient by design."

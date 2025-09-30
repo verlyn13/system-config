@@ -1,0 +1,201 @@
+diff --git a/package.json b/package.json
+index 1111111..2222222 100644
+--- a/package.json
++++ b/package.json
+@@
+   "dependencies": {
+     "react": "^18.3.1",
+     "react-dom": "^18.3.1",
+     "vite": "^5.4.0",
+     "express": "^4.19.2",
+ +    "ajv": "^8.17.1"
+   }
+
+diff --git a/server/index.js b/server/index.js
+index 1111111..2222222 100644
+--- a/server/index.js
++++ b/server/index.js
+@@
+ const express = require('express');
+ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+ const app = express();
+ app.use(express.json());
+ const BRIDGE = process.env.OBS_BRIDGE_URL || 'http://127.0.0.1:7171';
+
+ // Discovery proxy to bridge
+ app.get('/api/discovery/schemas', async (req, res) => {
+   const r = await fetch(`${BRIDGE}/api/discovery/schemas`, { headers: { 'If-None-Match': req.headers['if-none-match'] || '' } });
+   if (r.status === 304) return res.status(304).end();
+   const etag = r.headers.get('etag');
+   const body = await r.text();
+   res.status(r.status);
+   if (etag) res.set('ETag', etag);
+   res.type('application/json').send(body);
+ });
+
+ app.get('/api/discovery/registry', async (req, res) => {
+   const r = await fetch(`${BRIDGE}/api/discovery/registry`);
+   const body = await r.text();
+   res.status(r.status).type('application/json').send(body);
+ });
+
+ // Existing routes remain...
+
+ module.exports = app;
+
+diff --git a/src/lib/contracts.js b/src/lib/contracts.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/lib/contracts.js
+@@
+ +import Ajv from 'ajv';
+ +
+ +export async function loadSchemas(base = '/api') {
+ +  const r = await fetch(`${base}/discovery/schemas`, { headers: { 'Accept': 'application/json' } });
+ +  if (r.status === 304) return null;
+ +  if (!r.ok) throw new Error(`schemas ${r.status}`);
+ +  const data = await r.json();
+ +  return data; // { schemas, etag }
+ +}
+ +
+ +export function buildValidators(schemas) {
+ +  const ajv = new Ajv({ strict: true, allErrors: true });
+ +  const byId = new Map(schemas.map(s => [s.$id, s]));
+ +  const obs = byId.get('https://contracts.local/schemas/obs.line.v1.json');
+ +  if (!obs) throw new Error('ObserverLine schema missing');
+ +  const validateObs = ajv.compile(obs);
+ +  return { ajv, validateObs };
+ +}
+ +
+ +export function assertObs(validateObs, payload) {
+ +  const ok = validateObs(payload);
+ +  if (!ok) throw new Error(`ObserverLine invalid: ${JSON.stringify(validateObs.errors)}`);
+ +}
+
+diff --git a/src/context/ContractsProvider.jsx b/src/context/ContractsProvider.jsx
+new file mode 100644
+index 0000000..1111111 100644
+--- /dev/null
++++ b/src/context/ContractsProvider.jsx
+@@
+ +import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+ +import { loadSchemas, buildValidators } from '../lib/contracts';
+ +
+ +const Ctx = createContext(null);
+ +export function ContractsProvider({ children }) {
+ +  const [validators, setValidators] = useState(null);
+ +  useEffect(() => {
+ +    (async () => {
+ +      try {
+ +        const data = await loadSchemas('/api');
+ +        if (!data) return;
+ +        const v = buildValidators(data.schemas);
+ +        setValidators(v);
+ +      } catch (e) {
+ +        console.error('Contracts load failed', e);
+ +      }
+ +    })();
+ +  }, []);
+ +  const value = useMemo(() => validators, [validators]);
+ +  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+ +}
+ +export function useContracts(){ return useContext(Ctx); }
+
+diff --git a/src/components/DiagnosticsPanel.jsx b/src/components/DiagnosticsPanel.jsx
+new file mode 100644
+index 0000000..1111111 100644
+--- /dev/null
++++ b/src/components/DiagnosticsPanel.jsx
+@@
+ +import React, { useEffect, useState } from 'react';
+ +
+ +export default function DiagnosticsPanel(){
+ +  const [state, setState] = useState(null);
+ +  useEffect(() => {
+ +    (async () => {
+ +      try {
+ +        const h = await fetch('/api/health').then(r=>r.json());
+ +        const v = await fetch('/api/obs/validate').then(r=>r.json());
+ +        setState({ health: h, validate: v });
+ +      } catch (e) {
+ +        setState({ error: String(e) });
+ +      }
+ +    })();
+ +  }, []);
+ +  if (!state) return null;
+ +  return (
+ +    <div>
+ +      <h3>Integration Diagnostics</h3>
+ +      <pre>{JSON.stringify(state, null, 2)}</pre>
+ +    </div>
+ +  );
+ +}
+
+diff --git a/src/components/ProjectDetail.jsx b/src/components/ProjectDetail.jsx
+index 1111111..2222222 100644
+--- a/src/components/ProjectDetail.jsx
++++ b/src/components/ProjectDetail.jsx
+@@
+ import React, { useEffect, useState } from 'react';
+ +import { useContracts } from '../context/ContractsProvider';
+ +import { assertObs } from '../lib/contracts';
+@@
+ export default function ProjectDetail({ id }){
+   const [items, setItems] = useState([]);
+ +  const contracts = useContracts();
+   useEffect(() => {
+     let alive = true;
+     (async () => {
+       const res = await fetch(`/api/obs/projects/${encodeURIComponent(id)}/observers`).then(r=>r.json());
+ -     if (alive) setItems(res.items || []);
+ +     const list = res.items || [];
+ +     if (contracts?.validateObs) {
+ +       for (const it of list) assertObs(contracts.validateObs, it);
+ +     }
+ +     if (alive) setItems(list);
+     })();
+     return () => { alive = false; }
+   }, [id, contracts]);
+   return (
+     <div>
+       <h2>Project {id}</h2>
+       <pre>{JSON.stringify(items, null, 2)}</pre>
+     </div>
+   );
+ }
+
+diff --git a/src/App.jsx b/src/App.jsx
+index 1111111..2222222 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@
+ import React from 'react';
+ import { BrowserRouter, Routes, Route } from 'react-router-dom';
+ import Projects from './components/Projects';
+ import ProjectDetail from './components/ProjectDetail';
+ +import DiagnosticsPanel from './components/DiagnosticsPanel';
+ +import { ContractsProvider } from './context/ContractsProvider';
+@@
+ export default function App(){
+   return (
+ -   <BrowserRouter>
+ -     <Routes>
+ -       <Route path="/" element={<Projects />} />
+ -       <Route path="/projects/:id" element={<ProjectDetail />} />
+ -     </Routes>
+ -   </BrowserRouter>
+ +   <ContractsProvider>
+ +     <BrowserRouter>
+ +       <Routes>
+ +         <Route path="/" element={<>
+ +           <DiagnosticsPanel />
+ +           <Projects />
+ +         </>} />
+ +         <Route path="/projects/:id" element={<ProjectDetail />} />
+ +       </Routes>
+ +     </BrowserRouter>
+ +   </ContractsProvider>
+   );
+ }
+

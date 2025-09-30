@@ -1,0 +1,175 @@
+diff --git a/src/components/ObserversView.jsx b/src/components/ObserversView.jsx
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/components/ObserversView.jsx
+@@
+ +import React from 'react';
+ +
+ +function Chip({ status }){
+ +  const color = status === 'ok' ? '#16a34a' : status === 'warn' ? '#f59e0b' : '#dc2626';
+ +  return <span style={{padding:'2px 6px', borderRadius:4, background:color, color:'#fff', fontSize:12}}>{status}</span>;
+ +}
+ +
+ +function Card({ title, status, children }){
+ +  return (
+ +    <div style={{border:'1px solid #e5e7eb', borderRadius:8, padding:12, marginBottom:12}}>
+ +      <div style={{display:'flex', justifyContent:'space-between', marginBottom:8}}>
+ +        <strong>{title}</strong>
+ +        {status ? <Chip status={status} /> : null}
+ +      </div>
+ +      <div>{children}</div>
+ +    </div>
+ +  );
+ +}
+ +
+ +function Row({ label, value }){
+ +  return (
+ +    <div style={{display:'flex', justifyContent:'space-between', fontFamily:'monospace'}}>
+ +      <span>{label}</span>
+ +      <span>{String(value)}</span>
+ +    </div>
+ +  );
+ +}
+ +
+ +function GitCard({ item }){
+ +  const m = item.metrics || {};
+ +  return (
+ +    <Card title={`git • ${item.summary}`} status={item.status}>
+ +      <Row label="ahead/behind" value={`${m.ahead ?? m.metrics?.ahead ?? 0}/${m.behind ?? 0}`} />
+ +      <Row label="dirty/untracked" value={`${m.dirty_files ?? m.dirty ?? 0}/${m.untracked ?? m.untracked_files ?? 0}`} />
+ +      <Row label="timestamp" value={item.timestamp} />
+ +    </Card>
+ +  );
+ +}
+ +
+ +function MiseCard({ item }){
+ +  const m = item.metrics || {};
+ +  return (
+ +    <Card title={`mise • ${item.summary}`} status={item.status}>
+ +      <Row label="outdated" value={m.outdated ?? 0} />
+ +      <Row label="vulnerable" value={m.vulnerable ?? 0} />
+ +      <Row label="critical" value={m.vuln_critical ?? 0} />
+ +      <Row label="timestamp" value={item.timestamp} />
+ +    </Card>
+ +  );
+ +}
+ +
+ +function BuildCard({ item }){
+ +  const m = item.metrics || {};
+ +  return (
+ +    <Card title={`build • ${item.summary}`} status={item.status}>
+ +      <Row label="build_ok" value={m.build_ok ?? 0} />
+ +      <Row label="latency_ms" value={m.latency_ms ?? 0} />
+ +      <Row label="timestamp" value={item.timestamp} />
+ +    </Card>
+ +  );
+ +}
+ +
+ +function SbomCard({ item }){
+ +  const m = item.metrics || {};
+ +  return (
+ +    <Card title={`sbom • ${item.summary}`} status={item.status}>
+ +      <Row label="packages" value={m.packages ?? 0} />
+ +      <Row label="unique_licenses" value={m.unique_licenses ?? 0} />
+ +      <Row label="critical_issues" value={m.critical_issues ?? 0} />
+ +      <Row label="timestamp" value={item.timestamp} />
+ +    </Card>
+ +  );
+ +}
+ +
+ +function ManifestCard({ item }){
+ +  const m = item.metrics || {};
+ +  return (
+ +    <Card title={`manifest • ${item.summary}`} status={item.status}>
+ +      <Row label="present" value={m.present ?? false} />
+ +      <Row label="name" value={m.name ?? ''} />
+ +      <Row label="org/tier/kind/lang" value={`${m.org ?? ''}/${m.tier ?? ''}/${m.kind ?? ''}/${m.language ?? ''}`} />
+ +      <Row label="timestamp" value={item.timestamp} />
+ +    </Card>
+ +  );
+ +}
+ +
+ +function GenericCard({ item }){
+ +  const m = item.metrics || {};
+ +  return (
+ +    <Card title={`${item.observer} • ${item.summary}`} status={item.status}>
+ +      {Object.keys(m).map(k => <Row key={k} label={k} value={m[k]} />)}
+ +      <Row label="timestamp" value={item.timestamp} />
+ +    </Card>
+ +  );
+ +}
+ +
+ +export default function ObserversView({ items }){
+ +  if (!items || !items.length) return <div>No observations yet</div>;
+ +  return (
+ +    <div>
+ +      {items.map((it, idx) => {
+ +        const obs = (it.observer||'').toLowerCase();
+ +        if (obs === 'git') return <GitCard key={idx} item={it} />;
+ +        if (obs === 'mise') return <MiseCard key={idx} item={it} />;
+ +        if (obs === 'build') return <BuildCard key={idx} item={it} />;
+ +        if (obs === 'sbom') return <SbomCard key={idx} item={it} />;
+ +        if (obs === 'manifest') return <ManifestCard key={idx} item={it} />;
+ +        return <GenericCard key={idx} item={it} />;
+ +      })}
+ +    </div>
+ +  );
+ +}
+
+diff --git a/src/components/ProjectDetail.jsx b/src/components/ProjectDetail.jsx
+index 1111111..3333333 100644
+--- a/src/components/ProjectDetail.jsx
++++ b/src/components/ProjectDetail.jsx
+@@
+ import React, { useEffect, useState } from 'react';
+ import { useParams } from 'react-router-dom';
+ import { useContracts } from '../context/ContractsProvider';
+ import { assertObs } from '../lib/contracts';
+ +import ObserversView from './ObserversView';
+@@
+ export default function ProjectDetail(){
+   const { id } = useParams();
+   const [items, setItems] = useState([]);
+   const contracts = useContracts();
+   useEffect(() => {
+     let alive = true;
+     (async () => {
+       const res = await fetch(`/api/obs/projects/${encodeURIComponent(id)}/observers`).then(r=>r.json());
+       const list = res.items || [];
+       if (contracts?.validateObs) {
+         for (const it of list) assertObs(contracts.validateObs, it);
+       }
+       if (alive) setItems(list);
+     })();
+     return () => { alive = false; };
+   }, [id, contracts]);
+   return (
+     <div>
+       <h2>Project {id}</h2>
+ -     <pre>{JSON.stringify(items, null, 2)}</pre>
+ +     <ObserversView items={items} />
+     </div>
+   );
+ }
+
+diff --git a/server/index.js b/server/index.js
+index 2222222..4444444 100644
+--- a/server/index.js
++++ b/server/index.js
+@@
+ const BRIDGE = process.env.OBS_BRIDGE_URL || 'http://127.0.0.1:7171';
+ const BRIDGE_TOKEN = process.env.BRIDGE_TOKEN || '';
+@@
+ function proxyHeaders() {
+   const h = { 'Accept': 'application/json' };
+   if (BRIDGE_TOKEN) h['Authorization'] = `Bearer ${BRIDGE_TOKEN}`;
+   return h;
+ }
+@@
+ app.get('/api/discover', async (req, res) => {
+   const r = await fetch(`${BRIDGE}/api/discover`, { headers: proxyHeaders() });
+   const body = await r.text();
+   res.status(r.status).type('application/json').send(body);
+ });
+

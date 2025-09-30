@@ -1,0 +1,37 @@
+version: 1
+services:
+  bridge:
+    name: system-setup-update bridge
+    url: ${OBS_BRIDGE_URL:-http://127.0.0.1:7171}
+    openapi: file://${PWD}/openapi.yaml
+    sse_events: [ProjectObsCompleted, SLOBreach]
+  dashboard:
+    name: system-dashboard
+    url: http://127.0.0.1:3001
+  mcp:
+    name: devops-mcp server
+    url: http://127.0.0.1:4319
+  ds:
+    name: ds-go
+    url: ${DS_BASE_URL:-http://127.0.0.1:7777}
+
+contracts:
+  schemas:
+    - id: https://contracts.local/schemas/obs.line.v1.json
+      path: schema/obs.line.v1.json
+    - id: https://contracts.local/schemas/project.manifest.v1.json
+      path: schema/project.manifest.schema.json
+  openapi:
+    - id: https://contracts.local/apis/bridge.v1
+      path: openapi.yaml
+
+paths:
+  primary_data: ~/.local/share/devops-mcp/
+  fallback_macos: ~/Library/Application Support/devops.mcp/
+
+observer:
+  enum: [git, mise, sbom, build, manifest]
+  internal_aliases:
+    repo: git
+    deps: mise
+

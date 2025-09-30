@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.local/schemas/obs.line.v1.json",
+  "title": "ObserverLine",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "run_id",
+    "timestamp",
+    "project_id",
+    "observer",
+    "summary",
+    "metrics",
+    "status"
+  ],
+  "properties": {
+    "apiVersion": { "const": "obs.v1" },
+    "run_id": { "type": "string", "format": "uuid" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z]+:[a-z0-9-]+/[a-z0-9-]+$"
+    },
+    "observer": {
+      "type": "string",
+      "enum": ["git", "mise", "sbom", "build", "manifest"]
+    },
+    "summary": { "type": "string", "maxLength": 200 },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "number" },
+          { "type": "string" },
+          { "type": "boolean" }
+        ]
+      }
+    },
+    "status": { "type": "string", "enum": ["ok", "warn", "fail"] },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repo": { "type": "string", "format": "uri" },
+        "ci": { "type": "string", "format": "uri" },
+        "trace": { "type": "string", "format": "uri" }
+      }
+    },
+    "audit_id": { "type": "string", "format": "uuid" },
+    "trace_id": { "type": "string" },
+    "span_id": { "type": "string" }
+  }
+}
+

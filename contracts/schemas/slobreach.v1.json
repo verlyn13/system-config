@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.local/schemas/slobreach.v1.json",
+  "title": "SLO Breach Event Schema",
+  "description": "Contract schema for SLO breach notifications",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "breach_id",
+    "timestamp",
+    "project_id",
+    "service",
+    "metric",
+    "severity",
+    "threshold",
+    "actual",
+    "duration_ms"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "slobreach.v1",
+      "description": "API version identifier"
+    },
+    "breach_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this breach event"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when breach occurred"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z]+:[a-z0-9-]+/[a-z0-9-]+$",
+      "description": "Encoded project identifier (service:org/repo)"
+    },
+    "service": {
+      "type": "string",
+      "enum": ["ds-go", "system-setup-update", "devops-mcp", "system-dashboard"],
+      "description": "Service where breach occurred"
+    },
+    "metric": {
+      "type": "string",
+      "enum": [
+        "response_time_p50",
+        "response_time_p95",
+        "response_time_p99",
+        "error_rate",
+        "availability",
+        "validation_time"
+      ],
+      "description": "Metric that breached SLO"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "warning", "critical", "emergency"],
+      "description": "Breach severity level"
+    },
+    "threshold": {
+      "type": "number",
+      "description": "SLO threshold that was breached"
+    },
+    "actual": {
+      "type": "number",
+      "description": "Actual value that caused the breach"
+    },
+    "duration_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Duration of breach in milliseconds"
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resolved": {
+          "type": "boolean",
+          "description": "Whether breach has been resolved"
+        },
+        "resolved_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when breach was resolved"
+        },
+        "resolution_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Time to resolution in milliseconds"
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Additional context about the breach"
+    }
+  }
+}

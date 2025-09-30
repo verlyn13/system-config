@@ -1,0 +1,20 @@
+{
+  "name": "contract-compliance-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time contract compliance dashboard",
+  "main": "dashboard-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node dashboard-server.js",
+    "dev": "node --watch dashboard-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "glob": "^10.3.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0"
+  }
+}

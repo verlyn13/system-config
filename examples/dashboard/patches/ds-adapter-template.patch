@@ -1,0 +1,36 @@
+diff --git a/src/lib/dsAdapter.js b/src/lib/dsAdapter.js
+new file mode 100644
+index 0000000..1111111 100644
+--- /dev/null
++++ b/src/lib/dsAdapter.js
+@@
+ +// Adapter for DS generated client (if present), else falls back to server proxies
+ +import * as fallback from './bridgeClient';
+ +let generated;
+ +try {
+ +  generated = await import('../generated/ds-client');
+ +} catch {
+ +  generated = null;
+ +}
+ +
+ +function getApi() {
+ +  if (!generated) return null;
+ +  const { DefaultApi, Configuration } = generated;
+ +  if (!DefaultApi) return null;
+ +  const basePath = import.meta.env.VITE_DS_URL || 'http://127.0.0.1:7777';
+ +  const config = new Configuration({ basePath, headers: import.meta.env.VITE_DS_TOKEN ? { Authorization: `Bearer ${import.meta.env.VITE_DS_TOKEN}` } : {} });
+ +  return new DefaultApi(config);
+ +}
+ +
+ +const api = getApi();
+ +
+ +export async function getHealth() {
+ +  if (api?.v1HealthGet) { const res = await api.v1HealthGet(); return res.data; }
+ +  return fallback.getDsHealth?.();
+ +}
+ +
+ +export async function getCapabilities() {
+ +  if (api?.v1CapabilitiesGet) { const res = await api.v1CapabilitiesGet(); return res.data; }
+ +  return fallback.getDsCapabilities?.();
+ +}
+

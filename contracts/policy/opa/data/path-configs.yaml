@@ -1,0 +1,86 @@
+# Path Configuration
+# Canonical paths and location requirements
+
+version: v1.1.0
+updated: 2025-09-28
+
+# Canonical paths for contract files
+canonical_paths:
+  contracts_dir: "/contracts"
+  schemas_dir: "/contracts/schemas"
+  policy_dir: "/contracts/policy"
+  opa_dir: "/contracts/policy/opa"
+  data_dir: "/contracts/policy/opa/data"
+  tests_dir: "/contracts/policy/opa/tests"
+  scripts_dir: "/contracts/policy/opa/scripts"
+  src_dir: "/contracts/policy/opa/src"
+
+# Required files per service
+required_files:
+  base:
+    - path: "/contracts/schemas/obs.v1.json"
+      description: "Observation schema"
+      version: "2020-12"
+
+    - path: "/contracts/policy/opa/contracts.v1.rego"
+      description: "Main OPA policy file"
+      required: true
+
+    - path: "/contracts/policy/opa/data/observer-mappings.yaml"
+      description: "Observer name mappings"
+      required: true
+
+    - path: "/contracts/policy/opa/data/slo-thresholds.yaml"
+      description: "SLO definitions"
+      required: true
+
+  service_specific:
+    ds-go:
+      - path: "/contracts/schemas/ds-go.v1.json"
+        description: "DS-Go specific schemas"
+      - path: "/contracts/policy/opa/ds-go.rego"
+        description: "DS-Go specific policies"
+
+    system-setup-update:
+      - path: "/contracts/schemas/system-setup.v1.json"
+        description: "System setup schemas"
+      - path: "/contracts/policy/opa/system-setup.rego"
+        description: "System setup policies"
+
+    devops-mcp:
+      - path: "/contracts/schemas/devops-mcp.v1.json"
+        description: "DevOps MCP schemas"
+      - path: "/contracts/policy/opa/devops-mcp.rego"
+        description: "DevOps MCP policies"
+
+    system-dashboard:
+      - path: "/contracts/schemas/dashboard.v1.json"
+        description: "Dashboard schemas"
+      - path: "/contracts/policy/opa/dashboard.rego"
+        description: "Dashboard policies"
+
+# Path validation rules
+validation_rules:
+  - name: "Contracts must be in canonical location"
+    pattern: "^/contracts/.*"
+    required: true
+
+  - name: "Schemas must use 2020-12 version"
+    pattern: "^/contracts/schemas/.*\\.json$"
+    schema_version: "https://json-schema.org/draft/2020-12/schema"
+
+  - name: "OPA policies must have version suffix"
+    pattern: "^/contracts/policy/opa/.*\\.v[0-9]+\\.rego$"
+    required: false
+
+# Migration paths
+migration_paths:
+  from_draft_07:
+    old_pattern: "https://json-schema.org/draft-07/schema"
+    new_pattern: "https://json-schema.org/draft/2020-12/schema"
+    action: "update_schema_version"
+
+  from_flat_structure:
+    old_pattern: "^/[^/]+\\.json$"
+    new_pattern: "/contracts/schemas/"
+    action: "move_to_canonical"

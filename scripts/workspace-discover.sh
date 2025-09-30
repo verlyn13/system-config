@@ -96,6 +96,7 @@ discover_projects() {
 
     if [[ ! -d "$root" ]]; then
         echo -e "${YELLOW}Warning: Workspace root does not exist: $root${NC}" >&2
+        echo "[]"  # Return empty array
         return
     fi
 
@@ -190,7 +191,7 @@ discover_all() {
 
         # Discover projects in workspace
         local projects_json=$(discover_projects "$workspace" "$root" "$depth" "$tier")
-        local project_count=$(echo "$projects_json" | jq '. | length')
+        local project_count=$(echo "$projects_json" | jq '. | length // 0')
 
         # Add workspace to registry
         local workspace_json=$(cat <<EOF

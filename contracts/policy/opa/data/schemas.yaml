@@ -1,0 +1,385 @@
+# contracts/policy/opa/data/schemas.yaml
+# Schema definitions for OPA policy evaluation
+apiVersion: policy.v1
+kind: SchemaData
+metadata:
+  name: contract-schemas
+  version: v1.1.0
+data:
+  schemas:
+    observation:
+      version: "https://json-schema.org/draft/2020-12/schema"
+      id: "https://contracts.local/schemas/obs.line.v1.json"
+      required_fields:
+        - apiVersion
+        - run_id
+        - timestamp
+        - project_id
+        - observer
+        - summary
+        - metrics
+        - status
+      field_constraints:
+        apiVersion:
+          const: "obs.v1"
+        project_id:
+          pattern: "^[a-z]+:[a-z0-9-]+/[a-z0-9-]+$"
+        observer:
+          enum: ["git", "mise", "sbom", "build", "manifest"]
+        status:
+          enum: ["ok", "warn", "fail"]
+        summary:
+          maxLength: 200
+    slobreach:
+      version: "https://json-schema.org/draft/2020-12/schema"
+      id: "https://contracts.local/schemas/slobreach.v1.json"
+      required_fields:
+        - apiVersion
+        - timestamp
+        - project_id
+        - slo_name
+        - breach_level
+      field_constraints:
+        apiVersion:
+          const: "obs.v1"
+        breach_level:
+          enum: ["warning", "critical"]
+
+---
+# contracts/policy/opa/data/mappings.yaml
+# Observer mapping configuration
+apiVersion: policy.v1
+kind: MappingData
+metadata:
+  name: observer-mappings
+  version: v1.1.0
+data:
+  mappings:
+    internal_to_external:
+      repo: git
+      deps: mise
+      quality: null  # Never exposed
+      git: git      # Pass-through
+      mise: mise    # Pass-through
+      sbom: sbom
+      build: build
+      manifest: manifest
+    
+    valid_sets:
+      external_api: ["git", "mise", "sbom", "build", "manifest"]
+      internal_all: ["repo", "deps", "quality", "git", "mise", "sbom", "build", "manifest"]
+      dashboard_display: ["git", "mise", "sbom", "build", "manifest"]
+      
+    context_rules:
+      external_api:
+        allowed: ["git", "mise", "sbom", "build", "manifest"]
+        blocked: ["quality", "repo", "deps"]
+        auto_map: true
+      internal:
+        allowed: ["repo", "deps", "quality", "git", "mise", "sbom", "build", "manifest"]
+        blocked: []
+        auto_map: false
+      dashboard:
+        allowed: ["git", "mise", "sbom", "build", "manifest"]
+        blocked: ["quality", "repo", "deps"]
+        auto_map: true
+
+---
+# contracts/policy/opa/data/slo.yaml  
+# SLO threshold definitions
+apiVersion: policy.v1
+kind: SLOData
+metadata:
+  name: slo-thresholds
+  version: v1.0.0
+data:
+  thresholds:
+    latency_p95:
+      value: 1000
+      unit: ms
+      breach_type: upper
+      critical_multiplier: 2.0
+      description: "95th percentile latency"
+    
+    latency_p99:
+      value: 2000
+      unit: ms
+      breach_type: upper
+      critical_multiplier: 1.5
+      description: "99th percentile latency"
+    
+    error_rate:
+      value: 0.01
+      unit: ratio
+      breach_type: upper
+      critical_multiplier: 5.0
+      description: "Error rate (errors/total)"
+    
+    observation_age:
+      value: 3600
+      unit: seconds
+      breach_type: upper
+      critical_multiplier: 2.0
+      description: "Time since last observation"
+    
+    availability:
+      value: 0.999
+      unit: ratio
+      breach_type: lower
+      critical_threshold: 0.99
+      description: "Service availability"
+    
+    build_success_rate:
+      value: 0.95
+      unit: ratio
+      breach_type: lower
+      critical_threshold: 0.80
+      description: "Build success rate"
+    
+    vulnerability_count:
+      value: 0
+      unit: count
+      breach_type: upper
+      critical_threshold: 5
+      description: "Critical vulnerabilities"
+    
+    coverage:
+      value: 0.80
+      unit: ratio
+      breach_type: lower
+      critical_threshold: 0.60
+      description: "Test coverage"
+
+  evaluation_windows:
+    immediate: 0      # Current value only
+    short: 300        # 5 minutes
+    medium: 3600      # 1 hour
+    long: 86400       # 24 hours
+
+  aggregation_methods:
+    - last
+    - mean
+    - max
+    - min
+    - p50
+    - p95
+    - p99
+
+---
+# contracts/policy/opa/data/paths.yaml
+# Path configuration and validation rules
+apiVersion: policy.v1
+kind: PathData
+metadata:
+  name: path-configuration
+  version: v1.0.0
+data:
+  canonical:
+    base_dir: "~/.local/share/devops-mcp"
+    registry: "~/.local/share/devops-mcp/project-registry.json"
+    observations: "~/.local/share/devops-mcp/observations"
+    schemas: "~/.local/share/devops-mcp/contracts/schemas"
+    policies: "~/.local/share/devops-mcp/contracts/policies"
+    
+  fallback:
+    macos:
+      observations: "~/Library/Application Support/devops-mcp/observations"
+      readonly: true
+    
+  project_encoding:
+    pattern: "^[a-z]+:[a-z0-9-]+/[a-z0-9-]+"
+    replacement:
+      ":": "__"
+      "/": "__"
+    example:
+      input: "github:user/repo"
+      output: "github__user__repo"
+  
+  file_patterns:
+    observations:
+      latest: "latest.json"
+      stream: "observations.ndjson"
+      observer: "{observer}.ndjson"
+      rotated: "{observer}-{timestamp}.ndjson"
+    
+  rotation:
+    max_size_mb: 64
+    max_age_days: 30
+    compress_after_days: 7
+
+  forbidden_paths:
+    - "/etc"
+    - "/usr"
+    - "/bin"
+    - "/sbin"
+    - "~/.ssh"
+    - "~/.gnupg"
+
+---
+# contracts/policy/opa/data/services.yaml
+# Service configuration and compliance requirements
+apiVersion: policy.v1
+kind: ServiceData
+metadata:
+  name: service-configuration
+  version: v1.1.0
+data:
+  services:
+    obs_bridge:
+      name: "Observation Bridge"
+      port: 7171
+      endpoints:
+        - /api/self-status
+        - /api/tools/project_obs_run
+        - /api/events/stream
+        - /api/health
+      required_headers:
+        response:
+          - X-Contract-Version
+          - X-Schema-Version
+      contract_version: v1.1.0
+      schema_version: obs.v1
+      
+    devops_mcp:
+      name: "DevOps MCP Bridge"
+      port: 4319
+      endpoints:
+        - /api/self-status
+        - /health
+      required_headers:
+        response:
+          - X-Contract-Version
+          - X-Schema-Version
+      contract_version: v1.1.0
+      schema_version: obs.v1
+      
+    system_dashboard:
+      name: "System Dashboard"
+      port: 3000
+      endpoints:
+        - /api/self-status
+        - /api/health
+        - /api/obs/projects
+      contract_version: v1.1.0
+      schema_version: obs.v1
+      validation_mode: client_side
+      
+    ds_go:
+      name: "DS-Go Service"  
+      port: 7777
+      endpoints:
+        - /v1/self-status
+        - /v1/health
+        - /v1/validate/observation
+        - /v1/policy/check
+      contract_version: v1.1.0
+      schema_version: obs.v1
+      openapi_version: "3.1.0"
+
+  compliance_checks:
+    - endpoint: self-status
+      required_fields:
+        - contractVersion
+        - schemaVersion
+        - observerMapping
+        - paths
+        - timestamp
+    - endpoint: health
+      required_status_codes: [200, 503]
+    - endpoint: validation
+      required_behavior:
+        - reject_invalid_observers
+        - map_internal_names
+        - validate_before_stream
+
+---
+# contracts/policy/opa/tests/test-cases.yaml
+# Test cases for policy validation
+apiVersion: policy.v1
+kind: TestCases
+metadata:
+  name: contract-validation-tests
+  version: v1.0.0
+tests:
+  - name: valid_observation
+    description: "Valid observation should pass"
+    input:
+      apiVersion: "obs.v1"
+      run_id: "550e8400-e29b-41d4-a716-446655440000"
+      timestamp: "2025-09-28T10:00:00Z"
+      project_id: "github:user/repo"
+      observer: "git"
+      status: "ok"
+      summary: "Repository analysis complete"
+      metrics:
+        files: 100
+        lines: 5000
+      duration_ms: 1234
+    expected:
+      allow: true
+      violations: []
+      
+  - name: invalid_observer_quality_external
+    description: "Quality observer blocked from external API"
+    input:
+      context: "external_api"
+      apiVersion: "obs.v1"
+      run_id: "550e8400-e29b-41d4-a716-446655440001"
+      timestamp: "2025-09-28T10:00:00Z"
+      project_id: "github:user/repo"
+      observer: "quality"
+      status: "ok"
+      summary: "Quality check complete"
+      metrics:
+        coverage: 0.85
+    expected:
+      allow: false
+      violations:
+        - type: "quality_observer_exposed"
+          severity: "critical"
+          
+  - name: internal_observer_needs_mapping
+    description: "Internal observer should be mapped"
+    input:
+      context: "internal"
+      observer: "repo"
+    expected_mapping: "git"
+    
+  - name: slo_breach_detection
+    description: "High latency triggers SLO breach"
+    input:
+      apiVersion: "obs.v1"
+      project_id: "github:user/repo"
+      observer: "git"
+      metrics:
+        latency_p95: 3000
+    expected_breaches:
+      - slo_name: "latency_p95"
+        breach_level: "critical"
+        
+  - name: schema_migration_needed
+    description: "Old schema version requires migration"
+    input:
+      $schema: "http://json-schema.org/draft-07/schema#"
+      observer: "repo"
+      context: "external"
+    expected_migration:
+      needs_migration: true
+      issues:
+        - "schema_version_outdated"
+        - "internal_observer_exposed"
+      severity: "critical"
+
+  - name: path_validation_canonical
+    description: "Canonical path should pass"
+    input:
+      path: "~/.local/share/devops-mcp/observations/github__user__repo/latest.json"
+    expected:
+      valid_path: true
+      
+  - name: path_validation_non_canonical
+    description: "Non-canonical path needs migration"
+    input:
+      path: "/tmp/observations/github:user/repo/data.json"
+    expected:
+      requires_migration: true

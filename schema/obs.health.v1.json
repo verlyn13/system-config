@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.local/schemas/obs.health.v1.json",
+  "title": "ProjectHealthSummary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["project_id","overall","counts","observers","slo"],
+  "properties": {
+    "project_id": { "type": "string", "pattern": "^[a-z]+:[a-z0-9-]+/[a-z0-9-]+$" },
+    "overall": { "type": "string", "enum": ["ok","warn","fail","unknown"] },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok","warn","fail"],
+      "properties": {
+        "ok": { "type": "integer", "minimum": 0 },
+        "warn": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "observers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["p95_ms","runs"],
+        "properties": {
+          "p95_ms": { "type": "number", "minimum": 0 },
+          "runs": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "slo": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "p95LocalBuildSec": { "type": ["string","null"] },
+        "p95LocalBuildSec_ok": { "type": ["boolean","null"] },
+        "ciSuccessRate": { "type": ["string","null"] },
+        "ciSuccessRate_ok": { "type": ["boolean","null"] }
+      }
+    }
+  }
+}
+

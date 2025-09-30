@@ -39,9 +39,16 @@ Repository Roles
 ### 📚 Navigation
 
 #### 🎯 Quick Start
-- **[INDEX.md](INDEX.md)** - Complete document registry and navigation
-- **[REPO-STRUCTURE.md](REPO-STRUCTURE.md)** - Repository organization guide
-- **[01-setup/00-prerequisites.md](01-setup/00-prerequisites.md)** - Start here for new installations
+- **[Documentation Index](docs/INDEX.md)** - Complete documentation navigation
+- **[System Status](docs/system/implementation-status.md)** - Current system state
+- **[Setup Guide](01-setup/00-prerequisites.md)** - Start here for new installations
+
+#### 📂 Documentation Structure
+- **[/docs/](docs/)** - All documentation with proper metadata
+  - **[/docs/system/](docs/system/)** - System status and configuration
+  - **[/docs/mcp/](docs/mcp/)** - MCP server and bridge docs
+  - **[/docs/guides/](docs/guides/)** - Implementation guides
+  - **[/docs/reports/](docs/reports/)** - Status reports
 
 #### 🛠️ Setup Guides (Phase-by-Phase)
 1. **[Prerequisites](01-setup/00-prerequisites.md)** - System requirements ✅
