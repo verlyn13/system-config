@@ -15,8 +15,17 @@ function compileValidators() {
   const ajv = new Ajv2020({ strict: true, allErrors: true });
   addFormats(ajv);
   const dir = path.join(process.cwd(), 'schema');
+
+  // Load and add all schemas to resolve references
+  const health = loadJSON(path.join(dir, 'obs.health.v1.json'));
   const line = loadJSON(path.join(dir, 'obs.line.v1.json'));
   const breach = loadJSON(path.join(dir, 'obs.slobreach.v1.json'));
+
+  // Add schemas to Ajv instance to resolve $refs
+  ajv.addSchema(health, 'https://contracts.local/schemas/obs.health.v1.json');
+  ajv.addSchema(line, 'https://contracts.local/schemas/obs.line.v1.json');
+  ajv.addSchema(breach, 'https://contracts.local/schemas/obs.slobreach.v1.json');
+
   const vLine = ajv.compile(line);
   const vBreach = ajv.compile(breach);
   return { vLine, vBreach };
