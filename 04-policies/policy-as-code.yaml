@@ -327,7 +327,7 @@ reporting:
     - "performance_metrics"
 
   output_format: "markdown"
-  report_location: "~/Development/personal/system-setup-update/compliance-report.md"
+  report_location: "docs/reports/compliance-report.md"
   frequency: "weekly"
   optional:
     ds:

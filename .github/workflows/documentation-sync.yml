@@ -191,6 +191,24 @@ jobs:
           pip install yamllint
           yamllint -d relaxed .
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Docs Lint (value-density & duplication)
+        id: docs_lint
+        run: |
+          node scripts/docs-lint.mjs
+          echo "docs_lint_exit=$?" >> $GITHUB_OUTPUT
+
+      - name: Upload Docs Lint Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-lint-report
+          path: 07-reports/status/docs-lint.json
+
   security:
     name: Security Checks
     runs-on: ubuntu-latest

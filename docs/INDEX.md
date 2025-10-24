@@ -1,13 +1,14 @@
 ---
-title: Documentation Index
-category: index
-component: system
-status: active
-version: 2.0.0
-last_updated: 2025-09-28
-tags: [documentation, index, navigation]
-priority: critical
+title: Index
+category: reference
+component: index
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # System Documentation Index
 
@@ -41,6 +42,10 @@ node ./scripts/migrate-observations.js
 curl -X POST http://localhost:7171/api/tools/project_obs_run \
   -H "Content-Type: application/json" \
   -d '{"project_id": "PROJECT_ID", "observer": "git"}'
+
+# Docs quality checks
+node ./scripts/docs-lint.mjs         # Lint docs (structure, duplication, length)
+python3 03-automation/scripts/add-frontmatter.py  # Normalize frontmatter
 ```
 
 ## Documentation Structure
@@ -70,14 +75,21 @@ curl -X POST http://localhost:7171/api/tools/project_obs_run \
 ### `/docs/guides/` - Implementation Guides
 - [`MAINTENANCE-GUIDE.md`](guides/MAINTENANCE-GUIDE.md) - System maintenance
 - [`SECRETS-MANAGEMENT-GUIDE.md`](guides/SECRETS-MANAGEMENT-GUIDE.md) - Secrets handling
+- [`GOPASS-DEFINITIVE-GUIDE.md`](guides/GOPASS-DEFINITIVE-GUIDE.md) - Complete gopass guide
 - [`PROJECT-OBSERVABILITY-PLAN.md`](guides/PROJECT-OBSERVABILITY-PLAN.md) - Observer design
 - [`IMPLEMENTATION-PLAN-2025-09-28.md`](guides/IMPLEMENTATION-PLAN-2025-09-28.md) - Implementation roadmap
 - [`dashboard-integration.md`](guides/dashboard-integration.md) - **📊 Dashboard UI integration requirements**
 
+### `/docs/` - Tool Configuration
+- [`claude-cli-setup.md`](claude-cli-setup.md) - **🤖 Claude Code CLI setup & configuration**
+- [`codex-cli-setup.md`](codex-cli-setup.md) - **🔧 Codex CLI setup & configuration**
+- [`terraform-cli-setup.md`](terraform-cli-setup.md) - **🏗️ Terraform CLI setup, updates & auth**
+- [`AGENT-ONBOARDING.md`](AGENT-ONBOARDING.md) - Quick onboarding for agents
+
 ### `/docs/` - Core Documentation
 - `INDEX.md` - This file
 - [`observability.md`](observability.md) - Observability overview
-- [`dashboard_quickstart.md`](dashboard_quickstart.md) - Dashboard setup
+- [`dashboard-quick-reference.md`](dashboard-quick-reference.md) - Dashboard setup
 
 ## Root Level Documents (Minimal)
 
@@ -116,6 +128,19 @@ priority: [critical|high|medium|low]
 - Reports include dates: `daily-report-2025-09-28.md`
 - Guides are descriptive: `secrets-management-guide.md`
 
+### Writing Guidelines
+- Value density over volume: keep content concise; prefer links to upstream docs over copying.
+- Single source of truth: avoid duplicating the same procedure across files. Link to the canonical doc.
+- Prefer Quick Start + Reference: lead with actionable steps, follow with details where necessary.
+- Audience clarity: make the intended audience explicit (system, project, CI, etc.) when ambiguity is possible.
+- Change minimization: when updating, edit the canonical doc instead of creating new variants.
+- No word-count metrics: never use word count as a quality signal in docs.
+
+### Duplication Policy
+- If two docs share the same H1/title within a category, consolidate into one and redirect/link the other.
+- Do not fork guides for minor variations; add a short “Variants” section or per-environment notes.
+- Pull project-specific details into project repos; keep this repo focused on system-wide setup and patterns.
+
 ## Navigation Paths
 
 ### For System Status
@@ -138,7 +163,7 @@ priority: [critical|high|medium|low]
 ### By Component
 - **MCP Server**: [mcp/](mcp/)
 - **HTTP Bridge**: [mcp/integration-guide.md](mcp/integration-guide.md)
-- **Dashboard**: [dashboard_quickstart.md](dashboard_quickstart.md)
+- **Dashboard**: [dashboard-quick-reference.md](dashboard-quick-reference.md)
 - **Observers**: [guides/PROJECT-OBSERVABILITY-PLAN.md](guides/PROJECT-OBSERVABILITY-PLAN.md)
 
 ### By Task
@@ -152,6 +177,10 @@ priority: [critical|high|medium|low]
 - **High**: Hardening, Maintenance
 - **Medium**: Reports, Guides
 - **Low**: Historical reports
+
+### Archives
+- Long-form or exploratory writeups that are not part of the primary workflow live under `docs/archives/`.
+- Example: `archives/iterm-architecture-notes.md` (kept for context; not part of the primary path).
 
 ---
 

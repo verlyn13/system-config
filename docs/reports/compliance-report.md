@@ -1,3 +1,15 @@
+---
+title: Compliance Report
+category: reference
+component: compliance_report
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
+
 # Policy as Code Compliance Report
 ## Generated: 2025-09-30 11:05:29
 

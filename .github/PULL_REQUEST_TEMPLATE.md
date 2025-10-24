@@ -1,3 +1,14 @@
+---
+title: Pull_Request_Template
+category: reference
+component: pull_request_template
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 Title: <concise summary>
 
 ## Summary
@@ -46,6 +57,8 @@ node scripts/sse-listen.js
 - [ ] Ajv schema validation passes
 - [ ] OpenAPI lint passes
 - [ ] Endpoint validation workflow green
+ - [ ] Documentation changes (if any) follow docs/INDEX.md Writing Guidelines (no duplication, value-dense; no word-count metrics)
+ - [ ] Docs Lint: zero errors (see artifact docs-lint-report)
 
 ## Breaking Changes / Migrations
 
@@ -62,4 +75,3 @@ node scripts/sse-listen.js
 ## Screenshots / Logs
 
 Attach if UI or logs changed.
-

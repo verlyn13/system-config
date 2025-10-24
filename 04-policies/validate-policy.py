@@ -235,7 +235,8 @@ class PolicyValidator:
         print(f"{Colors.YELLOW}⚠{Colors.RESET} {message}")
 
 def generate_report(results: Dict):
-    """Generate compliance report"""
+    """Generate compliance report with docs frontmatter"""
+    # Build body
     report = f"""# Policy as Code Compliance Report
 ## Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -265,11 +266,26 @@ def generate_report(results: Dict):
     if len(results['passed']) > 10:
         report += f"- ... and {len(results['passed']) - 10} more\n"
 
-    # Write report
-    report_path = expand_path("~/Development/personal/system-setup-update/compliance-report.md")
+    # Prepare frontmatter and path within repo
+    repo_root = Path(__file__).resolve().parents[2]
+    report_path = repo_root / "docs" / "reports" / "compliance-report.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
+
+    frontmatter = (
+        "---\n"
+        "title: Policy as Code Compliance Report\n"
+        "category: report\n"
+        "component: compliance\n"
+        "status: active\n"
+        "version: 1.0.0\n"
+        f"last_updated: {datetime.now().strftime('%Y-%m-%d')}\n"
+        "tags: [report, compliance]\n"
+        "priority: medium\n"
+        "---\n\n"
+    )
+
     with open(report_path, 'w') as f:
-        f.write(report)
+        f.write(frontmatter + report)
 
     print(f"\n{Colors.BLUE}Report saved to: {report_path}{Colors.RESET}")
 

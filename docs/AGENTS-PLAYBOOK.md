@@ -1,11 +1,14 @@
 ---
-title: Agents Playbook (Integration)
+title: Agents Playbook
 category: reference
-component: agents
-status: active
+component: agents_playbook
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Agents Playbook: How to Integrate Correctly
 
@@ -45,3 +48,12 @@ Validation Rules
 
 CI Gates (recommended)
 - Validate JSON Schemas (ajv), OpenAPI (Redocly), registry policy (Conftest), and breaking changes (oasdiff) on PR.
+
+## Docs Quality & Canonical Locations
+
+- Canonical index: `docs/INDEX.md` (navigation, writing/duplication policy)
+- Reports: `docs/reports/` (status, completion, audits)
+- Archives: `docs/archives/` (long-form/historical; excluded from length errors)
+- Quick commands:
+  - `node scripts/docs-lint.mjs` — lint docs for structure/duplicates/length
+  - `python3 03-automation/scripts/add-frontmatter.py` — normalize frontmatter

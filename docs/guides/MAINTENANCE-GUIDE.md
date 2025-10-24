@@ -1,3 +1,14 @@
+---
+title: Maintenance Guide
+category: reference
+component: maintenance_guide
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # 🔧 System Maintenance Guide
 **Version**: 1.0.0 | **Updated**: 2025-09-26 | **Status**: ACTIVE
 
@@ -156,7 +167,7 @@ chezmoi commit -m "Add <tool>"
 python 04-policies/validate-policy.py
 
 # Review failures in report
-cat compliance-report.md
+cat docs/reports/compliance-report.md
 
 # Fix based on issue type:
 # - Missing directory: mkdir -p <path>
