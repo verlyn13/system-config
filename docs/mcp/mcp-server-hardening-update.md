@@ -1,3 +1,14 @@
+---
+title: Mcp Server Hardening Update
+category: reference
+component: mcp_server_hardening_update
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # MCP Server Hardening Update
 
 **Date**: 2025-09-28

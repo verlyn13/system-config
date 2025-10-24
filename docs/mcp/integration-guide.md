@@ -1,13 +1,14 @@
 ---
-title: MCP-Bridge Integration Guide
-category: integration
-component: mcp-server
-status: active
-version: 2.0.0
-last_updated: 2025-09-28
-tags: [mcp, bridge, dashboard, api]
-priority: high
+title: Integration Guide
+category: reference
+component: integration_guide
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # MCP-Bridge Integration Guide
 

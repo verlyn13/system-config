@@ -1,3 +1,14 @@
+---
+title: Workspace Configuration Plan
+category: reference
+component: workspace_configuration_plan
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Workspace Configuration Management Plan
 **Version**: 2.0.0
 **Created**: 2025-09-28

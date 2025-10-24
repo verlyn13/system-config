@@ -1,13 +1,14 @@
 ---
-title: Gopass Touch ID Setup Clarification
-category: guide
-component: security
-status: active
-version: 1.1.0
-last_updated: 2025-09-28
-tags: [security, gopass, age, touch-id, migration]
-priority: critical
+title: Gopass Touchid Clarification
+category: reference
+component: gopass_touchid_clarification
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Gopass and Touch ID: Current Status and Clarification
 

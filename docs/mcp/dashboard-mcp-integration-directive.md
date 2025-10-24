@@ -1,3 +1,14 @@
+---
+title: Dashboard Mcp Integration Directive
+category: reference
+component: dashboard_mcp_integration_directive
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Dashboard-MCP Integration Directive
 
 ## Overview

@@ -1,3 +1,14 @@
+---
+title: Integration Guide Temp
+category: reference
+component: integration_guide_temp
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Dashboard-MCP Integration Directive
 
 ## Overview

@@ -1,11 +1,14 @@
 ---
-title: MCP HTTP Examples
-category: guide
-component: mcp
-status: active
-version: 1.1.0
-last_updated: 2025-09-28
+title: Mcp Http Examples
+category: reference
+component: mcp_http_examples
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # MCP HTTP Examples
 

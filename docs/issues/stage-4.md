@@ -1,11 +1,14 @@
 ---
-title: Stage 4 — UX & Prefetch
-category: tracking
-component: dashboard
-status: planned
-version: 1.1.0
-last_updated: 2025-09-30
+title: Stage 4
+category: reference
+component: stage_4
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Stage 4 — UX & Prefetch
 

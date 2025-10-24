@@ -1,13 +1,14 @@
 ---
 title: Dashboard Quick Reference
 category: reference
-component: dashboard
-status: active
+component: dashboard_quick_reference
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
-tags: [dashboard, api, quick-reference]
-priority: high
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Dashboard Quick Reference Card
 

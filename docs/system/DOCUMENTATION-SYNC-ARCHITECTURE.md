@@ -1,13 +1,14 @@
 ---
 title: Documentation Sync Architecture
-category: automation
-component: sync-engine
-status: active
-version: 2.0.0
-last_updated: 2025-09-26
+category: reference
+component: documentation_sync_architecture
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
 tags: []
-priority: high
+priority: medium
 ---
+
 
 # Documentation Synchronization Architecture
 

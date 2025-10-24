@@ -1,11 +1,14 @@
 ---
-title: DS CLI Integration
+title: Ds Cli
 category: reference
-component: ds-cli
-status: active
+component: ds_cli
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # DS CLI (ds-go) Integration
 

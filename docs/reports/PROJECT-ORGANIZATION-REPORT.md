@@ -1,3 +1,14 @@
+---
+title: Project Organization Report
+category: reference
+component: project_organization_report
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # 📊 Project Organization Report
 **Generated**: 2025-09-26
 **Total Repositories**: 45

@@ -1,11 +1,14 @@
 ---
-title: Stage 1 Completion Checklist
-category: checklist
-component: bridge
-status: complete
-version: 1.1.0
-last_updated: 2025-09-30
+title: Stage 1 Checklist
+category: reference
+component: stage_1_checklist
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Stage 1 Completion Checklist - Agent A
 

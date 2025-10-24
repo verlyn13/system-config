@@ -1,13 +1,14 @@
 ---
-title: Gopass Final Status Report
-category: report
-component: security
-status: active
+title: Gopass Final Status
+category: reference
+component: gopass_final_status
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
-tags: [security, gopass, age, touch-id, status]
-priority: critical
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Gopass with Touch ID: Final Status Report
 

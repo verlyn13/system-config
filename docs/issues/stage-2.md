@@ -1,11 +1,14 @@
 ---
-title: Stage 2 — Typed Clients & Adapters
-category: tracking
-component: bridge
-status: active
-version: 1.1.0
-last_updated: 2025-09-30
+title: Stage 2
+category: reference
+component: stage_2
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Stage 2 — Typed Clients & Adapters
 

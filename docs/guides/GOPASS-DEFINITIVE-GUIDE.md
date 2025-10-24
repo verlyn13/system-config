@@ -1,13 +1,14 @@
 ---
-title: Gopass - The Definitive Guide
-category: guide
-component: security
-status: active
-version: 2.0.0
-last_updated: 2025-09-28
-tags: [security, gopass, age, secrets, passwords]
-priority: critical
+title: Gopass Definitive Guide
+category: reference
+component: gopass_definitive_guide
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Gopass Secret Management - The Definitive Guide
 

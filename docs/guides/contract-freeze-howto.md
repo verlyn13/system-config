@@ -1,3 +1,14 @@
+---
+title: Contract Freeze Howto
+category: reference
+component: contract_freeze_howto
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # How to Freeze Contracts - Stage 1 Guide
 
 **Purpose**: Step-by-step instructions for freezing contracts and schemas in Stage 1

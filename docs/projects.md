@@ -1,11 +1,14 @@
 ---
-title: Project Manifests
+title: Projects
 category: reference
 component: projects
-status: active
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Project Manifests (devops.v1)
 

@@ -1,3 +1,14 @@
+---
+title: Mcp Project Discovery Analysis
+category: reference
+component: mcp_project_discovery_analysis
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # MCP Project Discovery Analysis
 
 ## Investigation Summary

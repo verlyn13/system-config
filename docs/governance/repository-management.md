@@ -1,13 +1,14 @@
 ---
-title: Repository Management Framework
-category: governance
-component: repository
-status: active
+title: Repository Management
+category: reference
+component: repository_management
+status: draft
 version: 1.0.0
-last_updated: 2025-09-30
-tags: [governance, automation, settings]
-priority: high
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Repository Management Framework
 

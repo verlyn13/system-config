@@ -1,11 +1,14 @@
 ---
-title: SSE Validation (Stage 3)
-category: guides
-component: bridge
-status: active
-version: 1.1.0
-last_updated: 2025-09-30
+title: Sse Validation
+category: reference
+component: sse_validation
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # SSE Validation Guide (Stage 3)
 

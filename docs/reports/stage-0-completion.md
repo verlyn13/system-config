@@ -1,3 +1,14 @@
+---
+title: Stage 0 Completion
+category: reference
+component: stage_0_completion
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Stage 0 Completion Report - Agent A
 **Date**: 2025-09-29
 **Role**: Bridge/Contracts Director Agent

@@ -1,13 +1,14 @@
 ---
 title: Secrets Management Guide
 category: reference
-component: security
-status: active
+component: secrets_management_guide
+status: draft
 version: 1.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 tags: []
-priority: critical
+priority: medium
 ---
+
 
 # 🔐 Secrets Management System Guide
 

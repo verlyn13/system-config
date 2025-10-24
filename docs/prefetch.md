@@ -1,10 +1,14 @@
 ---
-title: Dashboard Prefetch & Caching
-category: guides
-status: active
-version: 1.1.0
-last_updated: 2025-09-30
+title: Prefetch
+category: reference
+component: prefetch
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Dashboard Prefetch & Caching
 

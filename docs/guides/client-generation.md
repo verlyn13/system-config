@@ -1,11 +1,14 @@
 ---
-title: Typed Client Generation
-category: guides
-component: bridge
-status: active
-version: 1.1.0
-last_updated: 2025-09-30
+title: Client Generation
+category: reference
+component: client_generation
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Typed Client Generation (Stage 2)
 

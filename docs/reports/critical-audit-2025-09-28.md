@@ -1,13 +1,14 @@
 ---
-title: Critical System Audit Report
-category: report
-component: system
-status: active
+title: Critical Audit 2025 09 28
+category: reference
+component: critical_audit_2025_09_28
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
-tags: [audit, critical, integration, status]
-priority: critical
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Critical System Audit Report
 

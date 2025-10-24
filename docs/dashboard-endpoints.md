@@ -1,3 +1,14 @@
+---
+title: Dashboard Endpoints
+category: reference
+component: dashboard_endpoints
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Dashboard Integration Endpoints
 **Version**: 1.0.0
 **Updated**: 2025-09-28

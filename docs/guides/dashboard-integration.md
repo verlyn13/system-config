@@ -1,13 +1,14 @@
 ---
-title: Dashboard Integration Guide
-category: guide
-component: dashboard
-status: active
+title: Dashboard Integration
+category: reference
+component: dashboard_integration
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
-tags: [dashboard, ui, integration, mcp, bridge]
-priority: high
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Dashboard Integration Guide
 

@@ -1,11 +1,14 @@
 ---
-title: Repository Roles
+title: Repositories
 category: reference
-component: repos
-status: active
+component: repositories
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Repository Roles and Usage
 

@@ -1,11 +1,14 @@
 ---
-title: Contracts Index
+title: Contracts
 category: reference
 component: contracts
-status: active
-version: 1.1.0
-last_updated: 2025-09-28
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Contracts Index
 

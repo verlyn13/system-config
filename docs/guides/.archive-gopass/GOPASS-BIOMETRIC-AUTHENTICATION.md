@@ -1,13 +1,14 @@
 ---
-title: Gopass Biometric Authentication Guide
-category: guide
-component: security
-status: active
+title: Gopass Biometric Authentication
+category: reference
+component: gopass_biometric_authentication
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
-tags: [security, gopass, age, touch-id, biometric, fish, chezmoi]
-priority: high
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Gopass Biometric Authentication (Touch ID) Setup
 

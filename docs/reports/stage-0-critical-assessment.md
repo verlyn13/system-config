@@ -1,3 +1,14 @@
+---
+title: Stage 0 Critical Assessment
+category: reference
+component: stage_0_critical_assessment
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Stage 0 Critical Assessment Report - Agent A
 **Date**: 2025-09-29
 **Assessment Type**: Thorough and Critical

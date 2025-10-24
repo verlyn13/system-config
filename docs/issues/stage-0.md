@@ -1,3 +1,14 @@
+---
+title: Stage 0
+category: reference
+component: stage_0
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Stage 0 — Prep & Baseline
 
 Epic: <link to MVP Orchestration Epic>

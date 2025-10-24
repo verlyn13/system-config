@@ -1,3 +1,14 @@
+---
+title: Mvp Epic
+category: reference
+component: mvp_epic
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # MVP Orchestration Epic
 
 Track the end-to-end MVP across repos using staged checklists. Agents:

@@ -1,3 +1,14 @@
+---
+title: Agent A Stage 0 Status
+category: reference
+component: agent_a_stage_0_status
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Agent A - Stage 0 Status Report
 **Date**: 2025-09-29
 **Role**: Bridge/Contracts Director Agent

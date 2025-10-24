@@ -1,13 +1,14 @@
 ---
-title: Gopass Setup Decision Tree
-category: guide
-component: security
-status: active
+title: Gopass Decision Tree
+category: reference
+component: gopass_decision_tree
+status: draft
 version: 1.0.0
-last_updated: 2025-09-28
-tags: [security, gopass, age, decision-tree]
-priority: critical
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Gopass Configuration: Simple Decision Tree
 

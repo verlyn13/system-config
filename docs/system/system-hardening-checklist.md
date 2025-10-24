@@ -1,3 +1,14 @@
+---
+title: System Hardening Checklist
+category: reference
+component: system_hardening_checklist
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # System Hardening Checklist
 
 **Focus**: Local-Only System Reliability & Self-Management

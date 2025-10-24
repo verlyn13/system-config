@@ -1,12 +1,14 @@
 ---
-title: Stage 1 — Contract Freeze & CI Gates
-category: tracking
-status: active
-version: 1.1.0
-last_updated: 2025-09-29
-tags: [stage, tracking, mvp]
-priority: critical
+title: Stage 1
+category: reference
+component: stage_1
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 ---
 title: Stage 1 — Contract Freeze & CI Gates

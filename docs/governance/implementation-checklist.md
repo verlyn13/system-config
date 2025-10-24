@@ -1,13 +1,14 @@
 ---
-title: Repository Governance Implementation Checklist
-category: governance
-component: implementation
-status: active
+title: Implementation Checklist
+category: reference
+component: implementation_checklist
+status: draft
 version: 1.0.0
-last_updated: 2025-09-30
-tags: [checklist, implementation, governance]
-priority: high
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Repository Governance Implementation Checklist
 

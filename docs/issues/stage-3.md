@@ -1,11 +1,14 @@
 ---
-title: Stage 3 — SSE & Observers
-category: tracking
-component: bridge
-status: active
-version: 1.1.0
-last_updated: 2025-09-30
+title: Stage 3
+category: reference
+component: stage_3
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Stage 3 — SSE & Observers
 

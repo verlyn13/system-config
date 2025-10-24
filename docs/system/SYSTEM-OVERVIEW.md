@@ -1,3 +1,14 @@
+---
+title: System Overview
+category: reference
+component: system_overview
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # 🏗️ System Configuration & Management Hub
 **Apple M3 Max Development Environment** | **96.7% Compliant** | **Production Ready**
 

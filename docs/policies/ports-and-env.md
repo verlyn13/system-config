@@ -1,11 +1,14 @@
 ---
-title: Ports and Env Conventions
-category: policy
-component: bridge
-status: active
-version: 1.1.0
-last_updated: 2025-09-30
+title: Ports And Env
+category: reference
+component: ports_and_env
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # Ports and Environment Conventions
 

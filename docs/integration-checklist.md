@@ -1,3 +1,14 @@
+---
+title: Integration Checklist
+category: reference
+component: integration_checklist
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Integration Checklist (15‑Minute Demo)
 
 Use this checklist to validate the MVP end-to-end locally.
