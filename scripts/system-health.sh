@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # System health dashboard - real-time monitoring of all components
 set -euo pipefail
 
