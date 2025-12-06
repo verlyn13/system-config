@@ -4,7 +4,7 @@ category: setup
 component: prerequisites
 status: active
 version: 3.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 dependencies:
 tags: [installation, setup]
 applies_to:
@@ -13,6 +13,7 @@ applies_to:
   - arch: ["arm64", "x86_64"]
 priority: critical
 ---
+
 
 # M3 Max Development Environment Setup
 ## Architected for Reproducibility, Security, and Developer Experience
@@ -640,7 +641,7 @@ java = \"17\"" > .mise.toml
     echo "use mise
 PATH_add bin" > .envrc
     
-    direnv allow
+    direnv allow .
     echo "✅ Created $type project: $name"
 end
 ```

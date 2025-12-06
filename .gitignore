@@ -1,5 +1,42 @@
+# Dependencies
+node_modules/
+package-lock.json
 
-# Claude project configuration
+# Build artifacts
+dist/
+build/
+*.tgz
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+.envrc.local
+
+# Editor and IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp and backup files
+*.bak
+*.tmp
+*.log
+tmp/
+
+# Claude Code
 .claude/logs/
 .claude/cache/
 .claude/*.log
+
+# Gemini
+.gemini/tmp/
+
+# Generated files (keep docs, ignore build outputs)
+examples/dashboard/generated/

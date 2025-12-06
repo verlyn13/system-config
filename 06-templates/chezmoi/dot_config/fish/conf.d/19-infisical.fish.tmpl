@@ -1,0 +1,255 @@
+#!/usr/bin/env fish
+# Infisical CLI Configuration
+# Self-hosted Infisical instance at infisical.jefahnierocks.com
+# Installation: brew install infisical
+# Docs: https://infisical.com/docs/cli/overview
+
+# Self-hosted instance URL
+if not set -q INFISICAL_API_URL
+    set -gx INFISICAL_API_URL "https://infisical.jefahnierocks.com/api"
+end
+
+# Disable telemetry (optional, for privacy)
+if not set -q INFISICAL_TELEMETRY_ENABLED
+    set -gx INFISICAL_TELEMETRY_ENABLED false
+end
+
+# Trinity context (defaults to personal, can be overridden)
+if not set -q TRINITY_CONTEXT
+    set -gx TRINITY_CONTEXT "personal"
+end
+
+# Helper function to check if Infisical CLI is installed
+function __infisical_check --description 'Check if Infisical CLI is available'
+    if not type -q infisical
+        echo "infisical: CLI not found. Run: brew install infisical"
+        return 1
+    end
+    return 0
+end
+
+# Helper function to switch Trinity contexts
+function trinity-context --description 'Switch Trinity context (personal, litecky, happy)'
+    set -l context $argv[1]
+
+    if test -z "$context"
+        echo "Current context: $TRINITY_CONTEXT"
+        echo ""
+        echo "Available contexts:"
+        echo "  personal  - Family budget & personal tech"
+        echo "  litecky   - Ahnie's editing business"
+        echo "  happy     - Verlyn's software business"
+        echo ""
+        echo "Usage: trinity-context <context>"
+        return 0
+    end
+
+    switch $context
+        case personal litecky happy
+            set -gx TRINITY_CONTEXT $context
+            echo "✓ Switched to context: $context"
+        case '*'
+            echo "Error: Invalid context '$context'"
+            echo "Valid contexts: personal, litecky, happy"
+            return 1
+    end
+end
+
+# Helper function to login interactively (web browser)
+function infisical-login --description 'Login to Infisical via browser'
+    __infisical_check; or return 1
+    infisical login --domain $INFISICAL_API_URL
+end
+
+# Helper function to login with Universal Auth (for automation)
+function infisical-login-machine --description 'Login with Universal Auth credentials'
+    __infisical_check; or return 1
+
+    set -l client_id $argv[1]
+    set -l client_secret $argv[2]
+
+    if test -z "$client_id" -o -z "$client_secret"
+        echo "Usage: infisical-login-machine <client-id> <client-secret>"
+        echo ""
+        echo "Or retrieve from gopass:"
+        echo "  infisical-login-machine \\"
+        echo "    (gopass show trinity/$TRINITY_CONTEXT/client_id) \\"
+        echo "    (gopass show trinity/$TRINITY_CONTEXT/client_secret)"
+        return 1
+    end
+
+    infisical login \
+        --method universal-auth \
+        --client-id "$client_id" \
+        --client-secret "$client_secret" \
+        --domain $INFISICAL_API_URL
+end
+
+# Helper function to get secret from current context
+function infisical-get --description 'Get secret from Infisical'
+    __infisical_check; or return 1
+
+    set -l secret_path $argv[1]
+    set -l env $argv[2]
+
+    if test -z "$secret_path"
+        echo "Usage: infisical-get <secret-path> [environment]"
+        echo "Example: infisical-get API_KEY dev"
+        return 1
+    end
+
+    if test -z "$env"
+        set env "dev"
+    end
+
+    infisical secrets get $secret_path --env $env --plain
+end
+
+# Helper function to set secret in current context
+function infisical-set --description 'Set secret in Infisical'
+    __infisical_check; or return 1
+
+    set -l secret_name $argv[1]
+    set -l secret_value $argv[2]
+    set -l env $argv[3]
+
+    if test -z "$secret_name"
+        echo "Usage: infisical-set <secret-name> <value> [environment]"
+        echo "Example: infisical-set API_KEY sk-abc123 dev"
+        return 1
+    end
+
+    if test -z "$env"
+        set env "dev"
+    end
+
+    if test -z "$secret_value"
+        # Interactive mode
+        infisical secrets set $secret_name --env $env
+    else
+        # Non-interactive mode
+        echo $secret_value | infisical secrets set $secret_name --env $env
+    end
+end
+
+# Helper function to list secrets
+function infisical-list --description 'List secrets in current context'
+    __infisical_check; or return 1
+
+    set -l env $argv[1]
+
+    if test -z "$env"
+        set env "dev"
+    end
+
+    infisical secrets list --env $env
+end
+
+# Helper function to export secrets as .env format
+function infisical-export --description 'Export secrets as .env file'
+    __infisical_check; or return 1
+
+    set -l env $argv[1]
+    set -l output_file $argv[2]
+
+    if test -z "$env"
+        set env "dev"
+    end
+
+    if test -z "$output_file"
+        # Print to stdout
+        infisical export --env $env --format dotenv
+    else
+        # Write to file
+        infisical export --env $env --format dotenv > $output_file
+        echo "✓ Exported secrets to: $output_file"
+    end
+end
+
+# Helper function to run command with injected secrets
+function infisical-run --description 'Run command with Infisical secrets injected'
+    __infisical_check; or return 1
+
+    set -l env "dev"
+
+    # Check if first arg is --env or -e
+    if test "$argv[1]" = "--env" -o "$argv[1]" = "-e"
+        set env $argv[2]
+        set -e argv[1..2]
+    end
+
+    if test (count $argv) -eq 0
+        echo "Usage: infisical-run [--env <environment>] <command> [args...]"
+        echo "Example: infisical-run npm start"
+        echo "Example: infisical-run --env prod node server.js"
+        return 1
+    end
+
+    infisical run --env $env -- $argv
+end
+
+# Status check function
+function infisical_status --description 'Show Infisical installation and configuration status'
+    echo "Infisical CLI Status"
+    echo "===================="
+    echo ""
+
+    # Check installation
+    if type -q infisical
+        set -l version (infisical --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        echo "✓ Installed: v$version"
+        echo "  Location: "(which infisical)
+    else
+        echo "✗ Not installed"
+        echo "  Install: brew install infisical"
+        return 1
+    end
+
+    echo ""
+    echo "Configuration:"
+    echo "  API URL: $INFISICAL_API_URL"
+    echo "  Context: $TRINITY_CONTEXT"
+    echo "  Telemetry: "(test "$INFISICAL_TELEMETRY_ENABLED" = "true" && echo "enabled" || echo "disabled")
+
+    echo ""
+    echo "Authentication:"
+    if test -f ~/.config/infisical/.infisicalrc
+        echo "✓ Logged in"
+    else
+        echo "✗ Not logged in"
+        echo "  Run: infisical-login"
+    end
+
+    echo ""
+    echo "Server Status:"
+    set -l status_code (curl -s -o /dev/null -w "%{http_code}" $INFISICAL_API_URL/status 2>/dev/null)
+    if test "$status_code" = "200"
+        echo "✓ Server reachable at $INFISICAL_API_URL"
+    else
+        echo "✗ Server not reachable (HTTP $status_code)"
+    end
+end
+
+# Check for updates (run manually: infisical_check_updates)
+function infisical_check_updates --description 'Check for Infisical CLI updates'
+    __infisical_check; or return 1
+
+    set -l current (infisical --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    set -l latest (brew info infisical --json 2>/dev/null | jq -r '.[0].versions.stable')
+
+    if test -n "$current" -a -n "$latest"
+        echo "Current: v$current"
+        echo "Latest:  v$latest"
+        if test "$current" != "$latest"
+            echo ""
+            echo "Update available! Run: brew upgrade infisical"
+        else
+            echo "✓ Up to date"
+        end
+    else
+        echo "Could not determine version info"
+    end
+end
+
+# DEFERRED: Check login status only when infisical commands are used (not on shell start)
+# This prevents network calls during startup. Use 'infisical-login' to authenticate.

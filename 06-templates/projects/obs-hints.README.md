@@ -1,3 +1,14 @@
+---
+title: Obs Hints.Readme
+category: template
+component: obs_hints.readme
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # .obs Hints (Optional)
 
 Create a `.obs/` directory in your project to provide hints to observers.

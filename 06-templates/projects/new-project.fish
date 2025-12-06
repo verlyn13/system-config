@@ -484,7 +484,7 @@ echo ""
 echo "Next steps:"
 echo "  cd $project_dir"
 echo "  mise install        # Install language versions"
-echo "  direnv allow       # Allow environment loading"
+echo "  direnv allow .      # Allow environment loading (dot required!)"
 
 switch $project_type
     case node react next cli lib api

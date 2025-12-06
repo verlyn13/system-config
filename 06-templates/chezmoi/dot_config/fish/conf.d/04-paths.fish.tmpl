@@ -1,0 +1,10 @@
+# Add user-level bin directories to PATH early
+
+if status is-interactive
+    # Append to avoid shadowing Homebrew/core tools and mise shims
+    fish_add_path -a ~/.npm-global/bin
+    fish_add_path -a ~/bin
+    fish_add_path -a ~/.local/bin
+    fish_add_path -a ~/.bun/bin
+    fish_add_path -a ~/.local/share/go/workspace/bin
+end

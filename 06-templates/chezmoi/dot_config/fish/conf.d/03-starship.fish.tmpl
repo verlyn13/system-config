@@ -1,0 +1,12 @@
+# Initialize starship prompt for Fish (interactive shells only)
+
+if status is-interactive
+    if type -q starship
+        # Avoid duplicate init if sourced twice
+        if not set -q __STARSHIP_INIT_DONE
+            set -gx __STARSHIP_INIT_DONE 1
+            starship init fish | source
+        end
+    end
+end
+

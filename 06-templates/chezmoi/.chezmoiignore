@@ -1,0 +1,52 @@
+# Chezmoi Ignore File
+# Files/patterns listed here won't be managed by chezmoi
+
+# Sensitive Configuration Files
+.ssh/**
+.gnupg/**
+.gopass/**
+
+# Claude Code Sensitive Files
+.claude/claude.json  # Contains session data, customApiKeyResponses
+
+# Editor/IDE Specific
+.vscode/settings.json
+.idea/**
+
+# Local Development
+.env
+.env.*
+*.local
+
+# Secret Management
+secrets/**
+*.pem
+*.key
+*.cert
+*.p12
+
+# API Keys and Tokens
+**/api-keys/**
+**/tokens/**
+
+# Build Artifacts
+node_modules/**
+dist/**
+build/**
+.cache/**
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/**
+
+# Temporary Files
+tmp/**
+temp/**
+*.tmp
+*.swp
+*.swo
+*~

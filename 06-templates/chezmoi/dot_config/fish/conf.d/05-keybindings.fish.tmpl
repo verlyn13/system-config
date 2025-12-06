@@ -1,0 +1,29 @@
+#!/usr/bin/env fish
+# Fish shell key bindings configuration
+# Ensures proper functionality for paste, history, and navigation
+
+# Use default (Emacs-style) key bindings
+# This provides standard terminal behavior
+if status is-interactive
+    # Set default key bindings mode (only if not already set)
+    if not set -q fish_key_bindings; or test "$fish_key_bindings" = "fish_vi_key_bindings"
+        fish_default_key_bindings
+    end
+
+    # Override up/down arrow keys for smart history search
+    # When command line is empty: navigate through history
+    # When command line has text: search history with that prefix
+    bind \e\[A history-search-backward  # Up arrow
+    bind \e\[B history-search-forward   # Down arrow
+
+    # Alternative bindings for up/down (some terminals)
+    bind \eOA history-search-backward
+    bind \eOB history-search-forward
+
+    # Ctrl+P/N for history navigation (Emacs-style)
+    bind \cp history-search-backward
+    bind \cn history-search-forward
+
+    # Ctrl+R for reverse interactive history search
+    bind \cr history-pager
+end

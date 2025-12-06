@@ -1,0 +1,273 @@
+{{- /* Tmux integration and helper functions (chezmoi-managed) */ -}}
+# Tmux Integration for Fish Shell
+# Provides helper functions and aliases for working with tmux
+# Loaded after other core configurations (00-05)
+
+# Only load in interactive shells
+if status is-interactive
+
+    # ========================================================================
+    # TMUX STATUS CHECK FUNCTION
+    # ========================================================================
+
+    function tmux_status
+        if set -q TMUX
+            echo (set_color green)"✓"(set_color normal) "Inside tmux session:"
+            tmux display-message -p '  Session: #S'
+            tmux display-message -p '  Window: #I:#W'
+            tmux display-message -p '  Pane: #P'
+        else
+            echo (set_color yellow)"✗"(set_color normal) "Not in a tmux session"
+
+            if type -q tmux
+                echo ""
+                echo "Available sessions:"
+                if tmux list-sessions 2>/dev/null
+                    echo ""
+                    echo "Run 'tmux attach' to attach to a session"
+                else
+                    echo "  (no active sessions)"
+                    echo ""
+                    echo "Run 'tmux' or 'tmux new -s <name>' to start a new session"
+                end
+            end
+        end
+    end
+
+    # ========================================================================
+    # TMUX HELPER FUNCTIONS
+    # ========================================================================
+
+    # Create or attach to a named session
+    function tmux_session
+        if test (count $argv) -eq 0
+            echo "Usage: tmux_session <session-name>"
+            return 1
+        end
+
+        set -l session_name $argv[1]
+
+        if tmux has-session -t $session_name 2>/dev/null
+            tmux attach -t $session_name
+        else
+            tmux new-session -s $session_name
+        end
+    end
+
+    # Create a development session with standard layout
+    function tmux_dev
+        if test (count $argv) -eq 0
+            set -l session_name (basename (pwd))
+        else
+            set -l session_name $argv[1]
+        end
+
+        if tmux has-session -t $session_name 2>/dev/null
+            echo "Session '$session_name' already exists. Attaching..."
+            tmux attach -t $session_name
+            return 0
+        end
+
+        echo "Creating development session: $session_name"
+
+        # Create new session
+        tmux new-session -d -s $session_name -n editor
+        tmux send-keys -t $session_name:editor "cd (pwd)" C-m
+
+        # Create additional windows
+        tmux new-window -t $session_name -n terminal
+        tmux send-keys -t $session_name:terminal "cd (pwd)" C-m
+
+        tmux new-window -t $session_name -n logs
+        tmux send-keys -t $session_name:logs "cd (pwd)" C-m
+
+        # Select first window and attach
+        tmux select-window -t $session_name:editor
+        tmux attach -t $session_name
+    end
+
+    # Kill all tmux sessions except current
+    function tmux_clean
+        if not set -q TMUX
+            echo "Not in a tmux session"
+            return 1
+        end
+
+        set -l current_session (tmux display-message -p '#S')
+
+        echo "Killing all sessions except: $current_session"
+
+        for session in (tmux list-sessions -F '#{session_name}')
+            if test "$session" != "$current_session"
+                echo "  Killing: $session"
+                tmux kill-session -t $session
+            end
+        end
+
+        echo "Done!"
+    end
+
+    # Reload tmux configuration
+    function tmux_reload
+        if test -f ~/.tmux.conf
+            tmux source-file ~/.tmux.conf
+            echo "Tmux configuration reloaded!"
+        else
+            echo "Error: ~/.tmux.conf not found"
+            return 1
+        end
+    end
+
+    # ========================================================================
+    # TMUX ALIASES
+    # ========================================================================
+
+    # Session management
+    alias tms 'tmux_session'
+    alias tmdev 'tmux_dev'
+    alias tmstat 'tmux_status'
+    alias tmreload 'tmux_reload'
+    alias tmclean 'tmux_clean'
+
+    # Quick commands
+    alias tma 'tmux attach'
+    alias tml 'tmux list-sessions'
+    alias tmk 'tmux kill-session -t'
+    alias tmka 'tmux kill-server'  # Kill all sessions
+
+    # Window management
+    alias tmn 'tmux new-window'
+    alias tmw 'tmux list-windows'
+
+    # Pane management
+    alias tmp 'tmux list-panes'
+
+    # ========================================================================
+    # TMUX AUTO-ATTACH HELPER
+    # ========================================================================
+
+    # Function to check if we should auto-attach to tmux
+    # This is used by the tmux.fish plugin, configured in config.fish
+    function __tmux_should_autostart
+        # Don't auto-start if:
+        # - Already in tmux
+        # - In SSH session (might interfere with SSH agent forwarding)
+        # - TMUX_AUTOSTART explicitly disabled
+        # - In VSCode integrated terminal
+        # - In any other IDE terminal
+
+        if set -q TMUX
+            return 1
+        end
+
+        if set -q SSH_TTY; and not set -q TMUX_AUTOSTART_SSH
+            return 1
+        end
+
+        if set -q TMUX_AUTOSTART_DISABLE
+            return 1
+        end
+
+        if set -q VSCODE_INJECTION
+            return 1
+        end
+
+        if set -q TERM_PROGRAM
+            switch $TERM_PROGRAM
+                case "vscode"
+                    return 1
+                case "WarpTerminal"
+                    return 1  # Warp has its own session management
+            end
+        end
+
+        return 0
+    end
+
+    # ========================================================================
+    # TMUX PROJECT SESSIONS (Advanced)
+    # ========================================================================
+
+    # Create project-specific tmux layouts
+    function tmux_project
+        if test (count $argv) -eq 0
+            echo "Usage: tmux_project <project-path>"
+            echo "Creates a tmux session with project-specific layout"
+            return 1
+        end
+
+        set -l project_path $argv[1]
+
+        if not test -d $project_path
+            echo "Error: Directory not found: $project_path"
+            return 1
+        end
+
+        set -l project_name (basename $project_path)
+        set -l session_name (string replace -a '.' '_' $project_name)
+
+        if tmux has-session -t $session_name 2>/dev/null
+            echo "Session '$session_name' already exists. Attaching..."
+            tmux attach -t $session_name
+            return 0
+        end
+
+        echo "Creating project session: $session_name"
+
+        # Create session with first window (editor)
+        tmux new-session -d -s $session_name -n editor -c $project_path
+
+        # Split editor window horizontally (60/40)
+        tmux split-window -h -t $session_name:editor -c $project_path
+        tmux resize-pane -t $session_name:editor.2 -x 40%
+
+        # Create server/dev window
+        tmux new-window -t $session_name -n server -c $project_path
+
+        # Create git window
+        tmux new-window -t $session_name -n git -c $project_path
+        tmux send-keys -t $session_name:git "git status" C-m
+
+        # Select editor window and attach
+        tmux select-window -t $session_name:editor
+        tmux select-pane -t $session_name:editor.1
+        tmux attach -t $session_name
+    end
+
+    # ========================================================================
+    # TMUX COPY MODE HELPERS
+    # ========================================================================
+
+    # Quick function to copy tmux buffer to clipboard
+    {{- if eq .chezmoi.os "darwin" }}
+    function tmux_copy
+        tmux show-buffer | pbcopy
+        echo "Tmux buffer copied to clipboard!"
+    end
+    {{- else }}
+    function tmux_copy
+        if type -q xclip
+            tmux show-buffer | xclip -selection clipboard
+            echo "Tmux buffer copied to clipboard!"
+        else if type -q xsel
+            tmux show-buffer | xsel --clipboard
+            echo "Tmux buffer copied to clipboard!"
+        else
+            echo "Error: xclip or xsel not installed"
+            return 1
+        end
+    end
+    {{- end }}
+
+    # ========================================================================
+    # TMUX INTEGRATION STATUS MESSAGE
+    # ========================================================================
+
+    # Show tmux status on shell startup (only if tmux.fish plugin is loaded)
+    if functions -q __tmux_init
+        # Plugin is loaded, configurations are active
+        # Uncomment to show status on startup:
+        # tmux_status
+    end
+
+end

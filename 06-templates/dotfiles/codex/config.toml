@@ -1,40 +1,49 @@
-model           = "gpt-5"
-model_provider  = "openai"
-approval_policy = "on-request"
-sandbox_mode    = "workspace-write"
-retain_data     = false
-log_level       = "info"
+model = "gpt-5.1"
+model_provider = "openai"
+profile = "dev"
 
-api_key_cmd = ["gopass", "show", "-o", "openai/api_key"]
-preferred_auth_method = "apikey"
-
-[budget]
-session = 3.00
-daily  = 40.00
-
-[profiles.speed]
-model = "gpt-5-mini"
-
-[profiles.deep]
-model                  = "gpt-5"
 model_reasoning_effort = "high"
+model_verbosity = "low"
+model_max_output_tokens = 4096
 
-[profiles.agent]
-model           = "gpt-5-mini"
-approval_policy = "never"
-sandbox_mode    = "workspace-write"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
 
-[profiles.maint]
-model           = "gpt-5"
+[shell_environment_policy]
+inherit = "none"
+include_only = ["PATH", "HOME", "OPENAI_API_KEY", "UV_PKG_INDEX"]
+exclude = ["AWS_*", "GCP_*", "TOKEN", "SECRET", "KEY"]
+
+[features]
+apply_patch_freeform = true
+streamable_shell = true
+web_search_request = true
+
+[model_providers.openai]
+name = "OpenAI"
+base_url = "https://api.openai.com/v1"
+env_key = "OPENAI_API_KEY"
+request_max_retries = 4
+stream_idle_timeout_ms = 300000
+
+[otel]
+environment = "dev"
+exporter = "none"
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+
+[profiles.dev]
+model_reasoning_effort = "high"
 approval_policy = "on-request"
 
-[mcp_servers.context]
-command = "context7"
-args    = ["--stdio"]
-enabled = true
-timeout = "30s"
+[profiles.fast]
+model = "gpt-4.1"
+model_reasoning_effort = "low"
+approval_policy = "untrusted"
 
-[mcp_servers.graphiti_memory]
-command = "graphiti-memory"
-args    = ["--stdio"]
-enabled = true
+[profiles.review]
+model = "gpt-5-pro"
+model_reasoning_effort = "high"
+approval_policy = "never"

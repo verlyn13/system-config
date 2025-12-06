@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[chezmoi] Installing Codex CLI (prefers Homebrew openai/codex tap)"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Check if already installed
+if have codex; then
+  current_version=$(codex --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "unknown")
+  echo "[chezmoi] Codex CLI already installed (v${current_version})"
+
+  # Check for updates
+  if have npm; then
+    latest_version=$(npm view @openai/codex version 2>/dev/null || echo "unknown")
+    if [[ "$current_version" != "$latest_version" && "$latest_version" != "unknown" ]]; then
+      echo "[chezmoi] Update available: v${current_version} → v${latest_version}"
+      echo "[chezmoi] Run: npm update -g @openai/codex"
+    fi
+  fi
+  exit 0
+fi
+
+# Install Codex CLI via Homebrew (preferred)
+if have brew; then
+  echo "[chezmoi] Installing via brew (openai/openai/codex)..."
+  brew install openai/openai/codex
+else
+  echo "[chezmoi] WARNING: Homebrew not found; falling back to npm global install."
+  if ! have npm; then
+    echo "[chezmoi] ERROR: npm not found. Install Homebrew or Node.js/npm first."
+    exit 1
+  fi
+  echo "[chezmoi] Installing @openai/codex globally via npm..."
+  npm install -g @openai/codex
+fi
+
+if have codex; then
+  version=$(codex --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+  echo "[chezmoi] ✓ Codex CLI v${version} installed"
+  echo "[chezmoi] Location: $(which codex)"
+  echo ""
+  echo "[chezmoi] Next steps:"
+  echo "[chezmoi]   1. Ensure config file exists: mkdir -p ~/.codex && touch ~/.codex/config.toml"
+  echo "[chezmoi]   2. Export CODEX_CONFIG in your shell (see 12-codex.fish)"
+  echo "[chezmoi]   3. Populate ~/.codex/config.toml using the baseline in 02-configuration/tools/codex-cli.md"
+else
+  echo "[chezmoi] WARNING: Installation completed but 'codex' command not found in PATH"
+  echo "[chezmoi] Ensure /opt/homebrew/bin (or your npm-global bin path) is in your PATH"
+fi

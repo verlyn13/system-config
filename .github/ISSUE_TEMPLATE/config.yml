@@ -1,5 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Demo Runbook
-    url: https://github.com/placeholder/repo/path/docs/integration-checklist.md
-    about: Follow the end-to-end runbook to validate the MVP locally.

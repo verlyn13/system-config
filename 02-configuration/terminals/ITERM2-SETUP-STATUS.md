@@ -4,10 +4,11 @@ category: report
 component: iterm2
 status: active
 version: 1.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 tags: [report, status, terminal, macos]
 priority: medium
 ---
+
 
 # iTerm2 3.6.2 Setup Status
 

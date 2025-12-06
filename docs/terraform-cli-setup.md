@@ -16,16 +16,16 @@ This document standardizes installation, updates, and authentication for the Has
 
 ## Overview
 
-- Installation methods: Homebrew (primary), mise (optional)
-- Version: Terraform v1.13.3 (via Homebrew)
-- Location: `which terraform` → typically `/opt/homebrew/bin/terraform`
+- Installation method: Homebrew (exclusively)
+- Version: Terraform v1.14.0 (latest via Homebrew)
+- Location: `/opt/homebrew/bin/terraform` (Apple Silicon) or `/usr/local/bin/terraform` (Intel)
 - Config dir: `~/.terraform.d/`
 - Credentials: `~/.terraform.d/credentials.tfrc.json`
 - Helper scripts: `scripts/update-terraform-cli.sh`, `scripts/terraform-auth-setup.sh`
 
 ## Installation
 
-### Homebrew (recommended)
+### Homebrew (exclusive method)
 
 ```bash
 ./scripts/update-terraform-cli.sh
@@ -34,6 +34,8 @@ This document standardizes installation, updates, and authentication for the Has
 What it does:
 - Taps `hashicorp/tap`
 - Installs or upgrades `hashicorp/tap/terraform`
+- Verifies Homebrew binary is installed
+- Warns if mise-managed terraform conflicts exist
 - Prints binary path and version
 
 Verify:
@@ -43,17 +45,7 @@ which terraform
 terraform -version
 ```
 
-### mise (optional)
-
-This repo includes `terraform = "latest"` in `.mise.toml` so you can optionally manage Terraform with mise:
-
-```bash
-mise install
-```
-
-Notes:
-- Prefer one manager per tool in your shell PATH to avoid ambiguity (Homebrew is the default in this setup).
-- Ensure PATH ordering if you switch to mise-managed binaries.
+**Note:** This system uses Homebrew exclusively for Terraform to avoid PATH conflicts with mise-managed tools. Terraform has been removed from `.mise.toml`.
 
 ## Authentication
 
@@ -95,8 +87,11 @@ cat ~/.terraform.d/credentials.tfrc.json | jq '.credentials | keys[]'
 
 ## Update Management
 
-- Check/update (brew): `./scripts/update-terraform-cli.sh`
-- Optional (mise): `mise install terraform@latest`
+```bash
+./scripts/update-terraform-cli.sh
+```
+
+This script ensures the latest Homebrew version is installed and detects any conflicts with mise-managed versions.
 
 ## Troubleshooting
 
@@ -106,7 +101,13 @@ cat ~/.terraform.d/credentials.tfrc.json | jq '.credentials | keys[]'
 
 - Multiple terraform binaries:
   - Inspect: `command -v -a terraform`
-  - Reorder PATH so the desired manager comes first
+  - If mise version is found: `mise uninstall terraform`
+  - Ensure Homebrew's `/opt/homebrew/bin` comes before mise in PATH
+
+- Version mismatch (mise conflict):
+  - Uninstall mise version: `mise uninstall terraform`
+  - Verify Homebrew version: `/opt/homebrew/bin/terraform -version`
+  - Run script to detect issues: `./scripts/update-terraform-cli.sh`
 
 - Auth issues:
   - Recreate credentials: set `TF_TOKEN_app_terraform_io` and rerun `scripts/terraform-auth-setup.sh`
@@ -114,22 +115,25 @@ cat ~/.terraform.d/credentials.tfrc.json | jq '.credentials | keys[]'
 
 ## Integration with This Repo
 
-- Use Homebrew as the primary install to match other system tools
-- `.mise.toml` includes Terraform for optional mise-based workflows
+- Homebrew is the exclusive installation method for Terraform
+- Terraform removed from `.mise.toml` to avoid PATH conflicts
 - Helper scripts live in `scripts/` and are idempotent & safe to rerun
+- Scripts detect and warn about mise conflicts
 
 ## Status (Local)
 
-Sample local state on this machine:
+After running the update script, you should see:
 
 ```
 Binary: /opt/homebrew/bin/terraform
-Version: Terraform v1.13.3
+Version: Terraform v1.14.0 (or latest)
 Auth: app.terraform.io present in ~/.terraform.d/credentials.tfrc.json
 ```
+
+If mise conflict exists, the script will warn you to uninstall the mise version.
 
 ---
 
 Maintainer: System setup team
-Last Reviewed: 2025-10-18
+Last Reviewed: 2025-11-20
 

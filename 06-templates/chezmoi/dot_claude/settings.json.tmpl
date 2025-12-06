@@ -1,0 +1,202 @@
+{
+  "model": "claude-sonnet-4-5-20250929",
+  "maxTokens": 16384,
+  "permissions": {
+    "allowedTools": [
+      "Read",
+      "Edit",
+      "MultiEdit",
+      "Grep",
+      "Glob",
+      "LS",
+      "WebSearch",
+      "WebFetch",
+      "SlashCommand",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(mise *)",
+      "Bash(docker *)",
+      "Bash(docker-compose *)",
+      "Bash(orb *)",
+      "Bash(orbctl *)",
+      "Bash(kubectl *)",
+      "Bash(npm *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(bun *)",
+      "Bash(node *)",
+      "Bash(biome *)",
+      "Bash(python *)",
+      "Bash(pytest *)",
+      "Bash(cargo *)",
+      "Bash(rustc *)",
+      "Bash(go *)",
+      "Bash(make *)",
+      "Bash(terraform *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "Bash(jq *)",
+      "Bash(rg *)",
+      "Bash(fd *)",
+      "Bash(chezmoi *)",
+      "Bash(gopass *)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/.ssh/**)",
+      "Write(**/.env)",
+      "Write(**/secrets/**)",
+      "Write(**/.ssh/**)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf /*)",
+      "Bash(sudo rm *)",
+      "Bash(dd if=*)",
+      "Bash(mkfs.*)",
+      "Bash(shutdown *)",
+      "Bash(reboot *)",
+      "Bash(gopass rm *)",
+      "Bash(gopass delete *)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mise current 2>/dev/null || echo 'No mise config'",
+            "systemMessage": "Runtime versions loaded via mise"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write(*.ts)|Write(*.tsx)|Write(*.js)|Write(*.jsx)|Write(*.json)|Write(*.jsonc)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "biome format --write $file 2>/dev/null || biome check --apply $file 2>/dev/null || true",
+            "description": "Format TypeScript/JavaScript with Biome"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(*.py)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ruff format $file 2>/dev/null || black $file 2>/dev/null || true",
+            "description": "Format Python with ruff or black"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(*.rs)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rustfmt $file 2>/dev/null || true",
+            "description": "Format Rust with rustfmt"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(*.go)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gofmt -w $file 2>/dev/null || true",
+            "description": "Format Go with gofmt"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(*.md)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "biome format --write $file 2>/dev/null || true",
+            "description": "Format Markdown with Biome"
+          }
+        ]
+      },
+      {
+        "matcher": "Write(*.fish)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "fish_indent -w $file 2>/dev/null || true",
+            "description": "Format Fish shell scripts"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git diff --stat HEAD 2>/dev/null || echo 'No git repo'",
+            "systemMessage": "Repository state before compaction"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git status --short 2>/dev/null || echo 'No changes'",
+            "systemMessage": "Final repository status"
+          }
+        ]
+      }
+    ]
+  },
+  "agents": {
+    "architect": {
+      "description": "System architecture and design specialist",
+      "prompt": "You are a senior software architect. Design scalable, maintainable systems. Consider trade-offs, document decisions, suggest modern patterns. Use mermaid diagrams where helpful.",
+      "tools": ["Read", "Grep", "Glob", "WebSearch"],
+      "model": "opus"
+    },
+    "security": {
+      "description": "Security and vulnerability analysis",
+      "prompt": "You are a security engineer. Identify vulnerabilities, suggest fixes, check for common security issues (OWASP Top 10, supply chain attacks, secrets exposure). Be thorough but practical.",
+      "tools": ["Read", "Grep", "Glob", "Bash(git *)"],
+      "model": "sonnet"
+    },
+    "tester": {
+      "description": "Comprehensive test generation",
+      "prompt": "You are a test engineering specialist. Generate comprehensive unit, integration, and e2e tests. Cover edge cases, error paths, and happy paths. Follow project test patterns.",
+      "tools": ["Read", "Write", "Edit", "Grep", "Bash(*)"],
+      "model": "sonnet"
+    },
+    "docs": {
+      "description": "Technical documentation specialist",
+      "prompt": "You are a technical writer. Create clear, comprehensive documentation. Include examples, diagrams, API references. Follow project documentation standards.",
+      "tools": ["Read", "Write", "Edit", "Grep"],
+      "model": "sonnet"
+    },
+    "reviewer": {
+      "description": "Code review and quality analysis",
+      "prompt": "You are a senior code reviewer. Check for bugs, performance issues, maintainability, best practices. Provide constructive feedback with examples.",
+      "tools": ["Read", "Grep", "Glob"],
+      "model": "sonnet"
+    },
+    "explorer": {
+      "description": "Efficient codebase exploration (uses Haiku)",
+      "prompt": "You are a codebase explorer. Quickly find relevant code, understand structure, identify patterns. Provide concise summaries.",
+      "tools": ["Read", "Grep", "Glob", "LS"],
+      "model": "haiku"
+    }
+  },
+  "spinnerTipsEnabled": false,
+  "companyAnnouncements": false
+}

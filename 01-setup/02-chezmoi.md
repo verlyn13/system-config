@@ -1,20 +1,18 @@
 ---
-title: Chezmoi Dotfiles Management Setup
+title: 02 Chezmoi
 category: setup
-component: chezmoi
-status: active
-version: 2.0.0
-last_updated: 2025-09-26
-dependencies:
-  - doc: 01-setup/01-homebrew.md
-    type: required
-tags: [installation, setup, dotfiles, configuration-management]
+component: 02_chezmoi
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: [installation, setup]
 applies_to:
   - os: macos
     versions: ["14.0+", "15.0+"]
   - arch: ["arm64", "x86_64"]
-priority: critical
+priority: medium
 ---
+
 
 # Chezmoi Dotfiles Management
 

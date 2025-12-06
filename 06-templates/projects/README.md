@@ -1,3 +1,14 @@
+---
+title: Readme
+category: template
+component: readme
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 #!/bin/bash
 # Project Template System - README
 

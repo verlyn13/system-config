@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[chezmoi] Installing Supabase CLI via Homebrew"
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# Check if already installed
+if have supabase; then
+  current_version=$(supabase --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "unknown")
+  echo "[chezmoi] Supabase CLI already installed (v${current_version})"
+
+  # Check for updates
+  if have brew; then
+    latest_version=$(brew info supabase/tap/supabase 2>/dev/null | grep -o 'stable [0-9]\+\.[0-9]\+\.[0-9]\+' | cut -d' ' -f2 || echo "unknown")
+    if [[ "$current_version" != "$latest_version" && "$latest_version" != "unknown" ]]; then
+      echo "[chezmoi] Update available: v${current_version} → v${latest_version}"
+      echo "[chezmoi] Run: brew upgrade supabase/tap/supabase"
+    fi
+  fi
+  exit 0
+fi
+
+# Ensure Homebrew is available
+if ! have brew; then
+  echo "[chezmoi] ERROR: Homebrew not found. Install Homebrew first."
+  echo "[chezmoi] Visit: https://brew.sh"
+  exit 1
+fi
+
+# Install Supabase CLI from Homebrew tap
+echo "[chezmoi] Installing supabase/tap/supabase..."
+brew install supabase/tap/supabase
+
+if have supabase; then
+  version=$(supabase --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+  echo "[chezmoi] ✓ Supabase CLI v${version} installed"
+  echo "[chezmoi] Location: $(which supabase)"
+  echo "[chezmoi]"
+  echo "[chezmoi] Configuration:"
+  echo "[chezmoi]   - Docker required for local development"
+  echo "[chezmoi]   - Run 'supabase init' to start a project"
+  echo "[chezmoi]   - Run 'supabase start' to launch services"
+  echo "[chezmoi]   - Store access token: gopass insert supabase/access-token"
+  echo "[chezmoi]   - Docs: https://supabase.com/docs/guides/cli"
+else
+  echo "[chezmoi] WARNING: Installation completed but 'supabase' command not found in PATH"
+  echo "[chezmoi] Try restarting your shell"
+fi

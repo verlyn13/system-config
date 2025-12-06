@@ -1,0 +1,23 @@
+# iTerm2 Shell Integration
+# Official iTerm2 shell integration for full APS (Automatic Profile Switching) support
+#
+# Features enabled:
+# - Automatic Profile Switching (username, hostname, path, job matching)
+# - Shell marks (navigate to previous prompts with Cmd-Shift-Up/Down)
+# - Command history tracking
+# - Directory tracking
+# - Alert on command completion
+# - Download/upload with scp
+#
+# Documentation: https://iterm2.com/documentation-shell-integration.html
+#
+# Last updated: 2025-11-24
+#
+# NOTE: Currently configured for regular iTerm2 sessions (non-tmux)
+# Tmux integration will be configured separately once basic APS is working
+
+# Source the official iTerm2 shell integration
+# The integration script checks for iTerm2 and interactive mode
+if test -f ~/.iterm2_shell_integration.fish
+    source ~/.iterm2_shell_integration.fish
+end

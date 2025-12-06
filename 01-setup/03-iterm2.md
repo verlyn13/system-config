@@ -1,23 +1,18 @@
 ---
-title: iTerm2 Complete Setup and Configuration
+title: 03 Iterm2
 category: setup
-component: iterm2
-status: active
-version: 3.0.0
-last_updated: 2025-09-26
-dependencies:
-  - doc: 01-setup/01-homebrew.md
-    type: required
-  - doc: 01-setup/02-chezmoi.md
-    type: recommended
-tags: [terminal, productivity, gpu-acceleration, macos]
+component: 03_iterm2
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: [installation, setup]
 applies_to:
   - os: macos
     versions: ["14.0+", "15.0+"]
   - arch: ["arm64", "x86_64"]
-  - hardware: ["M1", "M2", "M3"]
-priority: high
+priority: medium
 ---
+
 
 # iTerm2 Complete Setup Guide
 

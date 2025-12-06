@@ -1,0 +1,175 @@
+#!/usr/bin/env fish
+# Tailscale Configuration (managed via chezmoi)
+# Tailscale is a mesh VPN based on WireGuard
+# Installation: Official .pkg installer from https://tailscale.com/download/macos
+# Docs: https://tailscale.com/kb/
+#
+# NOTE: The official .pkg installer installs the CLI at /Applications/Tailscale.app/Contents/MacOS/tailscale
+# and provides the GUI application at /Applications/Tailscale.app
+
+# Set environment variables for reference
+if not set -q TAILSCALE_APP
+    set -gx TAILSCALE_APP /Applications/Tailscale.app
+end
+
+# Add Tailscale CLI to PATH if not already present
+if test -x "$TAILSCALE_APP/Contents/MacOS/tailscale"
+    fish_add_path -g "$TAILSCALE_APP/Contents/MacOS"
+end
+
+# Convenience aliases for common Tailscale operations
+
+function tsup --description 'Connect to Tailscale (bring up)'
+    if type -q tailscale
+        sudo tailscale up $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsdown --description 'Disconnect from Tailscale'
+    if type -q tailscale
+        sudo tailscale down $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsstatus --description 'Show Tailscale connection status'
+    if type -q tailscale
+        tailscale status $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsip --description 'Show Tailscale IP addresses'
+    if type -q tailscale
+        tailscale ip $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsping --description 'Ping a device on your Tailscale network'
+    if type -q tailscale
+        tailscale ping $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsnetcheck --description 'Check Tailscale network connectivity'
+    if type -q tailscale
+        tailscale netcheck $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsfile --description 'Send or receive files via Tailscale'
+    if type -q tailscale
+        tailscale file $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsssh --description 'SSH to a device on your Tailscale network'
+    if type -q tailscale
+        tailscale ssh $argv
+    else
+        echo "tailscale command not found. Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+function tsopen --description 'Open Tailscale GUI application'
+    if test -d $TAILSCALE_APP
+        open $TAILSCALE_APP
+    else
+        echo "Tailscale app not found at $TAILSCALE_APP"
+        echo "Install from: https://tailscale.com/download/macos"
+        return 127
+    end
+end
+
+# Version check helper
+function tailscale_check_updates --description 'Check for Tailscale updates'
+    echo "Current Tailscale version:"
+    if type -q tailscale
+        tailscale version | head -1
+    else
+        echo "  Not installed"
+    end
+    echo ""
+    echo "To check for updates, visit: https://tailscale.com/download/macos"
+    echo "Or check via Tailscale app: Menu Bar → Tailscale → About"
+end
+
+# Comprehensive status helper for troubleshooting
+function tailscale_status --description 'Show Tailscale installation and connection status'
+    echo "Tailscale Status"
+    echo "================"
+    echo ""
+
+    # Check if Tailscale app is installed
+    if test -d $TAILSCALE_APP
+        echo "✓ Application installed: $TAILSCALE_APP"
+    else
+        echo "✗ Application not found at: $TAILSCALE_APP"
+        echo "  Install from: https://tailscale.com/download/macos"
+    end
+
+    echo ""
+
+    # Check tailscale CLI
+    if type -q tailscale
+        echo "✓ tailscale CLI available: $(which tailscale)"
+
+        # Get version
+        set -l version_output (tailscale version 2>/dev/null | head -1)
+        if test -n "$version_output"
+            echo "  Version: $version_output"
+        end
+
+        echo ""
+
+        # Try to get status
+        set -l status_output (tailscale status --json 2>/dev/null)
+        if test $status = 0 -a -n "$status_output"
+            # Parse basic info from JSON
+            echo "Connection Status:"
+            tailscale status 2>/dev/null
+
+            echo ""
+            echo "IP Addresses:"
+            tailscale ip 2>/dev/null
+        else
+            echo "⚠ Not connected to Tailscale network"
+            echo "  Run 'tsup' or 'sudo tailscale up' to connect"
+        end
+    else
+        echo "✗ tailscale CLI not in PATH"
+        echo "  Expected at: $TAILSCALE_APP/Contents/MacOS/tailscale"
+    end
+
+    echo ""
+    echo "Available commands:"
+    echo "  tailscale         - Main CLI (requires sudo for up/down)"
+    echo "  tsup, tsdown      - Connect/disconnect (aliases with sudo)"
+    echo "  tsstatus          - Show connection status"
+    echo "  tsip              - Show Tailscale IPs"
+    echo "  tsping <device>   - Ping a device"
+    echo "  tsnetcheck        - Check network connectivity"
+    echo "  tsfile            - Send/receive files"
+    echo "  tsssh <device>    - SSH to a device"
+    echo "  tsopen            - Open GUI application"
+end

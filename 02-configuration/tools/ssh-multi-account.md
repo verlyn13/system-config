@@ -4,7 +4,7 @@ category: configuration
 component: ssh
 status: active
 version: 1.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 tags: [configuration, settings, security, remote-access]
 applies_to:
   - os: macos
@@ -12,6 +12,7 @@ applies_to:
   - arch: ["arm64", "x86_64"]
 priority: high
 ---
+
 
 # Multi-Account & Remote Server Setup Guide
 ## Managing Multiple Git Identities and Server Access

@@ -4,7 +4,7 @@ category: configuration
 component: iterm2
 status: active
 version: 2.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 dependencies:
   - doc: 01-setup/01-homebrew.md
     type: required
@@ -17,6 +17,7 @@ applies_to:
   - arch: ["arm64", "x86_64"]
 priority: high
 ---
+
 
 # iTerm2 3.6.2 Configuration
 ## Released September 24, 2025 — tuned for M3 Max workflows

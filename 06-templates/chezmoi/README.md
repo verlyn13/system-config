@@ -4,26 +4,25 @@ category: template
 component: chezmoi
 status: active
 version: 1.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 tags: [dotfiles, configuration-management]
 priority: medium
 ---
 
+
 # chezmoi Dotfiles Structure
-## Implementation Snapshot — September 2025
+## Current State vs Planned — September 2025
 
 ```
 ~/.local/share/chezmoi/
-├── .chezmoi.toml.tmpl            # Interactive prompts for machine data
+├── .chezmoi.toml.tmpl            # Interactive prompts for machine data (planned)
 ├── dot_config/
 │   ├── fish/
-│   │   ├── config.fish           # Minimal base config (sets trust + env)
 │   │   └── conf.d/
-│   │       ├── 00-homebrew.fish  # Homebrew shellenv bootstrap
-│   │       ├── 01-mise.fish      # mise activation
-│   │       ├── 02-direnv.fish    # direnv hook
-│   │       ├── 03-starship.fish  # prompt setup
-│   │       └── 04-paths.fish     # user/bin path additions (new)
+│   │       ├── 01-mise.fish      # mise activation (present)
+│   │       ├── 02-direnv.fish    # direnv hook with fail‑safe (present)
+│   │       ├── 03-starship.fish  # starship init (present)
+│   │       └── 04-paths.fish     # user/bin path additions (present)
 │   └── mise/
 │       └── config.toml           # Global toolchain + env defaults
 ├── run_once_01-install-packages.sh.tmpl  # Brew bundles (core/dev/gui/android)
@@ -37,17 +36,19 @@ priority: medium
     │   ├── Brewfile.gui           # GUI apps (workstation only)
     │   ├── Brewfile.android       # Android SDK toolchain
     │   └── templates/
-    │       ├── envrc              # Project direnv helper
-    │       └── mise.toml          # Project mise template with tasks
+    │       ├── envrc              # Project direnv helper (planned)
+    │       └── mise.toml          # Project mise template with tasks (planned)
     └── scripts/
         └── init-project.sh        # Bootstrap helper for new repos
 ```
 
-> Data values collected by `.chezmoi.toml.tmpl` are stored in `~/.config/chezmoi/chezmoi.toml` after the first `chezmoi init --apply`. That file currently holds email/name/GitHub identities but is missing the newer `headless`, `android`, and `shell` keys.
+> Note: Items marked “planned” are referenced by other docs but are not yet implemented here. Today, only the Fish `conf.d` entries (01-mise, 02-direnv), the global mise config, core run-once scripts, and basic templates are present.
+
+> Data values for chezmoi typically live in `~/.config/chezmoi/chezmoi.toml`. Some documents reference newer keys (`headless`, `android`, `shell`), but the corresponding `.chezmoi.toml.tmpl` is not yet present in this repo.
 
 ---
 
-## Core Metadata (`.chezmoi.toml.tmpl`)
+## Core Metadata (planned)
 
 ```toml
 {{- $email := promptStringOnce . "email" "Your email address" -}}
@@ -74,37 +75,18 @@ priority: medium
   shell = {{ $shell | quote }}
 ```
 
-These values feed the `run_once` scripts and templates via `.headless`, `.android`, and `.shell`. Older installs that pre-date these prompts will need those keys added manually (see `~/.config/chezmoi/chezmoi.toml`).
+These values will feed the `run_once` scripts and templates via `.headless`, `.android`, and `.shell` once the template exists. Until then, add keys manually in `~/.config/chezmoi/chezmoi.toml` as needed.
 
 ---
 
 ## Shell Configuration (`dot_config/fish`)
 
-### `config.fish`
-```fish
-# Fish shell configuration
-# As per consolidated-revisions.md:141 - minimal config with MISE trust
-
-set -gx MISE_TRUSTED_CONFIG_PATHS "~/Development/**" "~/workspace/**"
-set -gx MISE_EXPERIMENTAL 1
-```
-
-The heavy lifting lives in `conf.d`:
-
-- **00-homebrew.fish** — ensure `brew shellenv` runs with Fish-correct syntax so `/opt/homebrew/bin` and friends land on `PATH`.
-- **01-mise.fish** — activates mise shims so `node`, `bun`, `python`, etc., resolve per-project.
-- **02-direnv.fish** — loads direnv hook once.
-- **03-starship.fish** — optional starship prompt initialization.
-- **04-paths.fish** — adds user-level bins (`~/.npm-global/bin`, `~/bin`, `~/.local/bin`, `~/.bun/bin`, `~/.local/share/go/workspace/bin`) so CLIs like the Claude Code npm package are in scope even before direnv loads.
-
-```fish
-# ~/.local/share/chezmoi/dot_config/fish/conf.d/04-paths.fish
-fish_add_path ~/.npm-global/bin
-fish_add_path ~/bin
-fish_add_path ~/.local/bin
-fish_add_path ~/.bun/bin
-fish_add_path ~/.local/share/go/workspace/bin
-```
+### Fish `conf.d` (present)
+- 00-homebrew.fish — ensure `brew shellenv` runs with Fish‑correct syntax so `/opt/homebrew/bin` lands on PATH.
+- 01-mise.fish — activates mise shims so `node`, `bun`, `python`, etc., resolve per‑project.
+- 02-direnv.fish — sets `DIRENV_LOG_FORMAT` and loads the direnv hook (opt‑out via `DIRENV_DISABLE`); auto‑disables if export fails.
+- 03-starship.fish — starship prompt initialization for Fish.
+- 04-paths.fish — add user‑level bins (`~/.npm-global/bin`, `~/bin`, `~/.local/bin`, `~/.bun/bin`, `~/.local/share/go/workspace/bin`).
 
 ---
 
@@ -112,7 +94,7 @@ fish_add_path ~/.local/share/go/workspace/bin
 
 1. **run_once_01-install-packages.sh.tmpl** — installs Homebrew (if missing) and executes the modular Brewfiles. The script seeds `$headless`/`$android` with `hasKey` lookups so legacy configs default to `false`; GUI bundles run only when `$headless` is false, Android bundles when `$android` is true.
 2. **run_once_02-configure-shell.sh.tmpl** — appends Fish to `/etc/shells` and compares `lower $shell` to `fish` before calling `chsh`, which keeps older configs from erroring.
-3. **run_once_03-install-tools.sh.tmpl** — trusts the global mise config and runs `mise install`, including a fallback to install `uv` if not already available.
+3. **run_once_03-install-tools.sh.tmpl** — trusts the global mise config and runs `mise install`.
 
 Each script expects the corresponding data keys; without them, templating fails, which is why legacy configs need manual updates.
 
@@ -121,15 +103,15 @@ Each script expects the corresponding data keys; without them, templating fails,
 ## Workspace Assets
 
 - `workspace/dotfiles/Brewfile*` — the modular bundle structure called by `run_once_01`. `Brewfile.gui` only applies on non-headless hosts; `Brewfile.android` is opt-in.
-- `workspace/dotfiles/templates/envrc` — direnv helper with secret-loading utilities, language-specific setup, and Android path injection.
-- `workspace/dotfiles/templates/mise.toml` — project template with common tasks (`test`, `lint`, `format`, `dev`, `build`, `clean`).
+- `workspace/dotfiles/templates/envrc` — planned direnv helper with secret‑loading utilities and language‑specific setup.
+- `workspace/dotfiles/templates/mise.toml` — planned project template with common tasks (`test`, `lint`, `format`, `dev`, `build`, `clean`).
 - `workspace/scripts/init-project.sh` — convenience script that copies the templates into a new repo, initializes git, trusts mise, and installs toolchains.
 
 ---
 
 ## State File Location
 
-The active machine state lives in `~/.config/chezmoi/chezmoi.toml`. Today it contains:
+The active machine state lives in `~/.config/chezmoi/chezmoi.toml`. Typical contents include:
 
 ```toml
 [data]

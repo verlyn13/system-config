@@ -1,3 +1,14 @@
+---
+title: Readme
+category: reference
+component: readme
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Claude Project Configuration
 
 This directory contains project-specific configuration for Claude Code CLI and Claude Desktop.

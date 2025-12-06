@@ -4,10 +4,11 @@ category: policy
 component: versions
 status: active
 version: 1.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 tags: [policy, compliance]
 priority: medium
 ---
+
 
 # Version Policy
 

@@ -1,3 +1,14 @@
+---
+title: Changelog
+category: reference
+component: changelog
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: []
+priority: medium
+---
+
 # Changelog
 
 ## v0.3.0 (RC1)

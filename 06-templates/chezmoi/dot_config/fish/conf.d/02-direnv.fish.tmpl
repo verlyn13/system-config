@@ -1,10 +1,16 @@
-# Enable direnv hook in interactive shells only
+# Enable direnv hook in interactive shells only, with a safety self-test
 if status is-interactive
     # Allow opt-out if troubleshooting
     if not set -q DIRENV_DISABLE
         if type -q direnv
-            set -gx DIRENV_LOG_FORMAT ""
-            direnv hook fish | source
+            # Quick self-test: if export segfaults/fails, disable direnv for this session
+            if not direnv export bash >/dev/null 2>/dev/null
+                set -gx DIRENV_DISABLE 1
+                echo "[direnv] Disabled automatically due to export failure. Investigate direnv install."
+            else
+                set -gx DIRENV_LOG_FORMAT ""
+                direnv hook fish | source
+            end
         end
     end
 end

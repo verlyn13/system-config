@@ -1,0 +1,30 @@
+# Global direnv configuration (chezmoi)
+# Avoid redefining stdlib functions; provide helpers only.
+
+# Quieter logs by default; override with DIRENV_LOG_FORMAT in env if needed.
+export DIRENV_LOG_FORMAT="${DIRENV_LOG_FORMAT-direnv: %s}"
+
+# Helper: load mise within .envrc via `use mise`
+use_mise() {
+  direnv_load mise direnv exec
+}
+
+# Safe dotenv helpers
+dotenv() {
+  local file="${1:-.env}"
+  if [[ -f "$file" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$file"
+    set +a
+    watch_file "$file"
+  fi
+}
+
+dotenv_if_exists() {
+  local file="${1:-.env.local}"
+  if [[ -f "$file" ]]; then
+    dotenv "$file"
+  fi
+}
+

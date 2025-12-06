@@ -1,0 +1,182 @@
+#!/usr/bin/env fish
+{{- /* Fisher plugin manager and essential plugins installer (chezmoi-managed) */ -}}
+# Fisher Plugin Manager & Essential Plugins Installer
+# Last updated: {{ now | date "2006-01-02" }}
+# This script runs once per machine to install Fisher and essential plugins
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+set -l FISHER_URL "https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish"
+set -l PLUGINS \
+    "jorgebucaran/fisher" \
+    "PatrickF1/fzf.fish" \
+    "budimanjojo/tmux.fish" \
+    "IlanCosman/tide@v6"
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+function log_info
+    echo (set_color blue)"[INFO]"(set_color normal) $argv
+end
+
+function log_success
+    echo (set_color green)"[SUCCESS]"(set_color normal) $argv
+end
+
+function log_error
+    echo (set_color red)"[ERROR]"(set_color normal) $argv
+end
+
+function log_warning
+    echo (set_color yellow)"[WARNING]"(set_color normal) $argv
+end
+
+# ============================================================================
+# MAIN INSTALLATION
+# ============================================================================
+
+log_info "Starting Fisher plugin manager installation..."
+
+# Check if we're running in Fish shell
+if not set -q FISH_VERSION
+    log_error "This script must be run in Fish shell"
+    exit 1
+end
+
+# Check if Fisher is already installed
+if functions -q fisher
+    log_warning "Fisher is already installed. Skipping installation."
+else
+    # Install Fisher
+    log_info "Downloading and installing Fisher..."
+
+    if curl -sL $FISHER_URL | source
+        log_success "Fisher downloaded successfully"
+
+        # Install Fisher itself
+        if fisher install jorgebucaran/fisher
+            log_success "Fisher plugin manager installed successfully"
+        else
+            log_error "Failed to install Fisher plugin manager"
+            exit 1
+        end
+    else
+        log_error "Failed to download Fisher"
+        exit 1
+    end
+end
+
+# ============================================================================
+# INSTALL ESSENTIAL PLUGINS
+# ============================================================================
+
+log_info "Installing essential Fish plugins..."
+
+for plugin in $PLUGINS
+    # Skip fisher itself (already installed)
+    if test "$plugin" = "jorgebucaran/fisher"
+        continue
+    end
+
+    log_info "Installing plugin: $plugin"
+
+    if fisher install $plugin
+        log_success "Installed: $plugin"
+    else
+        log_warning "Failed to install: $plugin (may already be installed)"
+    end
+end
+
+# ============================================================================
+# VERIFY INSTALLATION
+# ============================================================================
+
+log_info "Verifying installation..."
+
+# Check Fisher
+if functions -q fisher
+    log_success "✓ Fisher is installed"
+else
+    log_error "✗ Fisher is NOT installed"
+    exit 1
+end
+
+# Check installed plugins
+set -l fisher_file ~/.config/fish/fish_plugins
+
+if test -f $fisher_file
+    log_success "✓ Fish plugins file exists"
+    log_info "Installed plugins:"
+    cat $fisher_file | while read -l line
+        echo "  - $line"
+    end
+else
+    log_warning "Fish plugins file not found"
+end
+
+# ============================================================================
+# POST-INSTALLATION CONFIGURATION
+# ============================================================================
+
+{{- if not (.headless | default false) }}
+# Configure Tide prompt if installed
+if type -q tide
+    log_info "Tide prompt is installed. Run 'tide configure' to customize."
+    log_info "For non-interactive setup, we'll use defaults."
+
+    # Set some sensible Tide defaults (non-interactive)
+    set -U tide_left_prompt_items pwd git
+    set -U tide_right_prompt_items status cmd_duration context jobs time
+    set -U tide_character_icon '❯'
+    set -U tide_character_color green
+    set -U tide_character_color_failure red
+
+    log_success "Tide prompt configured with defaults"
+end
+{{- end }}
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
+
+echo ""
+log_success "============================================"
+log_success "Fisher installation complete!"
+log_success "============================================"
+echo ""
+log_info "Installed plugins:"
+echo "  • Fisher (plugin manager)"
+echo "  • fzf.fish (fuzzy finder integration)"
+echo "  • tmux.fish (tmux auto-start & integration)"
+echo "  • Tide (modern, fast prompt)"
+echo ""
+log_info "Next steps:"
+echo "  1. Restart your terminal or run: exec fish"
+echo "  2. For Tide customization, run: tide configure"
+echo "  3. Tmux will auto-start on next terminal launch"
+echo ""
+log_info "Useful Fisher commands:"
+echo "  • fisher install <plugin>  - Install a plugin"
+echo "  • fisher remove <plugin>   - Remove a plugin"
+echo "  • fisher update            - Update all plugins"
+echo "  • fisher list              - List installed plugins"
+echo ""
+
+# ============================================================================
+# OPTIONAL: ADDITIONAL RECOMMENDED PLUGINS
+# ============================================================================
+
+echo (set_color cyan)"[OPTIONAL]"(set_color normal) "Additional recommended plugins:"
+echo "  • jorgebucaran/nvm.fish           - Node version manager"
+echo "  • edc/bass                        - Bash script compatibility"
+echo "  • gazorby/fish-abbreviation-tips  - Show abbreviation tips"
+echo "  • nickeb96/puffer-fish            - Text expansion (like zsh)"
+echo ""
+echo "Install with: fisher install <plugin-name>"
+echo ""
+
+exit 0

@@ -1,9 +1,9 @@
 [tools]
 node = "24"
 bun = "latest"
+# terraform managed via Homebrew (not mise) to avoid PATH conflicts
 
 [env]
 # Keep node/bun CLIs predictable in this repo
 PROJECT_NAME = "system-setup-update"
 ENVIRONMENT = "development"
-

@@ -1,13 +1,14 @@
 ---
-title: MCP Server Practical Examples
+title: Mcp Examples
 category: reference
-component: mcp-examples
-status: active
+component: mcp_examples
+status: draft
 version: 1.0.0
-last_updated: 2025-09-27
-tags: [mcp, examples, automation, practical]
-priority: high
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # MCP Server Practical Examples
 

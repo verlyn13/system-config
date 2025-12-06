@@ -1,13 +1,14 @@
 ---
-title: MCP Server & Dashboard Integration
-category: reference
-component: integration
-status: active
+title: Mcp Dashboard Integration
+category: automation
+component: mcp_dashboard_integration
+status: draft
 version: 1.0.0
-last_updated: 2025-09-27
-tags: [mcp, dashboard, telemetry, integration, monitoring]
-priority: high
+last_updated: 2025-10-23
+tags: []
+priority: medium
 ---
+
 
 # MCP Server & Dashboard Integration
 

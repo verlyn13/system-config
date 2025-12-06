@@ -4,10 +4,11 @@ category: reference
 component: overview
 status: active
 version: 2.0.0
-last_updated: 2025-09-26
+last_updated: 2025-10-23
 tags: []
 priority: critical
 ---
+
 
 # macOS M3 Max Development Environment Setup
 ## 🚀 Holistic, Context-Aware System Configuration with Living Documentation
@@ -91,6 +92,23 @@ python3 03-automation/scripts/doc-sync-engine.py
 ./03-automation/scripts/install-launchagent.sh status
 ```
 
+### ⚠️ Shell Environment Essentials
+
+- direnv uses Homebrew Bash to avoid Apple `/bin/bash` crashes on macOS 26+.
+  - Ensure `~/.config/direnv/direnv.toml` contains: `bash_path = "/opt/homebrew/bin/bash"`
+  - Our repair script sets this up for you: `bash scripts/repair-shell-env.sh`
+- Fish conf.d load order: `00-homebrew.fish` → `01-mise.fish` → `02-direnv.fish` → `04-paths.fish`.
+  - Homebrew/env first, mise shims, then direnv hook (fail‑safe), then starship init, then user bins appended.
+- .envrc standard: embedded `use_mise()` with `direnv_load mise direnv exec`, then `use mise`, with PATH_add and dotenv.
+  - Use `scripts/multirepo-align-env.sh [optional scan roots...]` to standardize across repos.
+
+### Starship Prompt
+
+- Config file: `~/.config/starship.toml` (managed via `06-templates/chezmoi/dot_config/starship.toml.tmpl`)
+- Fish init: `~/.config/fish/conf.d/03-starship.fish` initializes starship for interactive shells.
+- Git status module: uses `stashed = "$$"` for literal `$` compatibility with recent starship versions.
+
+
 ### 📦 Installation
 
 #### Fresh System Setup
@@ -102,11 +120,26 @@ open implementation-status.md
 open validation-checklist.md
 ```
 
-#### For Claude Code AI
-```bash
-# AI-specific guidance
-open CLAUDE.md
-```
+#### AI CLI Tools (managed here)
+
+**Claude Code CLI**
+- Installation: npm global (`@anthropic-ai/claude-code@2.0.3+`)
+- Location: `~/.npm-global/bin/claude`
+- Config: `~/.config/fish/conf.d/10-claude.fish` (managed via chezmoi)
+- Docs: [`docs/claude-cli-setup.md`](docs/claude-cli-setup.md)
+- Update: `scripts/update-claude-cli.sh` or `claude_check_updates`
+- Aliases: `cc`, `ccc`, `ccp`, `ccplan`
+- Auth: subscription (default) or API key (via gopass)
+
+**Codex CLI**
+- Installation: Homebrew (`brew install openai/openai/codex`)
+- Location: `/opt/homebrew/bin/codex` (via PATH)
+- Config: `~/.config/fish/conf.d/12-codex.fish` (managed via chezmoi)
+- Config file: `~/.codex/config.toml` (single global file; see [`02-configuration/tools/codex-cli.md`](02-configuration/tools/codex-cli.md))
+- Docs: [`docs/codex-cli-setup.md`](docs/codex-cli-setup.md)
+- Update: `scripts/update-codex-cli.sh` or `codex_check_updates`
+- Aliases: `cx`, `cxp`, `cxfast`, `cxreview`
+- Auth: API key via gopass (`openai/api-key`)
 
 ### ✅ What's Working
 
@@ -114,7 +147,7 @@ open CLAUDE.md
 - ✅ **Homebrew** - Package management at `/opt/homebrew`
 - ✅ **Fish Shell** - Default shell with modular configuration
 - ✅ **chezmoi** - Dotfile management with hardened templates
-- ✅ **Claude CLI** - v1.0.126 accessible in PATH
+- ✅ **Claude Code CLI** - v2.0.34 accessible in PATH
 
 #### Installed Tools
 - **Languages**: Node 24.9.0, Python 3.13.7, Go 1.25.1, Bun 1.2.22, Java 17
@@ -265,3 +298,4 @@ For common issues and solutions, see:
 - [implementation-status.md#known-issues](implementation-status.md)
 - [validation-checklist.md](validation-checklist.md)
 - [CLAUDE.md#known-issues-and-solutions](CLAUDE.md)
+- [docs/claude-cli-setup.md](docs/claude-cli-setup.md) - Complete Claude CLI troubleshooting

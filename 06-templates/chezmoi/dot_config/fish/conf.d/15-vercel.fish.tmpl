@@ -1,0 +1,244 @@
+#!/usr/bin/env fish
+# Vercel CLI Configuration (managed via chezmoi)
+# Single source of truth for Vercel CLI commands and configuration
+# Installation: npm install -g vercel
+# Docs: https://vercel.com/docs/cli
+
+# Vercel CLI binary path (set if using local install)
+if not set -q VERCEL_BIN
+    # Default: use npm global installation
+    set -gx VERCEL_BIN ~/.npm-global/bin/vercel
+end
+
+# Authentication via token (for CI/CD environments)
+# Set in your .envrc or environment:
+# VERCEL_TOKEN - Authentication token (for non-interactive use)
+# VERCEL_ORG_ID - Organization/Team ID
+# VERCEL_PROJECT_ID - Project ID
+
+# How to fetch auth token from gopass
+if not set -q VERCEL_TOKEN_CMD
+    set -gx VERCEL_TOKEN_CMD "gopass show vercel/token"
+end
+
+function __vercel_exec --description 'Execute Vercel CLI (prefer npm global install)'
+    # Modern approach: use npm global installation at ~/.npm-global/bin/vercel
+    if test -x $VERCEL_BIN
+        command $VERCEL_BIN $argv
+        return $status
+    end
+
+    # Fallback: check PATH for 'vercel'
+    if type -q vercel
+        command vercel $argv
+        return $status
+    end
+
+    echo 'vercel: CLI not found. Run: npm install -g vercel'
+    return 127
+end
+
+function __vercel_resolve_token --description 'resolve VERCEL_TOKEN'
+    if set -q VERCEL_TOKEN
+        echo $VERCEL_TOKEN
+        return 0
+    end
+    if type -q gopass
+        set -l token (eval $VERCEL_TOKEN_CMD 2>/dev/null)
+        if test -n "$token"
+            echo $token
+            return 0
+        end
+    end
+    return 1
+end
+
+function __vercel_run --description 'run Vercel CLI with auth handling'
+    set -l args $argv
+
+    # If VERCEL_TOKEN not set, try to resolve from gopass
+    if not set -q VERCEL_TOKEN
+        set -l token (__vercel_resolve_token)
+        if test -n "$token"
+            env VERCEL_TOKEN="$token" __vercel_exec $args
+            return $status
+        end
+    end
+
+    # Run with existing environment
+    __vercel_exec $args
+end
+
+# Public commands (simple, documented)
+function vercel --description 'Vercel CLI'
+    __vercel_run $argv
+end
+
+function vc --description 'Vercel CLI (short alias)'
+    __vercel_run $argv
+end
+
+# Common Vercel CLI shortcuts
+function vercel-deploy --description 'Deploy to Vercel (production)'
+    __vercel_run --prod $argv
+end
+
+function vercel-preview --description 'Deploy to Vercel (preview)'
+    __vercel_run $argv
+end
+
+function vercel-dev --description 'Start Vercel dev server'
+    __vercel_run dev $argv
+end
+
+function vercel-logs --description 'View deployment logs'
+    __vercel_run logs $argv
+end
+
+function vercel-env --description 'Manage environment variables'
+    __vercel_run env $argv
+end
+
+function vercel-pull --description 'Pull environment variables'
+    __vercel_run env pull $argv
+end
+
+function vercel-link --description 'Link directory to Vercel project'
+    __vercel_run link $argv
+end
+
+function vercel-list --description 'List deployments'
+    __vercel_run list $argv
+end
+
+function vercel-inspect --description 'Inspect deployment'
+    __vercel_run inspect $argv
+end
+
+function vercel-login --description 'Authenticate with Vercel'
+    __vercel_run login $argv
+end
+
+function vercel-whoami --description 'Show current user'
+    __vercel_run whoami $argv
+end
+
+# Deployment shortcuts with common patterns
+function vercel-prod --description 'Deploy to production with Sentry release'
+    # Deploy to production
+    set -l deployment_url (__vercel_run --prod 2>&1 | grep -o 'https://[^[:space:]]*')
+
+    if test $status -eq 0
+        echo "✓ Deployed to production: $deployment_url"
+
+        # Create Sentry release if script exists
+        if test -x ./scripts/sentry-release.sh
+            echo "Creating Sentry release..."
+            ./scripts/sentry-release.sh production
+        end
+    else
+        echo "✗ Deployment failed"
+        return 1
+    end
+end
+
+function vercel-staging --description 'Deploy to staging/preview with Sentry'
+    # Deploy to preview
+    set -l deployment_url (__vercel_run 2>&1 | grep -o 'https://[^[:space:]]*')
+
+    if test $status -eq 0
+        echo "✓ Deployed to staging: $deployment_url"
+
+        # Create Sentry release if script exists
+        if test -x ./scripts/sentry-release.sh
+            echo "Creating Sentry release..."
+            ./scripts/sentry-release.sh staging
+        end
+    else
+        echo "✗ Deployment failed"
+        return 1
+    end
+end
+
+# Version check helper (run manually: vercel_check_updates)
+function vercel_check_updates --description 'Check for Vercel CLI updates'
+    set -l current (vercel --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+    set -l latest (npm view vercel version 2>/dev/null)
+
+    if test -n "$current" -a -n "$latest"
+        echo "Current: v$current"
+        echo "Latest:  v$latest"
+        if test "$current" != "$latest"
+            echo ""
+            echo "Update available! Run: npm update -g vercel"
+        else
+            echo "✓ Up to date"
+        end
+    else
+        echo "Could not determine version info"
+    end
+end
+
+# Status check helper
+function vercel_status --description 'Show Vercel CLI installation status'
+    echo "=== Vercel CLI Status ==="
+
+    # Check if binary exists
+    if type -q vercel
+        echo "✓ Binary found: "(which vercel)
+        set -l version (vercel --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+        if test -n "$version"
+            echo "✓ Version: v$version"
+        end
+    else
+        echo "✗ Binary not found"
+    end
+
+    # Check authentication
+    set -l whoami_output (vercel whoami 2>&1)
+    if test $status -eq 0
+        echo "✓ Authenticated as: $whoami_output"
+    else
+        if set -q VERCEL_TOKEN
+            echo "✓ VERCEL_TOKEN: set (non-interactive mode)"
+        else
+            set -l token (__vercel_resolve_token 2>/dev/null)
+            if test -n "$token"
+                echo "✓ Auth token: available via gopass"
+            else
+                echo "⚠ Not authenticated (run: vercel login)"
+            end
+        end
+    end
+
+    # Check for linked project
+    if test -d .vercel
+        echo "✓ Project linked (.vercel/ exists)"
+
+        if test -f .vercel/project.json
+            set -l project_name (cat .vercel/project.json | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+            if test -n "$project_name"
+                echo "  Project: $project_name"
+            end
+        end
+    else
+        echo "⚠ Not linked to a project (run: vercel link)"
+    end
+
+    # Check org/project config
+    if set -q VERCEL_ORG_ID
+        echo "✓ VERCEL_ORG_ID: $VERCEL_ORG_ID"
+    else
+        echo "  VERCEL_ORG_ID: not set (using default from login)"
+    end
+
+    if set -q VERCEL_PROJECT_ID
+        echo "✓ VERCEL_PROJECT_ID: $VERCEL_PROJECT_ID"
+    else
+        echo "  VERCEL_PROJECT_ID: not set (using default from link)"
+    end
+
+    echo ""
+    echo "Run 'vercel whoami' to check authentication"
+    echo "Run 'vercel list' to see recent deployments"
+end

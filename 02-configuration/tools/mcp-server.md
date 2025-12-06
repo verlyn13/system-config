@@ -1,13 +1,18 @@
 ---
-title: DevOps MCP Server Configuration
-category: reference
-component: mcp-server
-status: active
-version: 0.3.0
-last_updated: 2025-09-27
-tags: [mcp, ai-agents, devops, automation]
-priority: high
+title: Mcp Server
+category: configuration
+component: mcp_server
+status: draft
+version: 1.0.0
+last_updated: 2025-10-23
+tags: [configuration, settings]
+applies_to:
+  - os: macos
+    versions: ["14.0+", "15.0+"]
+  - arch: ["arm64", "x86_64"]
+priority: medium
 ---
+
 
 # DevOps MCP Server Configuration
 

@@ -1,13 +1,18 @@
 ---
-title: MCP Server Telemetry Configuration
-category: reference
-component: mcp-telemetry
-status: active
+title: Mcp Telemetry
+category: configuration
+component: mcp_telemetry
+status: draft
 version: 1.0.0
-last_updated: 2025-09-27
-tags: [telemetry, observability, monitoring, opentelemetry]
-priority: high
+last_updated: 2025-10-23
+tags: [configuration, settings]
+applies_to:
+  - os: macos
+    versions: ["14.0+", "15.0+"]
+  - arch: ["arm64", "x86_64"]
+priority: medium
 ---
+
 
 # MCP Server Telemetry Configuration
 

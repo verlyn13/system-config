@@ -1,0 +1,87 @@
+#!/usr/bin/env fish
+# Windsurf AI IDE Configuration (managed via chezmoi)
+# Windsurf is an agentic IDE powered by AI Flow paradigm
+# Installation: brew install --cask windsurf
+# Docs: https://docs.windsurf.com/
+
+# Windsurf binary path (installed via Homebrew cask)
+if not set -q WINDSURF_BIN
+    set -gx WINDSURF_BIN /Applications/Windsurf.app/Contents/Resources/app/bin/windsurf
+end
+
+# Add Windsurf CLI to PATH if installed
+if test -x $WINDSURF_BIN
+    set -l windsurf_dir (dirname $WINDSURF_BIN)
+    if not contains $windsurf_dir $PATH
+        fish_add_path $windsurf_dir
+    end
+end
+
+function __windsurf_exec --description 'Execute Windsurf CLI'
+    # Primary: Use Homebrew cask installation
+    if test -x $WINDSURF_BIN
+        command $WINDSURF_BIN $argv
+        return $status
+    end
+
+    # Fallback: Check PATH for 'windsurf'
+    if type -q windsurf
+        command windsurf $argv
+        return $status
+    end
+
+    echo 'windsurf: CLI not found. Install via: brew install --cask windsurf'
+    return 127
+end
+
+# Public commands
+function windsurf --description 'Windsurf AI IDE'
+    __windsurf_exec $argv
+end
+
+function ws --description 'Windsurf (short alias)'
+    __windsurf_exec $argv
+end
+
+function wso --description 'Windsurf: open current directory'
+    __windsurf_exec . $argv
+end
+
+function wsn --description 'Windsurf: new window'
+    __windsurf_exec --new-window $argv
+end
+
+# Version check helper
+function windsurf_check_updates --description 'Check for Windsurf updates'
+    if type -q brew
+        echo "Checking for Windsurf updates via Homebrew..."
+        brew info --cask windsurf | grep -E "windsurf:|Not installed|From:"
+        echo ""
+        echo "To update: brew upgrade --cask windsurf"
+    else
+        echo "Homebrew not found. Install updates manually from https://windsurf.com/download"
+    end
+end
+
+# Status helper
+function windsurf_status --description 'Show Windsurf installation status'
+    echo "Windsurf AI IDE Status"
+    echo "====================="
+
+    if test -x $WINDSURF_BIN
+        set -l ws_version (windsurf --version 2>/dev/null | head -1)
+        echo "✓ Installed: $WINDSURF_BIN"
+        if test -n "$ws_version"
+            echo "✓ Version: $ws_version"
+        end
+    else
+        echo "✗ Not installed"
+        echo "  Install: brew install --cask windsurf"
+    end
+
+    if type -q windsurf
+        echo "✓ CLI available: $(which windsurf)"
+    else
+        echo "✗ CLI not in PATH"
+    end
+end

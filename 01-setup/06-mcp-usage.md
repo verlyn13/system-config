@@ -1,13 +1,18 @@
 ---
-title: MCP Server Usage Guide
-category: guide
-component: mcp-usage
-status: active
+title: 06 Mcp Usage
+category: setup
+component: 06_mcp_usage
+status: draft
 version: 1.0.0
-last_updated: 2025-09-27
-tags: [mcp, automation, system-management, ai-agents]
-priority: critical
+last_updated: 2025-10-23
+tags: [installation, setup]
+applies_to:
+  - os: macos
+    versions: ["14.0+", "15.0+"]
+  - arch: ["arm64", "x86_64"]
+priority: medium
 ---
+
 
 # MCP Server Usage Guide - ACTUALLY Using It for System Management
 
