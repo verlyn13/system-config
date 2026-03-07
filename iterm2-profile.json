@@ -1,0 +1,36 @@
+{
+  "Profiles": [
+    {
+      "Name": "SystemConfig",
+      "Guid": "SystemConfig-Homer-AK-2026",
+      "Dynamic Profile Parent Name": "Base",
+      "Custom Directory": "Yes",
+      "Working Directory": "~/SystemConfig",
+      "Bound Files": [
+        "~/SystemConfig"
+      ],
+      "Badge Text": "Σ SystemConfig",
+      "Badge Color": {
+        "Red Component": 0.47,
+        "Green Component": 0.63,
+        "Blue Component": 1.0,
+        "Alpha Component": 0.3
+      },
+      "Background Color": {
+        "Red Component": 0.09,
+        "Green Component": 0.10,
+        "Blue Component": 0.15,
+        "Alpha Component": 1.0
+      },
+      "Foreground Color": {
+        "Red Component": 0.75,
+        "Green Component": 0.79,
+        "Blue Component": 0.96,
+        "Alpha Component": 1.0
+      },
+      "Transparency": 0.1,
+      "Blur": true,
+      "Blur Radius": 15
+    }
+  ]
+}

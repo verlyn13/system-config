@@ -1,0 +1,36 @@
+# ~/.config/system-update/config
+# Optional overrides for system-update. This file is sourced by bash.
+
+# Global toggles
+SYSTEM_UPDATE_ENABLE_PLUGINS=true
+SYSTEM_UPDATE_NOTIFY=false
+SYSTEM_UPDATE_JSON=false
+
+# Select packages for the core pip step
+SYSTEM_UPDATE_PIP_PACKAGES=(
+  huggingface_hub
+)
+
+# Enable/disable steps or plugins by id (see: system-update --list)
+SYSTEM_UPDATE_ENABLE=(
+  # brew-casks
+  # mas
+  # rustup
+  # pipx
+  # uv
+  # gem
+  # go-tools
+)
+SYSTEM_UPDATE_DISABLE=()
+
+# Run only / skip (empty means use defaults)
+SYSTEM_UPDATE_ONLY=()
+SYSTEM_UPDATE_SKIP=()
+
+# Optional step order override (any missing steps are appended)
+SYSTEM_UPDATE_STEP_ORDER=()
+
+# Go tools plugin (go install <tool>@latest)
+SYSTEM_UPDATE_GO_TOOLS=(
+  # golang.org/x/tools/gopls
+)

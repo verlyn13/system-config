@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Clear stale MCP OAuth cache that conflicts with Bearer auth tokens
+# run_once: executed once per chezmoi state hash; re-runs only if this file changes.
+set -euo pipefail
+
+MCP_CACHE="${HOME}/.mcp-auth"
+
+if [[ -d "$MCP_CACHE" ]]; then
+  echo "[chezmoi] Removing stale MCP OAuth cache: $MCP_CACHE"
+  rm -rf "$MCP_CACHE"
+  echo "[chezmoi] Done. MCP servers will use Bearer token auth from environment."
+else
+  echo "[chezmoi] $MCP_CACHE not found — nothing to remove."
+fi
