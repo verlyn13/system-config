@@ -4,7 +4,8 @@ Migration from current repo layout to the structure defined in `system-plan-draf
 (DEVMACHINE-SPEC) and `MIGRATION-PLAN.md` (Filesystem Migration Spec).
 
 ```yaml
-status: DRAFT v3
+status: IN PROGRESS
+current_phase: "Phase 0 complete — Phase 1 next"
 specs:
   - system-plan-draft.md        # DEVMACHINE-SPEC — shell, chezmoi, iTerm2, homebrew, mise
   - MIGRATION-PLAN.md           # ~/Organizations/the-nash-group/.archive/planning/
@@ -267,7 +268,9 @@ After this change: edit template → `chezmoi apply` → `git commit`. No sync s
 
 ---
 
-## Phase Pre-0: Clean Baseline
+## Phase Pre-0: Clean Baseline — COMPLETE
+
+**Status**: Complete. Commits 5881ed6 through 95fe4a5. Rollback tag: `pre-migration-20260306`.
 
 **Goal**: Commit all pending changes, tag rollback point, rename repo, move to target location.
 
@@ -297,7 +300,9 @@ git remote get-url origin                 # contains system-config
 
 ---
 
-## Phase 0: Doctor Harness
+## Phase 0: Doctor Harness — COMPLETE (P0-3 deferred)
+
+**Status**: Complete. Commit 9c3d5b9. P0-3 (chezmoi rewire) deferred to end of Phase 1.
 
 **Goal**: Build `ng-doctor` so every subsequent phase is testable.
 
@@ -305,12 +310,31 @@ git remote get-url origin                 # contains system-config
 
 ### Tasks
 
-| ID | Action | Spec Citation | Details |
-|----|--------|---------------|---------|
-| P0-1 | Create `home/` directory | Section 2 target layout | New chezmoi source root. |
-| P0-2 | Create `home/dot_local/bin/ng-doctor.tmpl` | Section 7 | Pass/fail/skip framework. 8 categories, 37 checks (see matrix below). All checks can return skip if prereqs aren't met yet. |
-| P0-3 | Wire chezmoi to `home/` | OQ-08, SSoT | Symlink `~/.local/share/chezmoi` → repo's `home/`. Or `chezmoi init --source`. |
-| P0-4 | Apply and verify | Section 7, P0-2 | `chezmoi apply` → `ng-doctor` runs → most skip/fail (expected). |
+| ID | Action | Spec Citation | Status | Details |
+|----|--------|---------------|--------|---------|
+| P0-1 | Create `home/` directory | Section 2 target layout | DONE | New chezmoi source root. |
+| P0-2 | Create `home/dot_local/bin/ng-doctor.tmpl` | Section 7 | DONE | Pass/fail/skip framework. 8 categories, 37 checks (see matrix below). All checks can return skip if prereqs aren't met yet. |
+| P0-2a | Install ng-doctor manually | — | DONE | `chezmoi execute-template` + patch SYSTEM_CONFIG_DIR. Needed because chezmoi not yet rewired. |
+| P0-3 | Wire chezmoi to `home/` | OQ-08, SSoT | DEFERRED | Deferred to end of Phase 1. Symlinking now would orphan all dotfiles repo content. `home/` needs shell configs (Phase 1) before it can replace the dotfiles repo as chezmoi source. |
+| P0-4 | Verify harness | Section 7, P0-2 | DONE | 23 pass, 8 fail (expected), 8 skip. Shellcheck clean. |
+
+### ng-doctor Baseline (2026-03-07)
+
+```
+23 passed, 8 failed, 8 skipped — exit code 1
+
+Expected failures (resolved in later phases):
+  shell:      zshenv_is_minimal (17 > 15 lines), zshrc_loads_modules (no zshrc.d)
+  iterm2:     agentic_profile_installed, human_fish_profile_installed
+  hygiene:    no_orphan_lockfiles (package-lock.json), no_nvmrc, no_node_version,
+              chezmoi_source_clean (dotfiles repo has 59 uncommitted changes)
+```
+
+### Dotfiles Repo State
+
+The separate dotfiles repo (`~/.local/share/chezmoi/`, github: verlyn13/dotfiles) has
+59 uncommitted changes. These must be reconciled before P0-3 rewire. Do NOT copy dotfiles
+content into `home/` — build fresh from DEVMACHINE-SPEC (Phase 1 does this).
 
 ### ng-doctor Check Matrix (37 checks, 8 categories)
 
@@ -374,13 +398,15 @@ chezmoi source-path                      # .../system-config/home
 
 ---
 
-## Phase 1: Shell Stabilization
+## Phase 1: Shell Stabilization — NEXT
+
+**Status**: Not started. This is the next phase to execute.
 
 **Goal**: Modular zshrc.d/ with NG_MODE gating. Slimmed fish conf.d. Shared `.chezmoidata.yaml`.
 
 **Spec**: DEVMACHINE-SPEC Sections 3.1–3.6, 6. OQ-01.
 
-**Depends on**: Phase 0.
+**Depends on**: Phase 0 (complete). P0-3 (chezmoi rewire) executes at end of this phase.
 
 ### Tasks
 
