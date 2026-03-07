@@ -2,7 +2,7 @@
 title: Claude Code Configuration - Chezmoi Migration Guide
 category: guide
 component: claude-config-migration
-status: draft
+status: deprecated
 version: 1.0.0
 last_updated: 2025-11-07
 tags: [claude-code, chezmoi, migration, future]
@@ -10,6 +10,8 @@ priority: low
 ---
 
 # Claude Code Configuration - Future Chezmoi Migration Guide
+
+> **Deprecated**: The decision was made to manage `~/.claude/` directly (not via chezmoi) due to rapid CLI evolution. This doc is retained for historical reference only.
 
 ## Current State
 

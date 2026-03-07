@@ -58,6 +58,7 @@ model_max_output_tokens = 4096
 # Approvals & sandbox
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
+web_search = "live"
 
 [shell_environment_policy]
 inherit = "none"
@@ -67,7 +68,6 @@ exclude = ["AWS_*", "GCP_*", "TOKEN", "SECRET", "KEY"]
 [features]
 apply_patch_freeform = true
 streamable_shell = true
-web_search_request = true
 
 [model_providers.openai]
 name = "OpenAI"

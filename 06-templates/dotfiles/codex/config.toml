@@ -1,6 +1,7 @@
 model = "gpt-5.1"
 model_provider = "openai"
 profile = "dev"
+web_search = "live"
 
 model_reasoning_effort = "high"
 model_verbosity = "low"
@@ -17,7 +18,6 @@ exclude = ["AWS_*", "GCP_*", "TOKEN", "SECRET", "KEY"]
 [features]
 apply_patch_freeform = true
 streamable_shell = true
-web_search_request = true
 
 [model_providers.openai]
 name = "OpenAI"

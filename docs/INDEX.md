@@ -4,7 +4,7 @@ category: reference
 component: index
 status: active
 version: 3.0.0
-last_updated: 2025-12-06
+last_updated: 2026-02-05
 tags: [navigation, docs]
 priority: high
 ---
@@ -42,14 +42,17 @@ priority: high
 | [guides/SECRETS-MANAGEMENT-GUIDE.md](guides/SECRETS-MANAGEMENT-GUIDE.md) | Secrets handling |
 | [guides/MAINTENANCE-GUIDE.md](guides/MAINTENANCE-GUIDE.md) | System maintenance |
 | [guides/ENVRC-MIGRATION-GUIDE.md](guides/ENVRC-MIGRATION-GUIDE.md) | direnv migration |
+| [guides/AGENT-HANDOFF.md](guides/AGENT-HANDOFF.md) | Agentic handoff and context |
 
 ## Claude Code Configuration
 
 | Guide | Purpose |
 |-------|---------|
-| [CLAUDE-CONFIG-UPDATE-GUIDE.md](CLAUDE-CONFIG-UPDATE-GUIDE.md) | Update configuration |
-| [CLAUDE-CONFIG-SETUP-COMPLETE.md](CLAUDE-CONFIG-SETUP-COMPLETE.md) | Setup completion status |
-| [CLAUDE-CONFIG-CHEZMOI-MIGRATION.md](CLAUDE-CONFIG-CHEZMOI-MIGRATION.md) | Future chezmoi migration |
+| [claude-cli-setup.md](claude-cli-setup.md) | Claude Code CLI setup |
+| [claude-desktop-setup.md](claude-desktop-setup.md) | Claude Desktop / Cowork setup |
+| [CLAUDE-CONFIG-UPDATE-GUIDE.md](CLAUDE-CONFIG-UPDATE-GUIDE.md) | Update configuration (deprecated) |
+| [CLAUDE-CONFIG-SETUP-COMPLETE.md](CLAUDE-CONFIG-SETUP-COMPLETE.md) | Setup completion status (historical) |
+| [CLAUDE-CONFIG-CHEZMOI-MIGRATION.md](CLAUDE-CONFIG-CHEZMOI-MIGRATION.md) | Chezmoi migration (deprecated) |
 
 ## Document Standards
 

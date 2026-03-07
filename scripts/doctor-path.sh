@@ -36,8 +36,8 @@ ls -1 "$HOME/.config/fish/conf.d" 2>/dev/null | sed 's/^/  /' || echo "  ~/.conf
 echo "\n[doctor] Suggestions"
 if ! command -v anthropic >/dev/null 2>&1 && ! command -v claude >/dev/null 2>&1; then
   cat <<'EOT'
-  - Install Claude Code CLI (single-source):
-      npm install -g @anthropic-ai/claude-code
+  - Install Claude Code CLI (native installer):
+      curl -fsSL https://claude.ai/install.sh | bash
 EOT
 fi
 

@@ -1,12 +1,16 @@
 # Global mise configuration for development environment (chezmoi-managed)
 
 [tools]
-node = "24"
+node = "{{ .versions.node | default "24" }}"
 bun = "latest"
-python = "3.13"
-go = "latest"
+python = "{{ .versions.python | default "3.13" }}"
+# go = "latest"
 # rust = "stable"  # Commented out - install with: mise install rust@stable
-java = "temurin-17"
+{{ if .android -}}
+java = "{{ .versions.java | default "temurin-21" }}"
+{{ else -}}
+# java = "{{ .versions.java | default "temurin-21" }}"
+{{ end -}}
 uv = "latest"
 
 [settings]
@@ -34,7 +38,7 @@ EDITOR = "nvim"
 VISUAL = "nvim"
 MAKEFLAGS = "-j10"
 CARGO_BUILD_JOBS = "10"
-NODE_OPTIONS = "--max-old-space-size=8192"
+NODE_OPTIONS = "--max-old-space-size=4096"
 BUN_INSTALL = "~/.bun"
 GOPATH = "~/.local/share/go/workspace"
 

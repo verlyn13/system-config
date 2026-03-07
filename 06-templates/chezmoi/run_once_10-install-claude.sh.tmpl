@@ -1,42 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "[chezmoi] Installing Claude Code CLI via npm"
+echo "[chezmoi] Installing Claude Code CLI via native installer"
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# Check if already installed
-if have claude; then
-  current_version=$(claude --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "unknown")
-  echo "[chezmoi] Claude CLI already installed (v${current_version})"
+# Native install location
+NATIVE_BIN="$HOME/.local/bin/claude"
+NATIVE_DATA="$HOME/.local/share/claude"
 
-  # Check for updates
-  if have npm; then
-    latest_version=$(npm view @anthropic-ai/claude-code version 2>/dev/null || echo "unknown")
-    if [[ "$current_version" != "$latest_version" && "$latest_version" != "unknown" ]]; then
-      echo "[chezmoi] Update available: v${current_version} → v${latest_version}"
-      echo "[chezmoi] Run: npm update -g @anthropic-ai/claude-code"
-    fi
-  fi
+# Check if already installed via native installer
+if [[ -x "$NATIVE_BIN" ]]; then
+  current_version=$("$NATIVE_BIN" --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || echo "unknown")
+  echo "[chezmoi] Claude CLI already installed (v${current_version}) at $NATIVE_BIN"
+
+  # Check for updates using claude's built-in update
+  echo "[chezmoi] To update, run: claude update"
   exit 0
 fi
 
-# Ensure npm is available
-if ! have npm; then
-  echo "[chezmoi] ERROR: npm not found. Install Node.js/npm first."
-  echo "[chezmoi] Run: brew install node"
-  exit 1
+# Remove old npm version if it exists
+if have npm; then
+  if npm list -g @anthropic-ai/claude-code >/dev/null 2>&1; then
+    echo "[chezmoi] Removing old npm installation..."
+    npm uninstall -g @anthropic-ai/claude-code || true
+  fi
 fi
 
-# Install Claude Code CLI from npm
-echo "[chezmoi] Installing @anthropic-ai/claude-code globally..."
-npm install -g @anthropic-ai/claude-code
+# Ensure ~/.local/bin exists and is in PATH
+mkdir -p "$HOME/.local/bin"
 
-if have claude; then
-  version=$(claude --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+# Install via native installer
+echo "[chezmoi] Running native installer..."
+curl -fsSL https://claude.ai/install.sh | bash
+
+if [[ -x "$NATIVE_BIN" ]]; then
+  version=$("$NATIVE_BIN" --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
   echo "[chezmoi] ✓ Claude Code CLI v${version} installed"
-  echo "[chezmoi] Location: $(which claude)"
+  echo "[chezmoi] Location: $NATIVE_BIN"
+  echo "[chezmoi] Data: $NATIVE_DATA"
 else
-  echo "[chezmoi] WARNING: Installation completed but 'claude' command not found in PATH"
-  echo "[chezmoi] Check ~/.npm-global/bin is in your PATH"
+  echo "[chezmoi] WARNING: Installation completed but 'claude' not found at $NATIVE_BIN"
+  echo "[chezmoi] Ensure ~/.local/bin is in your PATH"
 fi

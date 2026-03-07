@@ -2,7 +2,7 @@
 title: Claude Code Configuration Update Guide
 category: guide
 component: claude-config-update
-status: active
+status: deprecated
 version: 1.0.0
 last_updated: 2025-11-07
 tags: [claude-code, configuration, chezmoi, biome]
@@ -10,6 +10,8 @@ priority: high
 ---
 
 # Claude Code Configuration Update Guide
+
+> **Deprecated**: References `06-templates/chezmoi/dot_claude/` templates that were removed in commit 41d95ab. Do not follow these instructions. See `docs/claude-cli-setup.md` instead.
 
 ## Overview
 
@@ -242,17 +244,17 @@ cp ~/.config/fish/conf.d/10-claude.fish.backup-$(date +%Y%m%d) \
 
 **Solution**:
 ```bash
-# Verify npm global path is in PATH
-echo $PATH | grep npm-global
+# Verify ~/.local/bin is in PATH
+echo $PATH | grep local/bin
 
 # If not found, check Fish path config
 cat ~/.config/fish/conf.d/04-paths.fish
 
 # Verify Claude binary exists
-ls -la ~/.npm-global/bin/claude
+ls -la ~/.local/bin/claude
 
-# Reinstall if needed
-npm install -g @anthropic-ai/claude-code
+# Reinstall if needed (native installer)
+curl -fsSL https://claude.ai/install.sh | bash
 ```
 
 ### Issue: Environment Variables Not Set
@@ -338,8 +340,8 @@ chezmoi apply
 # Check for Claude CLI updates regularly
 claude_check_updates
 
-# Update when available
-npm update -g @anthropic-ai/claude-code
+# Update when available (native installer)
+claude update
 ```
 
 ## Configuration Customization

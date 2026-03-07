@@ -1,11 +1,11 @@
 ---
-title: Codex Cli Setup
+title: Codex CLI Setup
 category: reference
 component: codex_cli_setup
 status: active
-version: 2.0.0
-last_updated: 2025-12-05
-tags: []
+version: 2.1.0
+last_updated: 2026-02-05
+tags: [cli, codex, openai, ai, npm]
 priority: medium
 ---
 
@@ -17,8 +17,8 @@ expects. Codex uses a single TOML config shared by the CLI and IDE.
 
 ## Overview
 
-- **Installation**: Homebrew (`brew install openai/openai/codex`)
-- **Binary location**: Usually `/opt/homebrew/bin/codex` (or in PATH via brew)
+- **Installation**: npm (`npm install -g @openai/codex`)
+- **Binary location**: `~/.npm-global/bin/codex`
 - **Config**: Single file at `~/.codex/config.toml` (not managed by chezmoi)
 - **Env hook**: `CODEX_CONFIG=$HOME/.codex/config.toml` (for global default)
 - **Fish config**: `~/.config/fish/conf.d/12-codex.fish` (chezmoi-managed)
@@ -26,10 +26,10 @@ expects. Codex uses a single TOML config shared by the CLI and IDE.
 
 ## Installation
 
-Install via Homebrew (preferred for 2025 builds):
+Install via npm:
 
 ```bash
-brew install openai/openai/codex
+npm install -g @openai/codex
 ```
 
 ### Automated Installation
@@ -62,7 +62,7 @@ chezmoi apply
 ### Environment Variables
 
 ```fish
-CODEX_BIN="/opt/homebrew/bin/codex"              # Brew location (fallbacks to PATH)
+CODEX_BIN="$HOME/.npm-global/bin/codex"          # npm global location
 CODEX_CONFIG="$HOME/.codex/config.toml"          # Single config file Codex reads
 CODEX_PROFILE="dev"                              # Default profile inside config
 CODEX_SANDBOX="workspace-write"                  # Sandbox mode
@@ -164,23 +164,25 @@ codex_check_updates
 
 Codex supports Model Context Protocol (MCP) servers for extended functionality.
 
-### Configuration
+### Global MCP Servers
+
+Global servers are managed via `~/SystemConfig/ai-tools/sync-to-tools.sh`, which appends `[mcp_servers.*]` sections to `~/.codex/config.toml`.
+
+### Project-Specific Servers
+
+Add directly to config:
 
 ```toml
-[mcp_servers.context7]
+[mcp_servers.my-project]
 command = "npx"
-args = ["-y", "@upstash/context7-mcp"]
+args = ["-y", "my-mcp-server"]
 ```
 
-### Adding MCP Servers
+Or via CLI:
 
 ```bash
 codex mcp add <server-name>
-
-# Or manually edit CODEX_CONFIG / ~/.codex/config.toml
 ```
-
-Ensure MCP server binaries are in your PATH.
 
 ## Workflow Examples
 
@@ -216,10 +218,10 @@ codex -p dev --sandbox=full  # Full access for system maintenance (trusted only)
 
 ### Command not found
 
-Ensure your brew prefix is in PATH:
+Ensure npm global bin is in PATH:
 
 ```fish
-fish_add_path /opt/homebrew/bin
+fish_add_path ~/.npm-global/bin
 ```
 
 Verify installation:
@@ -284,8 +286,8 @@ Output:
 Codex CLI Status
 ================
 
-Version:  codex-cli 0.63.0
-Location: /opt/homebrew/bin/codex
+Version:  codex-cli 0.98.0
+Location: /Users/verlyn13/.npm-global/bin/codex
 Config:   /Users/verlyn13/.codex/config.toml
 Profile:  dev
 Sandbox:  workspace-write
@@ -304,7 +306,7 @@ codex -p dev
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CODEX_BIN` | `/opt/homebrew/bin/codex` | Path to Codex binary |
+| `CODEX_BIN` | `~/.npm-global/bin/codex` | Path to Codex binary |
 | `CODEX_CONFIG` | `~/.codex/config.toml` | Config file (single source) |
 | `CODEX_PROFILE` | `dev` | Default profile |
 | `CODEX_SANDBOX` | `workspace-write` | Sandbox mode |
@@ -327,5 +329,5 @@ codex -p dev
 
 ---
 
-**Last Updated**: 2025-12-05
+**Last Updated**: 2026-02-05
 **Maintainer**: System setup team

@@ -1,187 +1,129 @@
 #!/usr/bin/env fish
 # Claude Code CLI Configuration (managed via chezmoi)
-# Single source of truth for Claude CLI commands and configuration
-# Installation: npm install -g @anthropic-ai/claude-code
+# Installation: curl -fsSL https://claude.ai/install.sh | bash
 # Docs: https://docs.anthropic.com/en/docs/claude-code/overview
 
-# Disable auto-updater (use Homebrew for updates instead)
-# Prevents auto-updater from installing to ~/.local/bin/claude
-set -gx DISABLE_AUTOUPDATER 1
-
-# Model selection (override in .envrc or env vars)
-if not set -q CLAUDE_DEFAULT_MODEL
-    set -gx CLAUDE_DEFAULT_MODEL "claude-sonnet-4-5-20250929"  # Sonnet 4.5 (latest)
-end
-if not set -q CLAUDE_PLAN_MODEL
-    set -gx CLAUDE_PLAN_MODEL "claude-opus-4-20250514"  # Opus 4 for planning
-end
-# Auth mode: 'subscription' (default) or 'api'
-if not set -q CLAUDE_AUTH
-    set -gx CLAUDE_AUTH subscription
-end
-# How to fetch an API key when using CLAUDE_AUTH=api or ccplan
-if not set -q CLAUDE_API_KEY_CMD
-    set -gx CLAUDE_API_KEY_CMD "gopass show anthropic/api-keys/opus"
-end
-# Claude Code binary path (set if using local install)
+# === Environment ===
+# Native installer location (replaces npm-global path)
 if not set -q CLAUDE_BIN
-    # Default: use npm global installation
-    set -gx CLAUDE_BIN ~/.npm-global/bin/claude
+    set -gx CLAUDE_BIN ~/.local/bin/claude
 end
+set -gx CLAUDE_CONFIG_DIR ~/.claude
 
-# ============================================
-# Claude Code Environment Variables (v2.0+)
-# ============================================
+# Disable telemetry (also configurable in settings.json)
+set -gx DISABLE_TELEMETRY 1
+set -gx DISABLE_ERROR_REPORTING 1
 
-# Performance & Timeouts
-set -gx BASH_DEFAULT_TIMEOUT_MS 600000  # 10 minutes
-set -gx BASH_MAX_TIMEOUT_MS 1800000     # 30 minutes
-set -gx MCP_TIMEOUT 30000                # 30 seconds
-set -gx MCP_TOOL_TIMEOUT 120000          # 2 minutes
+# Performance tuning (adjust per machine)
+set -gx MAX_THINKING_TOKENS 32000
+set -gx BASH_DEFAULT_TIMEOUT_MS 300000
+set -gx BASH_MAX_TIMEOUT_MS 600000
+set -gx MCP_TIMEOUT 60000
+set -gx MCP_TOOL_TIMEOUT 120000
 
-# Bash Tool Configuration
-set -gx CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR true
-set -gx CLAUDE_BASH_NO_LOGIN 1  # Skip login shell for faster execution
+# === Abbreviations ===
+abbr -a cc 'claude'
+abbr -a ccp 'claude -p'
+abbr -a ccr 'claude --resume'
+abbr -a ccc 'claude --continue'
+abbr -a ccd 'claude --add-dir'
 
-# Privacy & Telemetry
-set -gx CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC true
-set -gx DISABLE_TELEMETRY true
-set -gx DISABLE_ERROR_REPORTING false  # Allow error reports (helps improve tool)
+# === Functions ===
 
-# Optimization
-set -gx USE_BUILTIN_RIPGREP 1
-set -gx DISABLE_INTERLEAVED_THINKING false
+# Initialize Claude Code project structure
+function claude-init -d "Initialize Claude Code project in current directory"
+    set -l project_dir (pwd)
+    set -l project_name (basename $project_dir)
 
-# SDK Mode Configuration (v2.0.35+)
-set -gx CLAUDE_CODE_EXIT_AFTER_STOP_DELAY 5000  # Auto-exit after 5s idle
+    echo "Initializing Claude Code project: $project_name"
 
-# IDE Integration
-set -gx CLAUDE_CODE_AUTO_CONNECT_IDE true
+    mkdir -p .claude/commands .claude/agents
 
-function __claude_exec --description 'Execute Claude CLI (prefer npm global install)'
-    # Modern approach: use npm global installation at ~/.npm-global/bin/claude
-    if test -x $CLAUDE_BIN
-        command $CLAUDE_BIN $argv
-        return $status
+    # Create settings.json if not exists
+    if not test -f .claude/settings.json
+        echo '{
+  "permissions": {
+    "allow": [],
+    "ask": [],
+    "deny": ["Read(./.env)", "Read(./.env.*)"]
+  }
+}' > .claude/settings.json
+        echo "  Created .claude/settings.json"
     end
 
-    # Fallback: check PATH for 'claude'
-    if type -q claude
-        command claude $argv
-        return $status
+    # Create CLAUDE.md if not exists
+    if not test -f CLAUDE.md
+        echo "# Project: $project_name
+
+## Overview
+<!-- Project description -->
+
+## Tech Stack
+<!-- Languages, frameworks, tools -->
+
+## Commands
+<!-- Common commands: build, test, lint -->
+" > CLAUDE.md
+        echo "  Created CLAUDE.md"
     end
 
-    # Last resort: check for older 'anthropic' command
-    if type -q anthropic
-        command anthropic $argv
-        return $status
-    end
-
-    echo 'claude: CLI not found. Run: npm install -g @anthropic-ai/claude-code'
-    return 127
-end
-
-function __claude_resolve_api_key --description 'resolve ANTHROPIC_API_KEY'
-    if set -q ANTHROPIC_API_KEY
-        echo $ANTHROPIC_API_KEY
-        return 0
-    end
-    if type -q gopass
-        set -l key (eval $CLAUDE_API_KEY_CMD 2>/dev/null)
-        if test -n "$key"
-            echo $key
-            return 0
-        end
-    end
-    return 1
-end
-
-function __claude_run --description 'run Claude with auth + model handling'
-    set -l args $argv
-    # Apply default model if none specified and variable is set
-    if test -n "$CLAUDE_DEFAULT_MODEL"
-        # Only inject if user did not specify --model
-        if not contains -- '--model' $args
-            set args --model $CLAUDE_DEFAULT_MODEL $args
+    # Update .gitignore
+    if test -f .gitignore
+        if not grep -q "settings.local.json" .gitignore
+            echo "
+# Claude Code
+.claude/settings.local.json
+.claude/activity.log" >> .gitignore
+            echo "  Updated .gitignore"
         end
     end
 
-    switch $CLAUDE_AUTH
-        case api
-            set -l key (__claude_resolve_api_key)
-            if test -z "$key"
-                echo 'claude: missing ANTHROPIC_API_KEY and unable to resolve via CLAUDE_API_KEY_CMD'
-                return 1
-            end
-            env ANTHROPIC_API_KEY="$key" __claude_exec $args
-        case '*'
-            # subscription/session auth
-            __claude_exec $args
+    echo "Done!"
+end
+
+# Quick code review with Claude
+function claude-review -d "Review staged changes or specified files"
+    set -l target $argv
+    if test -z "$target"
+        set target (git diff --staged --name-only | string join " ")
+    end
+
+    if test -z "$target"
+        echo "No staged changes and no files specified"
+        return 1
+    end
+
+    claude -p "Review these changes for bugs, security issues, and improvements: $target"
+end
+
+# Project detection on directory change
+function __claude_project_check --on-variable PWD
+    if test -f CLAUDE.md -o -d .claude
+        set_color cyan
+        echo "󰚩 Claude Code project"
+        set_color normal
     end
 end
 
-# Public commands (simple, documented)
-function cc --description 'Claude (default model)'
-    __claude_run $argv
-end
-
-function ccc --description 'Claude: continue conversation'
-    __claude_run --continue $argv
-end
-
-function ccp --description 'Claude: plan/headless mode'
-    __claude_run -p $argv
-end
-
-function ccplan --description 'Claude: force planning model (Opus) using API auth'
-    set -l prev_auth $CLAUDE_AUTH
-    set -gx CLAUDE_AUTH api
-    __claude_run --model $CLAUDE_PLAN_MODEL $argv
-    set -gx CLAUDE_AUTH $prev_auth
-end
-
-# Provide 'claude' command if PATH doesn't have it
-if not type -q claude
-    function claude --description 'Claude Code CLI'
-        __claude_run $argv
-    end
-end
-
-# ============================================
-# Helper Functions
-# ============================================
-
-# Start Claude with multiple directories
-function ccm --description 'Claude with multi-directory support'
-    set -l dirs
-    for arg in $argv
-        if test -d $arg
-            set -a dirs --add-dir $arg
-        end
-    end
-    __claude_run $dirs
-end
-
-# Start Claude with Opus for complex tasks
-function cco --description 'Claude with Opus model'
-    __claude_run --model claude-opus-4-1-20250805 $argv
-end
-
-# Version check helper (run manually: claude_check_updates)
-function claude_check_updates --description 'Check for Claude CLI updates'
+# Version check and update helper
+function claude_check_updates -d "Check for Claude CLI updates and update if available"
     set -l current (claude --version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
-    set -l latest (npm view @anthropic-ai/claude-code version 2>/dev/null)
 
-    if test -n "$current" -a -n "$latest"
+    if test -n "$current"
         echo "Current: v$current"
-        echo "Latest:  v$latest"
-        if test "$current" != "$latest"
-            echo ""
-            echo "Update available! Run: npm update -g @anthropic-ai/claude-code"
-        else
-            echo "✓ Up to date"
-        end
+        echo ""
+        echo "Checking for updates..."
+        claude update
     else
-        echo "Could not determine version info"
+        echo "Claude CLI not found. Install with: curl -fsSL https://claude.ai/install.sh | bash"
+    end
+end
+
+# Provide 'claude' if PATH doesn't include ~/.local/bin but CLAUDE_BIN exists
+if not type -q claude
+    if test -x $CLAUDE_BIN
+        function claude --description 'Claude Code CLI'
+            $CLAUDE_BIN $argv
+        end
     end
 end

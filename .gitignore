@@ -34,6 +34,7 @@ tmp/
 .claude/logs/
 .claude/cache/
 .claude/*.log
+.claude/settings.local.json
 
 # Gemini
 .gemini/tmp/

@@ -1,26 +1,281 @@
-# ~/.zshrc (chezmoi): safe hooks for mise + direnv
+# ~/.zshrc (chezmoi): Interactive shell configuration
+# Managed by chezmoi - edit ~/.local/share/chezmoi/dot_zshrc.tmpl
 
 # Interactive shell check
 if [[ $- != *i* ]]; then
   return
 fi
 
-# Homebrew (optional, macOS)
+# =============================================================================
+# Core Tool Integration
+# =============================================================================
+
+# Homebrew
 if [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 elif [[ -x /usr/local/bin/brew ]]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 
-# mise activation
+# mise activation (runtime management)
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate zsh)"
 fi
 
 # direnv hook (opt-out with DIRENV_DISABLE=1)
-if [[ -z "${DIRENV_DISABLE:-}" ]]; then
-  if command -v direnv >/dev/null 2>&1; then
-    export DIRENV_LOG_FORMAT=""
-    eval "$(direnv hook zsh)"
-  fi
+if [[ -z "${DIRENV_DISABLE:-}" ]] && command -v direnv >/dev/null 2>&1; then
+  export DIRENV_LOG_FORMAT=""
+  eval "$(direnv hook zsh)"
 fi
+
+# =============================================================================
+# Completion System
+# =============================================================================
+
+# Initialize completion system
+autoload -Uz compinit
+# Only regenerate completion dump once per day
+if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+  compinit
+else
+  compinit -C
+fi
+
+# Completion settings
+zstyle ':completion:*' menu select                       # Menu selection
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' # Case insensitive
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"  # Colored completions
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*:descriptions' format '%B%d%b'
+zstyle ':completion:*:messages' format '%d'
+zstyle ':completion:*:warnings' format 'No matches for: %d'
+zstyle ':completion:*' group-name ''
+
+# Cache completions
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path ~/.cache/zsh/compcache
+
+# =============================================================================
+# History
+# =============================================================================
+
+HISTFILE=~/.zsh_history
+HISTSIZE=50000
+SAVEHIST=50000
+
+setopt EXTENDED_HISTORY          # Write timestamps to history
+setopt HIST_EXPIRE_DUPS_FIRST    # Expire duplicates first
+setopt HIST_IGNORE_DUPS          # Don't record duplicates
+setopt HIST_IGNORE_SPACE         # Don't record commands starting with space
+setopt HIST_VERIFY               # Show command before executing from history
+setopt SHARE_HISTORY             # Share history between sessions
+setopt INC_APPEND_HISTORY        # Add commands immediately
+
+# =============================================================================
+# Key Bindings
+# =============================================================================
+
+# Use emacs key bindings
+bindkey -e
+
+# Better history search
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search    # Up arrow
+bindkey '^[[B' down-line-or-beginning-search  # Down arrow
+bindkey '^P' up-line-or-beginning-search      # Ctrl+P
+bindkey '^N' down-line-or-beginning-search    # Ctrl+N
+
+# Word navigation
+bindkey '^[[1;5C' forward-word    # Ctrl+Right
+bindkey '^[[1;5D' backward-word   # Ctrl+Left
+bindkey '^[f' forward-word        # Alt+f
+bindkey '^[b' backward-word       # Alt+b
+
+# Delete word
+bindkey '^[d' kill-word           # Alt+d
+bindkey '^W' backward-kill-word   # Ctrl+W
+
+# Home/End
+bindkey '^[[H' beginning-of-line  # Home
+bindkey '^[[F' end-of-line        # End
+bindkey '^A' beginning-of-line    # Ctrl+A
+bindkey '^E' end-of-line          # Ctrl+E
+
+# =============================================================================
+# Shell Options
+# =============================================================================
+
+setopt AUTO_CD              # cd without typing cd
+setopt AUTO_PUSHD           # Push directories to stack
+setopt PUSHD_IGNORE_DUPS    # No duplicates in dir stack
+setopt PUSHD_SILENT         # Don't print stack after pushd/popd
+setopt CORRECT              # Command correction
+setopt INTERACTIVE_COMMENTS # Allow comments in interactive shell
+setopt NO_BEEP              # No beeping
+
+# =============================================================================
+# Aliases
+# =============================================================================
+
+# Git
+alias gs='git status'
+alias gd='git diff'
+alias gds='git diff --staged'
+alias ga='git add'
+alias gap='git add -p'
+alias gc='git commit'
+alias gcm='git commit -m'
+alias gca='git commit --amend'
+alias gp='git push'
+alias gpf='git push --force-with-lease'
+alias gpl='git pull'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gb='git branch'
+alias gba='git branch -a'
+alias gl='git log --oneline -20'
+alias glo='git log --oneline --graph --all'
+alias gst='git stash'
+alias gstp='git stash pop'
+
+# Navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias dev='cd ~/Development'
+alias personal='cd ~/Development/personal'
+alias work='cd ~/Development/work'
+
+# Better defaults (if tools installed)
+if command -v eza >/dev/null 2>&1; then
+  alias ls='eza --icons --group-directories-first'
+  alias ll='eza -la --icons --group-directories-first'
+  alias lt='eza -T --icons -L 2'
+else
+  alias ll='ls -la'
+fi
+
+command -v bat >/dev/null 2>&1 && alias cat='bat --plain --paging=never'
+command -v rg >/dev/null 2>&1 && alias grep='rg'
+command -v fd >/dev/null 2>&1 && alias find='fd'
+
+# Node/JS
+alias ni='npm install'
+alias nr='npm run'
+alias nrd='npm run dev'
+alias nrb='npm run build'
+alias nrt='npm run test'
+
+# Misc
+alias c='clear'
+alias h='history'
+alias reload='source ~/.zshrc'
+alias zshrc='${EDITOR:-nvim} ~/.zshrc'
+
+# =============================================================================
+# Functions
+# =============================================================================
+
+# Quick project navigation with fzf
+proj() {
+  local dir
+  dir=$(find ~/Development -maxdepth 3 -type d -name '.git' 2>/dev/null |
+        sed 's|/.git$||' |
+        fzf --height 40% --reverse --prompt="Project: ")
+  [[ -n "$dir" ]] && cd "$dir"
+}
+
+# Create and enter directory
+mkcd() {
+  mkdir -p "$1" && cd "$1"
+}
+
+# Git branch with fzf
+fco() {
+  local branch
+  branch=$(git branch -a | fzf --height 40% --reverse | sed 's/^[* ]*//' | sed 's|remotes/origin/||')
+  [[ -n "$branch" ]] && git checkout "$branch"
+}
+
+# Show what's using a port
+port() {
+  lsof -i ":$1"
+}
+
+# Kill process on port
+killport() {
+  local pid=$(lsof -ti ":$1")
+  if [[ -n "$pid" ]]; then
+    kill -9 "$pid"
+    echo "Killed process $pid"
+  else
+    echo "No process found on port $1"
+  fi
+}
+
+# Quick HTTP server
+serve() {
+  local port="${1:-8000}"
+  python3 -m http.server "$port"
+}
+
+# System update (calls unified bash script)
+system-update() {
+  local script="$HOME/SystemConfig/scripts/system-update.sh"
+  if [[ -x "$script" ]]; then
+    bash "$script" "$@"
+  else
+    echo "system-update: script not found at $script (run: chezmoi apply)"
+    return 1
+  fi
+}
+
+# Backward compat
+update-tools() {
+  echo "Note: 'update-tools' is deprecated. Use 'system-update' instead."
+  system-update "$@"
+}
+
+# =============================================================================
+# Prompt (Starship)
+# =============================================================================
+
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
+
+# =============================================================================
+# FZF Integration (if installed)
+# =============================================================================
+
+if command -v fzf >/dev/null 2>&1; then
+  # Set up fzf key bindings and fuzzy completion
+  source <(fzf --zsh 2>/dev/null) || true
+
+  # Use fd for fzf if available
+  if command -v fd >/dev/null 2>&1; then
+    export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+  fi
+
+  export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+fi
+
+# =============================================================================
+# User Binary Paths
+# =============================================================================
+
+# GAM7 — Google Workspace CLI (https://github.com/GAM-team/GAM)
+# Install: bash <(curl -s -S -L https://git.io/gam-install)
+# Update:  gam_update (or system-update --only gam)
+[[ -d "$HOME/bin/gam7" ]] && path=("$HOME/bin/gam7" $path)
+
+# =============================================================================
+# Local Overrides (not in chezmoi)
+# =============================================================================
+
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
