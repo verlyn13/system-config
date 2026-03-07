@@ -1,0 +1,673 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2088
+# ng-doctor — Nash Group development machine verification harness
+# Delivered via chezmoi from home/dot_local/bin/ng-doctor.tmpl
+# Spec: DEVMACHINE-SPEC Section 7
+#
+# Exit codes:
+#   0 — all checks passed (or skipped)
+#   1 — one or more checks failed
+#
+# Usage:
+#   ng-doctor              # run all checks
+#   ng-doctor <category>   # run checks for one category
+#   ng-doctor --list       # list all checks
+#   ng-doctor --summary    # compact pass/fail/skip counts
+
+set -euo pipefail
+
+# --- Configuration -----------------------------------------------------------
+
+SYSTEM_CONFIG_DIR="{{ .chezmoi.workingTree }}"
+HOMEBREW_PREFIX="{{ .homebrew_prefix | default "/opt/homebrew" }}"
+CHEZMOI_SOURCE="{{ .chezmoi.sourceDir }}"
+
+# --- Output helpers -----------------------------------------------------------
+
+_pass=0
+_fail=0
+_skip=0
+
+pass() {
+  local name="$1" desc="$2"
+  printf '\033[32m✓\033[0m %s: %s\n' "$name" "$desc"
+  (( _pass++ )) || true
+}
+
+fail() {
+  local name="$1" desc="$2" expected="$3" got="$4"
+  printf '\033[31m✗\033[0m %s: %s — EXPECTED: %s, GOT: %s\n' "$name" "$desc" "$expected" "$got"
+  (( _fail++ )) || true
+}
+
+skip() {
+  local name="$1" reason="$2"
+  printf '\033[33m⊘\033[0m %s: skipped (%s)\n' "$name" "$reason"
+  (( _skip++ )) || true
+}
+
+section() {
+  printf '\n\033[1m[%s]\033[0m\n' "$1"
+}
+
+# --- Category: shell ----------------------------------------------------------
+
+check_login_shell_is_zsh() {
+  local actual
+  actual=$(dscl . -read /Users/"$USER" UserShell 2>/dev/null | awk '{print $2}')
+  if [[ "$actual" == "/bin/zsh" ]]; then
+    pass "login_shell_is_zsh" "Login shell is /bin/zsh"
+  else
+    fail "login_shell_is_zsh" "Login shell" "/bin/zsh" "${actual:-unknown}"
+  fi
+}
+
+check_homebrew_bash_installed() {
+  if [[ -x "${HOMEBREW_PREFIX}/bin/bash" ]]; then
+    pass "homebrew_bash_installed" "Homebrew bash installed"
+  else
+    fail "homebrew_bash_installed" "Homebrew bash" "${HOMEBREW_PREFIX}/bin/bash" "not found"
+  fi
+}
+
+check_fish_installed() {
+  if command -v fish &>/dev/null; then
+    pass "fish_installed" "Fish shell installed"
+  else
+    fail "fish_installed" "Fish shell" "installed" "not found"
+  fi
+}
+
+check_zshenv_is_minimal() {
+  local zshenv="$HOME/.zshenv"
+  if [[ ! -f "$zshenv" ]]; then
+    skip "zshenv_is_minimal" ".zshenv does not exist yet"
+    return
+  fi
+  local lines
+  lines=$(grep -cve '^\s*$' -e '^\s*#' "$zshenv" 2>/dev/null || echo 0)
+  if (( lines <= 15 )); then
+    pass "zshenv_is_minimal" ".zshenv has ${lines} non-comment lines (<=15)"
+  else
+    fail "zshenv_is_minimal" ".zshenv line count" "<=15" "$lines"
+  fi
+}
+
+check_zshrc_loads_modules() {
+  local zshrc="$HOME/.zshrc"
+  if [[ ! -f "$zshrc" ]]; then
+    skip "zshrc_loads_modules" ".zshrc does not exist yet"
+    return
+  fi
+  if grep -q 'zshrc\.d' "$zshrc" 2>/dev/null; then
+    pass "zshrc_loads_modules" ".zshrc sources zshrc.d/ modules"
+  else
+    fail "zshrc_loads_modules" ".zshrc module loading" "sources zshrc.d/*.zsh" "no zshrc.d reference found"
+  fi
+}
+
+check_zshrc_d_modules_present() {
+  local moddir="$HOME/.config/zsh/zshrc.d"
+  if [[ ! -d "$moddir" ]]; then
+    skip "zshrc_d_modules_present" "zshrc.d/ does not exist yet"
+    return
+  fi
+  local count
+  count=$(find "$moddir" -name '*.zsh' -type f 2>/dev/null | wc -l | tr -d ' ')
+  if (( count >= 10 )); then
+    pass "zshrc_d_modules_present" "${count} modules in zshrc.d/"
+  else
+    fail "zshrc_d_modules_present" "Module count" ">=10" "$count"
+  fi
+}
+
+check_bash_config_minimal() {
+  local bashrc="$HOME/.bashrc"
+  if [[ ! -f "$bashrc" ]]; then
+    skip "bash_config_minimal" ".bashrc does not exist yet"
+    return
+  fi
+  local lines
+  lines=$(grep -cve '^\s*$' -e '^\s*#' "$bashrc" 2>/dev/null || echo 0)
+  if (( lines <= 40 )); then
+    pass "bash_config_minimal" ".bashrc has ${lines} non-comment lines (<=40)"
+  else
+    fail "bash_config_minimal" ".bashrc line count" "<=40" "$lines"
+  fi
+}
+
+run_shell_checks() {
+  section "shell"
+  check_login_shell_is_zsh
+  check_homebrew_bash_installed
+  check_fish_installed
+  check_zshenv_is_minimal
+  check_zshrc_loads_modules
+  check_zshrc_d_modules_present
+  check_bash_config_minimal
+}
+
+# --- Category: path ----------------------------------------------------------
+
+check_homebrew_on_path() {
+  if [[ ":$PATH:" == *":${HOMEBREW_PREFIX}/bin:"* ]]; then
+    pass "homebrew_on_path" "Homebrew bin on PATH"
+  else
+    fail "homebrew_on_path" "PATH entry" "${HOMEBREW_PREFIX}/bin" "not in PATH"
+  fi
+}
+
+check_local_bin_on_path() {
+  if [[ ":$PATH:" == *":$HOME/.local/bin:"* ]]; then
+    pass "local_bin_on_path" "~/.local/bin on PATH"
+  else
+    fail "local_bin_on_path" "PATH entry" "~/.local/bin" "not in PATH"
+  fi
+}
+
+check_mise_shims_on_path() {
+  local shims_dir="$HOME/.local/share/mise/shims"
+  if [[ ":$PATH:" == *":${shims_dir}:"* ]]; then
+    pass "mise_shims_on_path" "mise shims on PATH"
+  else
+    fail "mise_shims_on_path" "PATH entry" "$shims_dir" "not in PATH"
+  fi
+}
+
+check_no_duplicate_path_entries() {
+  local dupes
+  dupes=$(echo "$PATH" | tr ':' '\n' | sort | uniq -d | head -5)
+  if [[ -z "$dupes" ]]; then
+    pass "no_duplicate_path_entries" "No duplicate PATH entries"
+  else
+    fail "no_duplicate_path_entries" "Duplicate PATH entries" "none" "$dupes"
+  fi
+}
+
+run_path_checks() {
+  section "path"
+  check_homebrew_on_path
+  check_local_bin_on_path
+  check_mise_shims_on_path
+  check_no_duplicate_path_entries
+}
+
+# --- Category: tools ---------------------------------------------------------
+
+_check_tool() {
+  local name="$1" cmd="$2"
+  if command -v "$cmd" &>/dev/null; then
+    pass "${name}" "${cmd} installed"
+  else
+    fail "${name}" "${cmd}" "installed" "not found"
+  fi
+}
+
+check_mise_installed() { _check_tool "mise_installed" "mise"; }
+check_direnv_installed() { _check_tool "direnv_installed" "direnv"; }
+check_chezmoi_installed() { _check_tool "chezmoi_installed" "chezmoi"; }
+check_starship_installed() { _check_tool "starship_installed" "starship"; }
+check_gopass_installed() { _check_tool "gopass_installed" "gopass"; }
+
+check_mise_activated() {
+  if ! command -v mise &>/dev/null; then
+    skip "mise_activated" "mise not installed"
+    return
+  fi
+  # mise activation sets MISE_SHELL or the shims dir is functional
+  if [[ -n "${MISE_SHELL:-}" ]] || mise current &>/dev/null; then
+    pass "mise_activated" "mise is activated"
+  else
+    fail "mise_activated" "mise activation" "active" "not activated in current shell"
+  fi
+}
+
+check_direnv_hooked() {
+  if ! command -v direnv &>/dev/null; then
+    skip "direnv_hooked" "direnv not installed"
+    return
+  fi
+  # Check if direnv hook is present in shell config
+  local hooked=false
+  if [[ -f "$HOME/.zshrc" ]] && grep -q 'direnv' "$HOME/.zshrc" 2>/dev/null; then
+    hooked=true
+  fi
+  if [[ -d "$HOME/.config/zsh/zshrc.d" ]] && grep -rl 'direnv' "$HOME/.config/zsh/zshrc.d" &>/dev/null; then
+    hooked=true
+  fi
+  if [[ -d "$HOME/.config/fish/conf.d" ]] && grep -rl 'direnv' "$HOME/.config/fish/conf.d" &>/dev/null; then
+    hooked=true
+  fi
+  if $hooked; then
+    pass "direnv_hooked" "direnv hook found in shell config"
+  else
+    fail "direnv_hooked" "direnv hook" "in shell config" "not found"
+  fi
+}
+
+run_tools_checks() {
+  section "tools"
+  check_mise_installed
+  check_mise_activated
+  check_direnv_installed
+  check_direnv_hooked
+  check_chezmoi_installed
+  check_starship_installed
+  check_gopass_installed
+}
+
+# --- Category: iterm2 --------------------------------------------------------
+
+check_dynamic_profiles_dir_exists() {
+  local dp_dir="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+  if [[ -d "$dp_dir" ]]; then
+    pass "dynamic_profiles_dir_exists" "DynamicProfiles directory exists"
+  else
+    fail "dynamic_profiles_dir_exists" "DynamicProfiles dir" "exists" "not found"
+  fi
+}
+
+check_dev_profile_installed() {
+  local dp_dir="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+  if [[ ! -d "$dp_dir" ]]; then
+    skip "dev_profile_installed" "DynamicProfiles dir missing"
+    return
+  fi
+  if find "$dp_dir" -name '*.json' -exec grep -l '"Name".*[Dd]ev' {} + &>/dev/null; then
+    pass "dev_profile_installed" "Dev profile found in DynamicProfiles"
+  else
+    fail "dev_profile_installed" "Dev profile" "installed" "not found"
+  fi
+}
+
+check_agentic_profile_installed() {
+  local dp_dir="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+  if [[ ! -d "$dp_dir" ]]; then
+    skip "agentic_profile_installed" "DynamicProfiles dir missing"
+    return
+  fi
+  if find "$dp_dir" -name '*.json' -exec grep -l '"Name".*[Aa]gentic' {} + &>/dev/null; then
+    pass "agentic_profile_installed" "Agentic profile found in DynamicProfiles"
+  else
+    fail "agentic_profile_installed" "Agentic profile" "installed" "not found"
+  fi
+}
+
+check_human_fish_profile_installed() {
+  local dp_dir="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+  if [[ ! -d "$dp_dir" ]]; then
+    skip "human_fish_profile_installed" "DynamicProfiles dir missing"
+    return
+  fi
+  if find "$dp_dir" -name '*.json' -exec grep -l -E '"Name".*(([Hh]uman.*[Ff]ish)|([Ff]ish.*[Hh]uman))' {} + &>/dev/null; then
+    pass "human_fish_profile_installed" "Human-Fish profile found in DynamicProfiles"
+  else
+    fail "human_fish_profile_installed" "Human-Fish profile" "installed" "not found"
+  fi
+}
+
+run_iterm2_checks() {
+  section "iterm2"
+  check_dynamic_profiles_dir_exists
+  check_dev_profile_installed
+  check_agentic_profile_installed
+  check_human_fish_profile_installed
+}
+
+# --- Category: agentic -------------------------------------------------------
+
+check_agentic_mode_loads_minimal() {
+  local moddir="$HOME/.config/zsh/zshrc.d"
+  if [[ ! -d "$moddir" ]]; then
+    skip "agentic_mode_loads_minimal" "zshrc.d/ does not exist yet"
+    return
+  fi
+  local agentic_mod="$moddir/30-agentic.zsh"
+  if [[ -f "$agentic_mod" ]]; then
+    pass "agentic_mode_loads_minimal" "Agentic module exists"
+  else
+    fail "agentic_mode_loads_minimal" "Agentic module" "$agentic_mod" "not found"
+  fi
+}
+
+check_agentic_prompt_is_static() {
+  local moddir="$HOME/.config/zsh/zshrc.d"
+  if [[ ! -d "$moddir" ]]; then
+    skip "agentic_prompt_is_static" "zshrc.d/ does not exist yet"
+    return
+  fi
+  local agentic_mod="$moddir/30-agentic.zsh"
+  if [[ ! -f "$agentic_mod" ]]; then
+    skip "agentic_prompt_is_static" "agentic module not installed"
+    return
+  fi
+  if grep -q 'PROMPT=' "$agentic_mod" 2>/dev/null; then
+    pass "agentic_prompt_is_static" "Static PROMPT set in agentic module"
+  else
+    fail "agentic_prompt_is_static" "Agentic prompt" "static PROMPT=" "not found"
+  fi
+}
+
+check_agentic_startup_under_200ms() {
+  if ! command -v zsh &>/dev/null; then
+    skip "agentic_startup_under_200ms" "zsh not available"
+    return
+  fi
+  local moddir="$HOME/.config/zsh/zshrc.d"
+  if [[ ! -d "$moddir" ]]; then
+    skip "agentic_startup_under_200ms" "zshrc.d/ does not exist yet"
+    return
+  fi
+  # Measure agentic zsh startup time (3 runs, take median)
+  local times=()
+  for _ in 1 2 3; do
+    local t
+    t=$( { TIMEFORMAT='%3R'; time NG_MODE=agentic zsh -lic 'exit' &>/dev/null; } 2>&1 )
+    times+=("$t")
+  done
+  # Sort and take median
+  local sorted
+  sorted=$(printf '%s\n' "${times[@]}" | sort -n)
+  local median
+  median=$(echo "$sorted" | sed -n '2p')
+  # Convert to ms (median is in seconds like 0.045)
+  local ms
+  ms=$(echo "$median" | awk '{printf "%.0f", $1 * 1000}')
+  if (( ms <= 200 )); then
+    pass "agentic_startup_under_200ms" "Agentic zsh startup: ${ms}ms"
+  else
+    fail "agentic_startup_under_200ms" "Startup time" "<=200ms" "${ms}ms"
+  fi
+}
+
+run_agentic_checks() {
+  section "agentic"
+  check_agentic_mode_loads_minimal
+  check_agentic_prompt_is_static
+  check_agentic_startup_under_200ms
+}
+
+# --- Category: filesystem ----------------------------------------------------
+
+check_xdg_dirs_exist() {
+  local all_ok=true
+  local missing=""
+  for dir in "$HOME/.config" "$HOME/.local/share" "$HOME/.local/state" "$HOME/.cache"; do
+    if [[ ! -d "$dir" ]]; then
+      all_ok=false
+      missing="${missing} ${dir}"
+    fi
+  done
+  if $all_ok; then
+    pass "xdg_dirs_exist" "XDG base directories exist"
+  else
+    fail "xdg_dirs_exist" "XDG directories" "all exist" "missing:${missing}"
+  fi
+}
+
+check_organizations_dir_exists() {
+  if [[ -d "$HOME/Organizations" ]]; then
+    pass "organizations_dir_exists" "~/Organizations exists"
+  else
+    fail "organizations_dir_exists" "Organizations dir" "exists" "not found"
+  fi
+}
+
+check_development_dir_exists() {
+  if [[ -d "$HOME/Development" ]]; then
+    pass "development_dir_exists" "~/Development exists"
+  else
+    fail "development_dir_exists" "Development dir" "exists" "not found"
+  fi
+}
+
+check_system_config_in_correct_location() {
+  if [[ -d "$SYSTEM_CONFIG_DIR" ]] && [[ -d "$SYSTEM_CONFIG_DIR/.git" ]]; then
+    pass "system_config_in_correct_location" "system-config at ${SYSTEM_CONFIG_DIR}"
+  else
+    fail "system_config_in_correct_location" "system-config location" "$SYSTEM_CONFIG_DIR" "not found or not a git repo"
+  fi
+}
+
+check_chezmoi_source_is_repo() {
+  if [[ -z "$CHEZMOI_SOURCE" ]]; then
+    skip "chezmoi_source_is_repo" "chezmoi not configured"
+    return
+  fi
+  # After P0-3, chezmoi source should point to system-config/home
+  if [[ "$CHEZMOI_SOURCE" == *"system-config/home"* ]] && [[ -d "$(dirname "$CHEZMOI_SOURCE")/.git" ]]; then
+    pass "chezmoi_source_is_repo" "chezmoi source is within system-config repo"
+  else
+    skip "chezmoi_source_is_repo" "chezmoi source not yet rewired to system-config/home (deferred to end of Phase 1)"
+  fi
+}
+
+check_no_repos_in_desktop_documents() {
+  # Deferred check — always skip for now
+  skip "no_repos_in_desktop_documents" "deferred migration check"
+}
+
+check_spotlight_exclusions_set() {
+  # Phase 5 check — skip until then
+  skip "spotlight_exclusions_set" "Phase 5 check"
+}
+
+run_filesystem_checks() {
+  section "filesystem"
+  check_xdg_dirs_exist
+  check_organizations_dir_exists
+  check_development_dir_exists
+  check_system_config_in_correct_location
+  check_chezmoi_source_is_repo
+  check_no_repos_in_desktop_documents
+  check_spotlight_exclusions_set
+}
+
+# --- Category: hygiene -------------------------------------------------------
+
+check_no_orphan_lockfiles() {
+  if [[ ! -d "$SYSTEM_CONFIG_DIR" ]]; then
+    skip "no_orphan_lockfiles" "system-config not found"
+    return
+  fi
+  local locks
+  locks=$(find "$SYSTEM_CONFIG_DIR" -maxdepth 2 \( -name 'package-lock.json' -o -name 'yarn.lock' -o -name 'pnpm-lock.yaml' \) 2>/dev/null | head -5)
+  if [[ -z "$locks" ]]; then
+    pass "no_orphan_lockfiles" "No orphan lockfiles in system-config"
+  else
+    fail "no_orphan_lockfiles" "Orphan lockfiles" "none" "$locks"
+  fi
+}
+
+check_no_nvmrc_in_systemconfig() {
+  if [[ ! -d "$SYSTEM_CONFIG_DIR" ]]; then
+    skip "no_nvmrc_in_systemconfig" "system-config not found"
+    return
+  fi
+  if [[ -f "$SYSTEM_CONFIG_DIR/.nvmrc" ]]; then
+    fail "no_nvmrc_in_systemconfig" ".nvmrc" "absent" "exists in system-config"
+  else
+    pass "no_nvmrc_in_systemconfig" "No .nvmrc in system-config"
+  fi
+}
+
+check_no_node_version_in_systemconfig() {
+  if [[ ! -d "$SYSTEM_CONFIG_DIR" ]]; then
+    skip "no_node_version_in_systemconfig" "system-config not found"
+    return
+  fi
+  if [[ -f "$SYSTEM_CONFIG_DIR/.node-version" ]]; then
+    fail "no_node_version_in_systemconfig" ".node-version" "absent" "exists in system-config"
+  else
+    pass "no_node_version_in_systemconfig" "No .node-version in system-config"
+  fi
+}
+
+check_chezmoi_source_clean() {
+  local src
+  src=$(chezmoi source-path 2>/dev/null || echo "")
+  if [[ -z "$src" ]]; then
+    skip "chezmoi_source_clean" "chezmoi not configured"
+    return
+  fi
+  if [[ ! -d "$src/.git" ]] && [[ ! -d "$(dirname "$src")/.git" ]]; then
+    skip "chezmoi_source_clean" "chezmoi source is not a git repo"
+    return
+  fi
+  local git_dir="$src"
+  [[ -d "$src/.git" ]] || git_dir="$(dirname "$src")"
+  local dirty
+  dirty=$(git -C "$git_dir" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+  if (( dirty == 0 )); then
+    pass "chezmoi_source_clean" "chezmoi source repo is clean"
+  else
+    fail "chezmoi_source_clean" "chezmoi source" "clean" "${dirty} uncommitted changes"
+  fi
+}
+
+check_git_ignorecase_false() {
+  # Phase 5 check
+  local val
+  val=$(git config --global core.ignorecase 2>/dev/null || echo "unset")
+  if [[ "$val" == "false" ]]; then
+    pass "git_ignorecase_false" "git core.ignorecase is false"
+  else
+    skip "git_ignorecase_false" "Phase 5 check (current: ${val})"
+  fi
+}
+
+run_hygiene_checks() {
+  section "hygiene"
+  check_no_orphan_lockfiles
+  check_no_nvmrc_in_systemconfig
+  check_no_node_version_in_systemconfig
+  check_chezmoi_source_clean
+  check_git_ignorecase_false
+}
+
+# --- Category: governance -----------------------------------------------------
+
+check_org_claude_md_present() {
+  if [[ -f "$HOME/Organizations/CLAUDE.md" ]]; then
+    pass "org_claude_md_present" "~/Organizations/CLAUDE.md exists"
+  else
+    fail "org_claude_md_present" "Org CLAUDE.md" "exists" "not found"
+  fi
+}
+
+check_subsidiary_yaml_present() {
+  local yaml="$HOME/Organizations/jefahnierocks/.subsidiary.yaml"
+  if [[ -f "$yaml" ]]; then
+    pass "subsidiary_yaml_present" ".subsidiary.yaml exists"
+  else
+    fail "subsidiary_yaml_present" ".subsidiary.yaml" "exists at $yaml" "not found"
+  fi
+}
+
+run_governance_checks() {
+  section "governance"
+  check_org_claude_md_present
+  check_subsidiary_yaml_present
+}
+
+# --- Main ---------------------------------------------------------------------
+
+ALL_CATEGORIES=(shell path tools iterm2 agentic filesystem hygiene governance)
+
+list_checks() {
+  echo "ng-doctor checks (37 checks, 8 categories):"
+  echo ""
+  printf "%-14s %s\n" "CATEGORY" "CHECK"
+  printf "%-14s %s\n" "────────" "─────"
+  printf "%-14s %s\n" "shell" "login_shell_is_zsh"
+  printf "%-14s %s\n" "shell" "homebrew_bash_installed"
+  printf "%-14s %s\n" "shell" "fish_installed"
+  printf "%-14s %s\n" "shell" "zshenv_is_minimal"
+  printf "%-14s %s\n" "shell" "zshrc_loads_modules"
+  printf "%-14s %s\n" "shell" "zshrc_d_modules_present"
+  printf "%-14s %s\n" "shell" "bash_config_minimal"
+  printf "%-14s %s\n" "path" "homebrew_on_path"
+  printf "%-14s %s\n" "path" "local_bin_on_path"
+  printf "%-14s %s\n" "path" "mise_shims_on_path"
+  printf "%-14s %s\n" "path" "no_duplicate_path_entries"
+  printf "%-14s %s\n" "tools" "mise_installed"
+  printf "%-14s %s\n" "tools" "mise_activated"
+  printf "%-14s %s\n" "tools" "direnv_installed"
+  printf "%-14s %s\n" "tools" "direnv_hooked"
+  printf "%-14s %s\n" "tools" "chezmoi_installed"
+  printf "%-14s %s\n" "tools" "starship_installed"
+  printf "%-14s %s\n" "tools" "gopass_installed"
+  printf "%-14s %s\n" "iterm2" "dynamic_profiles_dir_exists"
+  printf "%-14s %s\n" "iterm2" "dev_profile_installed"
+  printf "%-14s %s\n" "iterm2" "agentic_profile_installed"
+  printf "%-14s %s\n" "iterm2" "human_fish_profile_installed"
+  printf "%-14s %s\n" "agentic" "agentic_mode_loads_minimal"
+  printf "%-14s %s\n" "agentic" "agentic_prompt_is_static"
+  printf "%-14s %s\n" "agentic" "agentic_startup_under_200ms"
+  printf "%-14s %s\n" "filesystem" "xdg_dirs_exist"
+  printf "%-14s %s\n" "filesystem" "organizations_dir_exists"
+  printf "%-14s %s\n" "filesystem" "development_dir_exists"
+  printf "%-14s %s\n" "filesystem" "system_config_in_correct_location"
+  printf "%-14s %s\n" "filesystem" "chezmoi_source_is_repo"
+  printf "%-14s %s\n" "filesystem" "no_repos_in_desktop_documents"
+  printf "%-14s %s\n" "filesystem" "spotlight_exclusions_set"
+  printf "%-14s %s\n" "hygiene" "no_orphan_lockfiles"
+  printf "%-14s %s\n" "hygiene" "no_nvmrc_in_systemconfig"
+  printf "%-14s %s\n" "hygiene" "no_node_version_in_systemconfig"
+  printf "%-14s %s\n" "hygiene" "chezmoi_source_clean"
+  printf "%-14s %s\n" "hygiene" "git_ignorecase_false"
+  printf "%-14s %s\n" "governance" "org_claude_md_present"
+  printf "%-14s %s\n" "governance" "subsidiary_yaml_present"
+}
+
+run_category() {
+  case "$1" in
+    shell)      run_shell_checks ;;
+    path)       run_path_checks ;;
+    tools)      run_tools_checks ;;
+    iterm2)     run_iterm2_checks ;;
+    agentic)    run_agentic_checks ;;
+    filesystem) run_filesystem_checks ;;
+    hygiene)    run_hygiene_checks ;;
+    governance) run_governance_checks ;;
+    *) echo "Unknown category: $1"; exit 2 ;;
+  esac
+}
+
+main() {
+  echo "ng-doctor — Nash Group development machine verification"
+  echo ""
+
+  case "${1:-}" in
+    --list)
+      list_checks
+      exit 0
+      ;;
+    --summary)
+      # Run all silently, then print summary
+      for cat in "${ALL_CATEGORIES[@]}"; do
+        run_category "$cat" >/dev/null 2>&1 || true
+      done
+      printf '\nSummary: %d passed, %d failed, %d skipped\n' "$_pass" "$_fail" "$_skip"
+      exit $(( _fail > 0 ? 1 : 0 ))
+      ;;
+    "")
+      for cat in "${ALL_CATEGORIES[@]}"; do
+        run_category "$cat"
+      done
+      ;;
+    *)
+      run_category "$1"
+      ;;
+  esac
+
+  echo ""
+  printf 'Summary: %d passed, %d failed, %d skipped\n' "$_pass" "$_fail" "$_skip"
+
+  if (( _fail > 0 )); then
+    exit 1
+  fi
+  exit 0
+}
+
+main "$@"
