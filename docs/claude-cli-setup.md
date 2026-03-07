@@ -78,7 +78,7 @@ curl -fsSL https://claude.ai/install.sh | bash
 
 ### MCP Servers
 
-Global MCP servers are managed via `~/SystemConfig/ai-tools/sync-to-tools.sh` and land in `~/.claude.json` (user-scoped). To add a server at user scope manually:
+Global MCP servers are managed via `~/Organizations/jefahnierocks/system-config/ai-tools/sync-to-tools.sh` and land in `~/.claude.json` (user-scoped). To add a server at user scope manually:
 
 ```bash
 claude mcp add --scope user <server-name> <command> [args...]

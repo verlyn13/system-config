@@ -20,8 +20,8 @@ priority: high
 
 ### 1. SSOT Architecture Established
 - Added `## Source of Truth` section to `AGENTS.md` with the SSOT table, workflow rule, iTerm2 policy, and project-scope guide.
-- `SystemConfig/06-templates/chezmoi/` is now the declared SSOT for shell integration, run_once installers, and global tool configs.
-- Workflow: edit in SystemConfig → `sync-chezmoi-templates.sh` → `chezmoi apply`.
+- `system-config/06-templates/chezmoi/` is now the declared SSOT for shell integration, run_once installers, and global tool configs.
+- Workflow: edit in system-config → `sync-chezmoi-templates.sh` → `chezmoi apply`.
 
 ### 2. `sync-chezmoi-templates.sh` Rewritten
 - Dynamic file discovery via `find` (was a hardcoded list of ~15 files).
@@ -76,8 +76,8 @@ The chezmoi template `06-templates/chezmoi/dot_config/system-update/config.tmpl`
 | `~/.config/fish/conf.d/10-claude.fish` | Updated — new CLAUDE_BIN, MCP_TOOL_TIMEOUT |
 | `~/.config/system-update/config` | New — deployed today |
 | `~/.mcp-auth/` | **Deleted** — MCP servers re-download mcp-remote on first connection |
-| `~/SystemConfig/scripts/system-update.sh` | Updated — 7 improvements |
-| `~/SystemConfig/scripts/sync-chezmoi-templates.sh` | Rewritten — dynamic, --check, --force |
+| `~/system-config/scripts/system-update.sh` | Updated — 7 improvements |
+| `~/system-config/scripts/sync-chezmoi-templates.sh` | Rewritten — dynamic, --check, --force |
 
 ### Chezmoi Status
 `chezmoi status` shows many pending items — **do not run `chezmoi apply` blindly**. The pending items include:
@@ -99,10 +99,10 @@ chezmoi apply ~/.config/<specific-file>
 To preview everything: `chezmoi diff`
 
 ### Sync Script Divergence Warnings
-Running `sync-chezmoi-templates.sh --check` will show these **expected** divergences (dotfiles newer than SystemConfig — pre-existing, out of scope):
+Running `sync-chezmoi-templates.sh --check` will show these **expected** divergences (dotfiles newer than system-config — pre-existing, out of scope):
 - `dot_bashrc.tmpl`, `dot_config/direnv/*`, `dot_config/fish/conf.d/00-homebrew.fish.tmpl`, `dot_config/fish/conf.d/02-direnv.fish.tmpl`, `dot_config/fish/conf.d/10-claude.fish.tmpl` (just applied today, now newer), `dot_config/fish/conf.d/90-system-update.fish.tmpl`, `dot_config/fish/config.fish.tmpl`, `dot_config/mise/config.toml.tmpl`, `dot_config/starship.toml.tmpl`
 
-These represent the inverse-SSOT problem: files that were edited directly in dotfiles without flowing through SystemConfig. Resolving them (deciding which version is authoritative) is a separate task.
+These represent the inverse-SSOT problem: files that were edited directly in dotfiles without flowing through system-config. Resolving them (deciding which version is authoritative) is a separate task.
 
 ---
 
@@ -130,7 +130,7 @@ Untracked files that likely belong in a future commit:
 
 1. **`~/.mcp-auth` is gone**: On first `claude` session after restart, MCP connections will re-download `mcp-remote` (~2s delay). Not a failure.
 
-2. **Inverse-sync problem**: Several dotfiles source files are newer than their SystemConfig counterparts. These represent templates that were edited directly in `~/.local/share/chezmoi/` rather than through the SystemConfig SSOT workflow. Do not `--force` overwrite without reviewing diffs.
+2. **Inverse-sync problem**: Several dotfiles source files are newer than their system-config counterparts. These represent templates that were edited directly in `~/.local/share/chezmoi/` rather than through the system-config SSOT workflow. Do not `--force` overwrite without reviewing diffs.
 
 3. **Stale docs**: `README.md` still has many broken references (see below). `docs/CLAUDE-CONFIG-UPDATE-GUIDE.md` documents a template structure (`dot_claude/`) that was entirely deleted in commit `41d95ab`. Do not follow its instructions.
 

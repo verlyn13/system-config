@@ -166,7 +166,7 @@ Codex supports Model Context Protocol (MCP) servers for extended functionality.
 
 ### Global MCP Servers
 
-Global servers are managed via `~/SystemConfig/ai-tools/sync-to-tools.sh`, which appends `[mcp_servers.*]` sections to `~/.codex/config.toml`.
+Global servers are managed via `~/Organizations/jefahnierocks/system-config/ai-tools/sync-to-tools.sh`, which appends `[mcp_servers.*]` sections to `~/.codex/config.toml`.
 
 ### Project-Specific Servers
 

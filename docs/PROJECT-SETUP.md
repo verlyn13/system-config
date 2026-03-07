@@ -202,7 +202,7 @@ User-level MCP servers are automatically available in all projects. They're mana
 
 ```bash
 # Sync global MCP servers to all AI tools
-~/SystemConfig/ai-tools/sync-to-tools.sh
+~/Organizations/jefahnierocks/system-config/ai-tools/sync-to-tools.sh
 ```
 
 **Available globally**: context7, github, memory, sequential-thinking, brave-search, firecrawl

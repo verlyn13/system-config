@@ -1,15 +1,15 @@
 {
   "Profiles": [
     {
-      "Name": "SystemConfig",
-      "Guid": "SystemConfig-Homer-AK-2026",
+      "Name": "system-config",
+      "Guid": "system-config-Homer-AK-2026",
       "Dynamic Profile Parent Name": "Base",
       "Custom Directory": "Yes",
-      "Working Directory": "~/SystemConfig",
+      "Working Directory": "~/Organizations/jefahnierocks/system-config",
       "Bound Files": [
-        "~/SystemConfig"
+        "~/Organizations/jefahnierocks/system-config"
       ],
-      "Badge Text": "Σ SystemConfig",
+      "Badge Text": "Σ system-config",
       "Badge Color": {
         "Red Component": 0.47,
         "Green Component": 0.63,

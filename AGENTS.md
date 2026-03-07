@@ -6,7 +6,7 @@ Configuration documentation and templates for a reproducible macOS development e
 
 ### Directory Layout
 ```
-SystemConfig/
+system-config/
 ├── 01-setup/              # Installation guides (prerequisites, Homebrew, chezmoi, iTerm2)
 ├── 02-configuration/      # Tool configuration docs (terminals, SSH, MCP, Codex)
 ├── 03-automation/         # Automation guides
@@ -125,8 +125,8 @@ system-update --no-cleanup # Skip brew cleanup and mise prune
 Global MCP servers defined in `ai-tools/mcp-servers.json`, synced to all tools:
 
 ```bash
-~/SystemConfig/ai-tools/sync-to-tools.sh           # Sync to all tools
-~/SystemConfig/ai-tools/sync-to-tools.sh --dry-run  # Preview
+~/Organizations/jefahnierocks/system-config/ai-tools/sync-to-tools.sh           # Sync to all tools
+~/Organizations/jefahnierocks/system-config/ai-tools/sync-to-tools.sh --dry-run  # Preview
 ```
 
 **Scope**: This syncs to Claude Code CLI (`~/.claude.json`) and other terminal dev tools only. Claude Desktop / Cowork is configured via its UI (Extensions, Connectors, Plugins) and is not a sync target. See `docs/claude-desktop-setup.md`.
@@ -148,20 +148,20 @@ Project-specific MCP servers belong in each project's `.mcp.json`, not in global
 
 | Repo | Manages | Does NOT manage |
 |------|---------|-----------------|
-| **SystemConfig** (`~/SystemConfig/06-templates/chezmoi/`) | Shell integration (Fish conf.d, zshrc, bashrc), global mise settings, starship, direnv global, run_once installers | SSH, GPG, git configs, Brewfiles, iTerm2 DynamicProfiles, private data |
-| **dotfiles** (`~/.local/share/chezmoi/`) | SSH/GPG/git configs, Brewfiles, iTerm2 DynamicProfiles, `.chezmoitemplates/`, everything NOT in SystemConfig | Duplicates of what SystemConfig owns |
+| **system-config** (`~/Organizations/jefahnierocks/system-config/06-templates/chezmoi/`) | Shell integration (Fish conf.d, zshrc, bashrc), global mise settings, starship, direnv global, run_once installers | SSH, GPG, git configs, Brewfiles, iTerm2 DynamicProfiles, private data |
+| **dotfiles** (`~/.local/share/chezmoi/`) | SSH/GPG/git configs, Brewfiles, iTerm2 DynamicProfiles, `.chezmoitemplates/`, everything NOT in system-config | Duplicates of what system-config owns |
 | **Project-level** (`.mise.toml`, `.envrc`) | Tool version pins, project API keys, per-project env | Global shell behavior |
 
 ### Workflow
 
-Always edit in SystemConfig → run `sync-chezmoi-templates.sh` → `chezmoi apply`.
+Always edit in system-config → run `sync-chezmoi-templates.sh` → `chezmoi apply`.
 
 ```bash
-# Sync SystemConfig templates into dotfiles source
-~/SystemConfig/scripts/sync-chezmoi-templates.sh
+# Sync system-config templates into dotfiles source
+~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh
 
 # Check for divergence without making changes (suitable for pre-commit hook)
-~/SystemConfig/scripts/sync-chezmoi-templates.sh --check
+~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh --check
 
 # Apply to live system
 chezmoi apply --dry-run    # Preview first

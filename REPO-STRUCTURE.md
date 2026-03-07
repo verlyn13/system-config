@@ -9,7 +9,7 @@ tags: [structure, organization]
 priority: high
 ---
 
-# SystemConfig Repository Structure
+# system-config Repository Structure
 
 > **Purpose**: macOS development environment configuration, templates, and documentation
 > **Focus**: Chezmoi dotfile templates, CLI tool setup, shell configuration
@@ -17,7 +17,7 @@ priority: high
 ## Directory Layout
 
 ```
-SystemConfig/
+system-config/
 ├── .claude/                    # Claude Code project config
 │   ├── settings.json          # Project permissions (committed)
 │   └── README.md              # Directory documentation
@@ -67,7 +67,7 @@ SystemConfig/
 ├── scripts/                    # Shell scripts
 │   ├── system-update.sh       # Unified system update command
 │   ├── system-update.d/       # Drop-in update plugins
-│   ├── sync-chezmoi-templates.sh  # Sync SystemConfig → dotfiles source (SSOT)
+│   ├── sync-chezmoi-templates.sh  # Sync system-config → dotfiles source (SSOT)
 │   ├── doctor-path.sh         # PATH diagnostic script
 │   └── iterm2-setup.sh        # iTerm2 configuration
 │

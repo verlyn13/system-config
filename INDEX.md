@@ -9,7 +9,7 @@ tags: [navigation, index]
 priority: critical
 ---
 
-# SystemConfig Navigation
+# system-config Navigation
 
 ## Quick Links
 
@@ -30,7 +30,7 @@ priority: critical
 ## Repository Structure
 
 ```
-SystemConfig/
+system-config/
 ├── 01-setup/           # Installation guides
 ├── 02-configuration/   # Tool configuration docs
 ├── 03-automation/      # Automation guides

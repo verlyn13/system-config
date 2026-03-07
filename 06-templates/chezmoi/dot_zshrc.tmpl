@@ -223,7 +223,7 @@ serve() {
 
 # System update (calls unified bash script)
 system-update() {
-  local script="$HOME/SystemConfig/scripts/system-update.sh"
+  local script="$HOME/Organizations/jefahnierocks/system-config/scripts/system-update.sh"
   if [[ -x "$script" ]]; then
     bash "$script" "$@"
   else

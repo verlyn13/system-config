@@ -11,7 +11,7 @@ priority: medium
 
 # .claude/ Directory
 
-Project-specific Claude Code configuration for SystemConfig.
+Project-specific Claude Code configuration for system-config.
 
 ## Files
 
@@ -35,7 +35,7 @@ Generic agents (reviewer, architect, tester, etc.) and commands (commit, feature
 
 ## Adding Project-Specific Commands
 
-If this repo needs a repeatable workflow specific to SystemConfig:
+If this repo needs a repeatable workflow specific to system-config:
 
 1. Create `.claude/commands/<name>.md` with the prompt
 2. Invoke with `/project:<name>` in Claude Code
@@ -45,4 +45,4 @@ Currently no project-specific commands are needed — global commands cover all 
 
 ## SSOT Workflow
 
-SystemConfig is the source of truth for chezmoi templates. To propagate changes to the live dotfiles: edit in `06-templates/chezmoi/` → run `scripts/sync-chezmoi-templates.sh` → `chezmoi apply`. See `AGENTS.md` for the full SSOT policy.
+system-config is the source of truth for chezmoi templates. To propagate changes to the live dotfiles: edit in `06-templates/chezmoi/` → run `scripts/sync-chezmoi-templates.sh` → `chezmoi apply`. See `AGENTS.md` for the full SSOT policy.

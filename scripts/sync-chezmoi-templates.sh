@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# sync-chezmoi-templates.sh — Sync SystemConfig templates to chezmoi source
-# SystemConfig is the SSOT. See AGENTS.md for the full SSOT policy.
+# sync-chezmoi-templates.sh — Sync system-config templates to chezmoi source
+# system-config is the SSOT. See AGENTS.md for the full SSOT policy.
 #
 # Usage:
 #   sync-chezmoi-templates.sh            # Sync all files; warn on reverse divergence
@@ -71,13 +71,13 @@ while IFS= read -r full_path; do
         DIVERGED=1
       fi
     else
-      printf '[new] %s (present in SystemConfig, absent from dotfiles)\n' "$rel"
+      printf '[new] %s (present in system-config, absent from dotfiles)\n' "$rel"
       DIVERGED=1
     fi
   else
     # Sync mode: warn if dotfiles version is newer (possible manual edit)
     if [ -f "$dst" ] && [ "$dst" -nt "$full_path" ]; then
-      yellow "[warning] dotfiles/$rel is newer than SystemConfig — possible manual edit"
+      yellow "[warning] dotfiles/$rel is newer than system-config — possible manual edit"
       diff -u "$full_path" "$dst" || true
       if [ "$FORCE" -eq 0 ]; then
         yellow "[skip] Skipping $rel (use --force to overwrite)"
@@ -90,7 +90,7 @@ done < <(find "$SRC" -type f -not -name '.DS_Store' -not -name 'README.md' | sor
 
 if [ "$CHECK" -eq 1 ]; then
   if [ "$DIVERGED" -eq 1 ]; then
-    printf '[check] Divergence found. Run sync to update dotfiles source (SystemConfig is SSOT).\n'
+    printf '[check] Divergence found. Run sync to update dotfiles source (system-config is SSOT).\n'
     exit 1
   fi
   printf '[check] No divergence found.\n'

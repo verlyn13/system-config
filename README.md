@@ -1,5 +1,5 @@
 ---
-title: SystemConfig
+title: system-config
 category: reference
 component: overview
 status: active
@@ -9,7 +9,7 @@ tags: [overview, setup, chezmoi, mise, fish]
 priority: critical
 ---
 
-# SystemConfig
+# system-config
 
 macOS development environment configuration, templates, and tooling.
 Managed with chezmoi (dotfiles), mise (runtimes), and Fish shell.
@@ -28,8 +28,8 @@ chezmoi apply
 # Update all packages, tools, and runtimes
 system-update
 
-# Sync SystemConfig templates into dotfiles source (SSOT workflow)
-~/SystemConfig/scripts/sync-chezmoi-templates.sh
+# Sync system-config templates into dotfiles source (SSOT workflow)
+~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh
 ```
 
 ---
@@ -50,19 +50,19 @@ system-update
 
 ## SSOT Workflow
 
-`SystemConfig/06-templates/chezmoi/` is the source of truth for all shell integration,
+`system-config/06-templates/chezmoi/` is the source of truth for all shell integration,
 global mise config, and run_once installers.
 
 ```
-Edit in SystemConfig → sync-chezmoi-templates.sh → chezmoi apply
+Edit in system-config → sync-chezmoi-templates.sh → chezmoi apply
 ```
 
 ```bash
 # Check for divergence without writing (suitable for pre-commit hook)
-~/SystemConfig/scripts/sync-chezmoi-templates.sh --check
+~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh --check
 
 # Sync and overwrite even if dotfiles file is newer
-~/SystemConfig/scripts/sync-chezmoi-templates.sh --force
+~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh --force
 ```
 
 ---
