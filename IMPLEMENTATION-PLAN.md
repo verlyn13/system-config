@@ -252,7 +252,7 @@ After this change: edit template → `chezmoi apply` → `git commit`. No sync s
 
 | Dimension | Current State | Target State | Verify |
 |-----------|--------------|--------------|--------|
-| **Repo name** | `SystemConfig` at `~/SystemConfig` | `system-config` at `~/Organizations/the-nash-group/system-config` | `basename $(git rev-parse --show-toplevel)` |
+| **Repo name** | `SystemConfig` at `~/SystemConfig` | `system-config` at `~/Organizations/jefahnierocks/system-config` | `basename $(git rev-parse --show-toplevel)` |
 | **Top-level dirs** | 6 numbered + docs/ + scripts/ + ai-tools/ | home/ + iterm2/ + scripts/ + policies/ + docs/ | `ls -d */` |
 | **Login shell** | `/bin/zsh` (already correct) | `/bin/zsh` | `dscl . -read /Users/$USER UserShell` |
 | **Fish role** | Primary interactive, 20+ conf.d files | iTerm2 profile only, 14 conf.d files | `ls home/dot_config/fish/conf.d/ \| wc -l` |
@@ -283,7 +283,7 @@ After this change: edit template → `chezmoi apply` → `git commit`. No sync s
 | PRE-4 | Verify clean working tree | OQ-05 | `git status --porcelain \| wc -l` → must be 0 |
 | PRE-5 | Rename repo on GitHub | OQ-06, P8 | Settings → General → Repository name → `system-config` |
 | PRE-6 | Update local remote URL | OQ-06 | `git remote set-url origin git@github.com:<org>/system-config.git` |
-| PRE-7 | Move local directory | OQ-06 | `mv ~/SystemConfig ~/Organizations/the-nash-group/system-config` |
+| PRE-7 | Move local directory | OQ-06 | `mv ~/SystemConfig ~/Organizations/jefahnierocks/system-config` |
 | PRE-8 | Update cross-references | OQ-06 | `grep -r 'SystemConfig'` in repo → replace. CLAUDE.md, AGENTS.md, CI workflows. |
 | PRE-9 | Update chezmoi if needed | OQ-06 | `chezmoi source-path` — update if it references old path. |
 | PRE-10 | Commit rename | OQ-06 | `chore: rename repository to system-config` |
