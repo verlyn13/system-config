@@ -1,0 +1,15 @@
+# ~/.bashrc — Minimal. For tools that spawn bash subshells.
+
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-{{ .xdg.config_home }}}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-{{ .xdg.data_home }}}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-{{ .xdg.state_home }}}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-{{ .xdg.cache_home }}}"
+
+# Homebrew
+[[ -x {{ .homebrew.prefix }}/bin/brew ]] && eval "$({{ .homebrew.prefix }}/bin/brew shellenv)"
+
+# mise
+command -v mise &>/dev/null && eval "$(mise activate bash)"
+
+# direnv
+command -v direnv &>/dev/null && eval "$(direnv hook bash)"

@@ -1,0 +1,13 @@
+# ~/.zprofile — Login shell init. Runs once per session.
+# RULE: PATH setup only. No interactive features.
+
+# Homebrew (Apple Silicon)
+if [[ -x {{ .homebrew.prefix }}/bin/brew ]]; then
+  eval "$({{ .homebrew.prefix }}/bin/brew shellenv)"
+fi
+
+# User binaries
+[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
+
+# mise shims (global tool versions)
+[[ -d "$XDG_DATA_HOME/mise/shims" ]] && export PATH="$XDG_DATA_HOME/mise/shims:$PATH"

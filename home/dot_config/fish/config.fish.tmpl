@@ -1,0 +1,14 @@
+# Fish Shell Configuration ({{ .chezmoi.hostname }})
+# Managed by chezmoi — conf.d/ modules handle all configuration.
+# This file sets only pre-conf.d requirements.
+
+# Disable default greeting
+set -g fish_greeting ""
+
+# Disable Vi mode indicator (we use starship prompt)
+function fish_mode_prompt; end
+
+# Load machine-specific configuration if it exists
+if test -f ~/.config/fish/local.fish
+    source ~/.config/fish/local.fish
+end

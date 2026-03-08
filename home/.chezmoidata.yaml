@@ -1,0 +1,31 @@
+# .chezmoidata.yaml — single source of truth for cross-shell values
+# Both zsh and fish templates render from this data.
+# chezmoi templates reference these as .xdg.config_home, .aliases, etc.
+
+xdg:
+  config_home: "$HOME/.config"
+  data_home: "$HOME/.local/share"
+  state_home: "$HOME/.local/state"
+  cache_home: "$HOME/.cache"
+
+paths:
+  prepend:
+    - "$HOME/.local/bin"
+    - "$HOME/.local/share/mise/shims"
+
+homebrew:
+  prefix: "/opt/homebrew"
+
+aliases:
+  # Safe aliases — don't shadow POSIX commands. Loaded in all modes.
+  ll: "ls -lah"
+  g: "git"
+  dc: "docker compose"
+
+coreutil_aliases:
+  # Coreutil replacements — shadow POSIX commands with modern tools.
+  # Loaded in interactive mode ONLY. Agents get vanilla coreutils.
+  # Rationale: Principle 8 (Fail Fast). Agents expect POSIX semantics.
+  cat: "bat --paging=never"
+  find: "fd"
+  grep: "rg"

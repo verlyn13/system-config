@@ -1,0 +1,10 @@
+# 01-path.zsh — PATH construction — idempotent, deterministic
+# GATE: always
+
+path_prepend() { [[ -d "$1" ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1:$PATH"; }
+
+{{- range .paths.prepend }}
+path_prepend "{{ . }}"
+{{- end }}
+
+export PATH

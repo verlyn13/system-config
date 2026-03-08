@@ -1,0 +1,24 @@
+# 10-aliases.fish — Safe aliases (no POSIX shadows)
+
+if status is-interactive
+{{- range $cmd, $expansion := .aliases }}
+    alias {{ $cmd }} '{{ $expansion }}'
+{{- end }}
+
+    # Git shortcuts
+    alias gs 'git status'
+    alias gd 'git diff'
+    alias ga 'git add'
+    alias gc 'git commit'
+    alias gp 'git push'
+    alias gpl 'git pull'
+    alias gco 'git checkout'
+    alias gb 'git branch'
+    alias glog 'git log --oneline --graph --all'
+
+    # Navigation
+    alias .. 'cd ..'
+    alias ... 'cd ../..'
+    alias .... 'cd ../../..'
+    alias c 'clear'
+end

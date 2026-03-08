@@ -1,0 +1,16 @@
+# ~/.zshrc — Interactive zsh. Delegates to modular fragments.
+# RULE: No inline config. Everything lives in zshrc.d/.
+
+# Ensure XDG is set (defensive — zshenv should have done this)
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+
+# Stub compdef in agentic mode (compinit not loaded, but mise/direnv emit compdef calls)
+[[ "$NG_MODE" == "agentic" ]] && compdef() { :; }
+
+# Source modules in deterministic order
+if [[ -d "$XDG_CONFIG_HOME/zshrc.d" ]]; then
+  for _rc in "$XDG_CONFIG_HOME/zshrc.d"/*.zsh(N); do
+    source "$_rc"
+  done
+  unset _rc
+fi

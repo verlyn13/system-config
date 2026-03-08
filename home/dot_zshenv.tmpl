@@ -1,0 +1,11 @@
+# ~/.zshenv — Universal exports. Sourced by ALL zsh invocations.
+# RULE: No PATH. No brew. No stdout. No external binaries.
+
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-{{ .xdg.config_home }}}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-{{ .xdg.data_home }}}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-{{ .xdg.state_home }}}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-{{ .xdg.cache_home }}}"
+
+# Point tools at XDG locations
+export HISTFILE="$XDG_STATE_HOME/zsh/history"
+export LESSHISTFILE="$XDG_STATE_HOME/less/history"

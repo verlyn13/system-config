@@ -1,0 +1,7 @@
+# 00-xdg.zsh — Ensure XDG vars are set (backup for zshenv)
+# GATE: always
+
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-{{ .xdg.config_home }}}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-{{ .xdg.data_home }}}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-{{ .xdg.state_home }}}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-{{ .xdg.cache_home }}}"

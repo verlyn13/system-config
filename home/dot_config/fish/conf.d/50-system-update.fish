@@ -1,0 +1,5 @@
+# 50-system-update.fish — Unified system update command
+
+function system-update -d "Update all system packages, tools, and runtimes"
+    bash "$HOME/Organizations/jefahnierocks/system-config/scripts/system-update.sh" $argv
+end
