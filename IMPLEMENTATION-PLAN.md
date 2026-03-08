@@ -5,7 +5,7 @@ Migration from current repo layout to the structure defined in `system-plan-draf
 
 ```yaml
 status: IN PROGRESS
-current_phase: "Phase 0 complete — Phase 1 next"
+current_phase: "Phase 1 complete — Phase 2 next"
 specs:
   - system-plan-draft.md        # DEVMACHINE-SPEC — shell, chezmoi, iTerm2, homebrew, mise
   - MIGRATION-PLAN.md           # ~/Organizations/the-nash-group/.archive/planning/
@@ -300,9 +300,9 @@ git remote get-url origin                 # contains system-config
 
 ---
 
-## Phase 0: Doctor Harness — COMPLETE (P0-3 deferred)
+## Phase 0: Doctor Harness — COMPLETE
 
-**Status**: Complete. Commit 9c3d5b9. P0-3 (chezmoi rewire) deferred to end of Phase 1.
+**Status**: Complete. P0-3 (chezmoi rewire) completed at end of Phase 1. Commit c855a4e.
 
 **Goal**: Build `ng-doctor` so every subsequent phase is testable.
 
@@ -315,26 +315,16 @@ git remote get-url origin                 # contains system-config
 | P0-1 | Create `home/` directory | Section 2 target layout | DONE | New chezmoi source root. |
 | P0-2 | Create `home/dot_local/bin/ng-doctor.tmpl` | Section 7 | DONE | Pass/fail/skip framework. 8 categories, 37 checks (see matrix below). All checks can return skip if prereqs aren't met yet. |
 | P0-2a | Install ng-doctor manually | — | DONE | `chezmoi execute-template` + patch SYSTEM_CONFIG_DIR. Needed because chezmoi not yet rewired. |
-| P0-3 | Wire chezmoi to `home/` | OQ-08, SSoT | DEFERRED | Deferred to end of Phase 1. Symlinking now would orphan all dotfiles repo content. `home/` needs shell configs (Phase 1) before it can replace the dotfiles repo as chezmoi source. |
+| P0-3 | Wire chezmoi to `home/` | OQ-08, SSoT | DONE | Completed at end of Phase 1. `sourceDir` in chezmoi.toml points directly at `system-config/home/`. Dotfiles repo snapshotted (commit dd25ea1) and preserved at `~/.local/share/chezmoi/`. |
 | P0-4 | Verify harness | Section 7, P0-2 | DONE | 23 pass, 8 fail (expected), 8 skip. Shellcheck clean. |
-
-### ng-doctor Baseline (2026-03-07)
-
-```
-23 passed, 8 failed, 8 skipped — exit code 1
-
-Expected failures (resolved in later phases):
-  shell:      zshenv_is_minimal (17 > 15 lines), zshrc_loads_modules (no zshrc.d)
-  iterm2:     agentic_profile_installed, human_fish_profile_installed
-  hygiene:    no_orphan_lockfiles (package-lock.json), no_nvmrc, no_node_version,
-              chezmoi_source_clean (dotfiles repo has 59 uncommitted changes)
-```
 
 ### Dotfiles Repo State
 
-The separate dotfiles repo (`~/.local/share/chezmoi/`, github: verlyn13/dotfiles) has
-59 uncommitted changes. These must be reconciled before P0-3 rewire. Do NOT copy dotfiles
-content into `home/` — build fresh from DEVMACHINE-SPEC (Phase 1 does this).
+The separate dotfiles repo (`~/.local/share/chezmoi/`, github: verlyn13/dotfiles) was
+snapshotted (commit dd25ea1) before the chezmoi rewire. It remains at its original
+location. Chezmoi `sourceDir` now points at `system-config/home/` instead. The dotfiles
+repo retains SSH, GPG, git configs, Brewfiles, iTerm2 DynamicProfiles — content NOT
+managed by system-config.
 
 ### ng-doctor Check Matrix (37 checks, 8 categories)
 
@@ -398,32 +388,53 @@ chezmoi source-path                      # .../system-config/home
 
 ---
 
-## Phase 1: Shell Stabilization — NEXT
+## Phase 1: Shell Stabilization — COMPLETE
 
-**Status**: Not started. This is the next phase to execute.
+**Status**: Complete. Commit c855a4e. ng-doctor: 29 pass, 7 fail (Phase 2/3), 3 skip.
 
 **Goal**: Modular zshrc.d/ with NG_MODE gating. Slimmed fish conf.d. Shared `.chezmoidata.yaml`.
 
 **Spec**: DEVMACHINE-SPEC Sections 3.1–3.6, 6. OQ-01.
 
-**Depends on**: Phase 0 (complete). P0-3 (chezmoi rewire) executes at end of this phase.
+**Depends on**: Phase 0 (complete). P0-3 (chezmoi rewire) completed at end of this phase.
 
 ### Tasks
 
-| ID | Action | Spec Citation | Details |
-|----|--------|---------------|---------|
-| P1-1 | Verify login shell | AD-01 | Already `/bin/zsh`. Confirm via ng-doctor. No action. |
-| P1-2 | Create `home/.chezmoidata.yaml` | Section 6 | XDG paths, PATH prepends, aliases, coreutil_aliases, git config, homebrew prefix. Both zsh and fish render from this. |
-| P1-3 | Create `home/dot_zshenv.tmpl` | Section 3.1 | XDG exports only. ≤15 lines. No PATH, no brew, no stdout. |
-| P1-4 | Create `home/dot_zprofile.tmpl` | Section 3.2 | Homebrew shellenv, ~/.local/bin, mise shims. |
-| P1-5 | Create `home/dot_zshrc.tmpl` | Section 3.3 | Thin loader: sources zshrc.d/*.zsh. ≤20 lines. REPLACES monolithic dot_zshrc.tmpl. |
-| P1-6 | Create zshrc.d/ modules (14 files) | Section 3.4, OQ-01 | `00-xdg`, `01-path`, `02-mise`, `03-direnv`, `10-aliases`, `15-coreutil-aliases` (GATED), `20-interactive` (GATED), `21-completion` (GATED), `22-prompt` (GATED), `30-agentic` (AGENTIC-ONLY), `40-orbstack`, `41-tailscale`, `99-local`. All render from `.chezmoidata.yaml`. |
-| P1-7 | Create fish conf.d/ modules (14 files) | Section 3.5, OQ-01 | `00-xdg`, `01-path`, `02-mise`, `03-direnv`, `10-aliases`, `15-coreutil-aliases`, `20-prompt`, `25-keybindings`, `30-iterm2`, `40-orbstack`, `41-tailscale`, `50-system-update`, `99-local`. Plus `config.fish.tmpl`. All render from `.chezmoidata.yaml`. |
-| P1-8 | Create minimal bash config | Section 3.6 | `home/dot_bash_profile.tmpl` + `home/dot_bashrc.tmpl`. XDG, Homebrew, mise, direnv. |
-| P1-9 | Move remaining chezmoi templates | Section 2 map | `git mv` from `06-templates/chezmoi/` → `home/`: .chezmoiignore, dot_envrc.tmpl, starship.toml.tmpl, direnv configs, system-update config. DELETE dot_tmux.conf.tmpl (tmux removed from system). |
-| P1-10 | Delete old fish conf.d files | OQ-01, P15 | DROP: windsurf, codex, GAM, tmux (shell module), dicee-auto, claude (fish). DIRENV: sentry, supabase, vercel, infisical (content preserved in docs/tools.md). |
-| P1-11 | Delete old monolithic dot_zshrc.tmpl | Section 3.3 | Replaced by thin loader + zshrc.d/ modules. Decomposition, not move. |
-| P1-12 | Run ng-doctor | — | shell, path, agentic categories: all green. |
+| ID | Action | Spec Citation | Status | Details |
+|----|--------|---------------|--------|---------|
+| P1-1 | Verify login shell | AD-01 | DONE | Already `/bin/zsh`. Confirmed via ng-doctor. |
+| P1-2 | Create `home/.chezmoidata.yaml` | Section 6 | DONE | XDG paths, PATH prepends, aliases, coreutil_aliases, homebrew prefix. Both zsh and fish render from this. |
+| P1-3 | Create `home/dot_zshenv.tmpl` | Section 3.1 | DONE | XDG exports only. 11 lines (6 non-comment). No PATH, no brew, no stdout. |
+| P1-4 | Create `home/dot_zprofile.tmpl` | Section 3.2 | DONE | Homebrew shellenv, ~/.local/bin, mise shims. |
+| P1-5 | Create `home/dot_zshrc.tmpl` | Section 3.3 | DONE | Thin loader (16 lines) + compdef stub for agentic mode. |
+| P1-6 | Create zshrc.d/ modules (13 files) | Section 3.4, OQ-01 | DONE | `00-xdg`, `01-path`, `02-mise`, `03-direnv`, `10-aliases`, `15-coreutil-aliases` (GATED), `20-interactive` (GATED), `21-completion` (GATED), `22-prompt` (GATED), `30-agentic` (AGENTIC-ONLY), `40-orbstack`, `41-tailscale`, `99-local`. |
+| P1-7 | Create fish conf.d/ modules (13 files) | Section 3.5, OQ-01 | DONE | `00-xdg`, `01-path`, `02-mise`, `03-direnv`, `10-aliases`, `15-coreutil-aliases`, `20-prompt`, `25-keybindings`, `30-iterm2`, `40-orbstack`, `41-tailscale`, `50-system-update`, `99-local`. Plus `config.fish.tmpl`. Note: grep→rg alias omitted in fish (breaks iTerm2 shell integration). |
+| P1-8 | Create minimal bash config | Section 3.6 | DONE | `dot_bash_profile.tmpl` + `dot_bashrc.tmpl`. XDG, Homebrew, mise, direnv. |
+| P1-9 | Move remaining chezmoi templates | Section 2 map | DONE | `git mv` .chezmoiignore, dot_envrc.tmpl, starship, direnv, mise, system-update. DELETE dot_tmux.conf.tmpl. |
+| P1-10 | Delete old fish conf.d files | OQ-01, P15 | DONE | 10 dropped + 11 superseded = 21 files deleted. Orphaned live files cleaned from ~/.config/fish/conf.d/. |
+| P1-11 | Delete old monolithic dot_zshrc.tmpl | Section 3.3 | DONE | + dot_bashrc.tmpl. Decomposition complete. |
+| P1-12 | Run ng-doctor | — | DONE | shell 7/7, path 4/4, agentic 2/3 (startup 557ms > 200ms target). |
+
+### ng-doctor Post-Phase 1 (2026-03-07)
+
+```
+29 passed, 7 failed, 3 skipped — exit code 1
+
+Remaining failures (Phase 2/3):
+  iterm2:     agentic_profile_installed, human_fish_profile_installed (Phase 2)
+  agentic:    agentic_startup_under_200ms (557ms — may improve with iTerm2 profile, Phase 2)
+  hygiene:    no_orphan_lockfiles (package-lock.json), no_nvmrc, no_node_version (Phase 3)
+              chezmoi_source_clean (Phase 1 work committed, but system-config has untracked changes)
+```
+
+### Fixes Applied During Phase 1
+
+- **compdef stub**: mise/direnv emit `compdef` calls but compinit skipped in agentic mode. Added noop stub in dot_zshrc.tmpl before module loading.
+- **grep→rg in fish**: iTerm2 shell integration uses `grep -cvE` internally. Aliasing `grep` to `rg` in fish broke it. Omitted grep alias from fish coreutil-aliases (cat/find still aliased).
+- **.chezmoiignore `*.local`**: Pattern matched `~/.local/` directory, blocking ng-doctor deployment. Changed to specific file patterns.
+- **ng-doctor zshrc.d path**: Was checking `~/.config/zsh/zshrc.d`, corrected to `~/.config/zshrc.d`.
+- **ng-doctor executable**: Renamed to `executable_ng-doctor.tmpl` for chezmoi to deploy with +x.
+- **chezmoi rewire**: Used `sourceDir` in chezmoi.toml (top-level, not under `[git]`) instead of symlink, so `{{ .chezmoi.workingTree }}` resolves to repo root.
 
 ### Key Complexity
 - **Decomposing dot_zshrc.tmpl**: The 8.7KB monolithic file must be analyzed, classified into
@@ -444,13 +455,15 @@ ng-doctor | grep -E 'shell|path|agentic' # all ✓
 
 ---
 
-## Phase 2: iTerm2 Profiles
+## Phase 2: iTerm2 Profiles — NEXT
+
+**Status**: Not started. This is the next phase to execute.
 
 **Goal**: Three-profile system via Dynamic Profiles.
 
 **Spec**: DEVMACHINE-SPEC Section 4. OQ-02.
 
-**Depends on**: Phase 1.
+**Depends on**: Phase 1 (complete).
 
 ### Tasks
 
