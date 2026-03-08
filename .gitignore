@@ -1,16 +1,6 @@
-# Dependencies
-node_modules/
-package-lock.json
-
-# Build artifacts
-dist/
-build/
-*.tgz
-
 # Environment and secrets
 .env
 .env.*
-!.env.example
 .envrc.local
 
 # Editor and IDE
@@ -39,5 +29,8 @@ tmp/
 # Gemini
 .gemini/tmp/
 
-# Generated files (keep docs, ignore build outputs)
-examples/dashboard/generated/
+# Legacy artifacts (should not reappear)
+node_modules/
+package-lock.json
+.nvmrc
+.node-version

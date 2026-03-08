@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# sync-to-tools.sh - Propagate global MCP server definitions to AI tool configs
+# sync-mcp.sh - Propagate global MCP server definitions to AI tool configs
 #
 # Syncs mcp-servers.json to each tool's expected user-level config location.
 # Secrets are pulled from gopass. Works with Fish and Zsh shells.
 #
-# Usage: ./sync-to-tools.sh [--dry-run]
+# Usage: ./sync-mcp.sh [--dry-run]
 
 set -euo pipefail
 

@@ -5,7 +5,7 @@ Migration from current repo layout to the structure defined in `system-plan-draf
 
 ```yaml
 status: IN PROGRESS
-current_phase: "Phase 2 complete — Phase 3 next"
+current_phase: "Phase 3 complete — Phase 4 next"
 specs:
   - system-plan-draft.md        # DEVMACHINE-SPEC — shell, chezmoi, iTerm2, homebrew, mise
   - MIGRATION-PLAN.md           # ~/Organizations/the-nash-group/.archive/planning/
