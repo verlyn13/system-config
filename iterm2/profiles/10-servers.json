@@ -1,0 +1,497 @@
+{
+  "Profiles": [
+    {
+      "Name": "SSH — Hetzner (Production)",
+      "Guid": "A7B2D9F1-HETZ-PROD-SECURE",
+      "Badge Text": "PROD • HETZNER",
+      "Custom Command": "Yes",
+      "Command": "/usr/bin/ssh",
+      "Initial Text": "",
+      "Custom Directory": "No",
+      "Working Directory": "~",
+      "Use Custom Command": "Yes",
+      "Arguments": ["hetzner-secure"],
+
+      "Unlimited Scrollback": true,
+      "Scrollback Lines": 0,
+
+      "Use Bright Bold": true,
+      "Minimum Contrast": 0.1,
+      "Cursor Guide Color": {
+        "Red Component": 0.9,
+        "Green Component": 0.3,
+        "Blue Component": 0.3,
+        "Alpha Component": 0.25
+      },
+      "Badge Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.2,
+        "Blue Component": 0.2,
+        "Alpha Component": 0.7
+      },
+      "Background Color": {
+        "Red Component": 0.15,
+        "Green Component": 0.0,
+        "Blue Component": 0.0,
+        "Alpha Component": 1.0
+      },
+      "Foreground Color": {
+        "Red Component": 0.9,
+        "Green Component": 0.9,
+        "Blue Component": 0.9,
+        "Alpha Component": 1.0
+      },
+
+      "Show Status Bar": true,
+      "Status Bar Layout": {
+        "components": [
+          {
+            "class": "iTermStatusBarHostnameComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5,
+                "shared text color": {
+                  "Red Component": 1.0,
+                  "Green Component": 0.3,
+                  "Blue Component": 0.3,
+                  "Alpha Component": 1.0
+                }
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarWorkingDirectoryComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5,
+                "path": "path"
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarCPUUtilizationComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarMemoryUtilizationComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarNetworkUtilizationComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 4
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarClockComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 3,
+                "format": "M/d h:mm a"
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          }
+        ],
+        "advanced configuration": {
+          "algorithm": 0,
+          "auto-rainbow style": 0
+        }
+      },
+
+      "Automatic Profile Switching Rules": [
+        "hostname=91.99.101.204",
+        "hostname=100.84.151.58",
+        "hostname=hetzner-*",
+        "path=/root/*",
+        "path=/home/verlyn13/*"
+      ],
+
+      "Non Ascii Font": "Unspecified",
+      "Normal Font": "Unspecified",
+      "Use Non-ASCII Font": false,
+      "Use Custom Window Title": true,
+      "Custom Window Title": "⚠️  PRODUCTION — Hetzner",
+
+      "Silence Bell": false,
+      "Visual Bell": true,
+      "Flashing Bell": true,
+
+      "Close Sessions On End": true,
+      "Prompt Before Closing 2": 2,
+
+      "Tags": ["production", "hetzner", "vps", "germany"],
+
+      "Triggers": [
+        {
+          "regex": "\\b(ERROR|CRITICAL|FATAL|FAIL(ed|ure)?|WARN(ING)?)\\b",
+          "action": "HighlightTrigger",
+          "parameter": {
+            "Red Component": 1.0,
+            "Green Component": 0.2,
+            "Blue Component": 0.2,
+            "Alpha Component": 0.5
+          },
+          "instant": false,
+          "enabled": true
+        },
+        {
+          "regex": "rm\\s+(-rf?|--recursive)\\s+(/|~/|/home|/etc|/var|/usr)",
+          "action": "RingBellAction",
+          "instant": false,
+          "enabled": true
+        },
+        {
+          "regex": "docker\\s+(system|volume|network|container)\\s+prune",
+          "action": "BounceDockIconAction",
+          "instant": false,
+          "enabled": true
+        },
+        {
+          "regex": "sudo\\s+(reboot|shutdown|halt|poweroff)",
+          "action": "BounceDockIconAction",
+          "instant": false,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "Name": "SSH — Hetzner Docker (Root)",
+      "Guid": "B8C3E0G2-HETZ-ROOT-EMERGENCY",
+      "Badge Text": "ROOT • DOCKER",
+      "Custom Command": "Yes",
+      "Command": "/usr/bin/ssh",
+      "Initial Text": "",
+      "Custom Directory": "No",
+      "Working Directory": "~",
+      "Use Custom Command": "Yes",
+      "Arguments": ["hetzner-docker"],
+
+      "Unlimited Scrollback": true,
+      "Scrollback Lines": 0,
+
+      "Use Bright Bold": true,
+      "Minimum Contrast": 0.1,
+      "Cursor Guide Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.1,
+        "Blue Component": 0.1,
+        "Alpha Component": 0.35
+      },
+      "Badge Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.0,
+        "Blue Component": 0.0,
+        "Alpha Component": 0.9
+      },
+      "Background Color": {
+        "Red Component": 0.2,
+        "Green Component": 0.0,
+        "Blue Component": 0.0,
+        "Alpha Component": 1.0
+      },
+      "Foreground Color": {
+        "Red Component": 1.0,
+        "Green Component": 1.0,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0
+      },
+
+      "Show Status Bar": true,
+      "Status Bar Layout": {
+        "components": [
+          {
+            "class": "iTermStatusBarHostnameComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5,
+                "shared text color": {
+                  "Red Component": 1.0,
+                  "Green Component": 0.1,
+                  "Blue Component": 0.1,
+                  "Alpha Component": 1.0
+                }
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarWorkingDirectoryComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5,
+                "path": "path"
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarCPUUtilizationComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarMemoryUtilizationComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarClockComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 3,
+                "format": "M/d h:mm a"
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          }
+        ],
+        "advanced configuration": {
+          "algorithm": 0,
+          "auto-rainbow style": 0
+        }
+      },
+
+      "Automatic Profile Switching Rules": [
+        "username=root",
+        "path=/root/*"
+      ],
+
+      "Non Ascii Font": "Unspecified",
+      "Normal Font": "Unspecified",
+      "Use Non-ASCII Font": false,
+      "Use Custom Window Title": true,
+      "Custom Window Title": "🚨 ROOT ACCESS — Hetzner Docker",
+
+      "Silence Bell": false,
+      "Visual Bell": true,
+      "Flashing Bell": true,
+
+      "Close Sessions On End": true,
+      "Prompt Before Closing 2": 2,
+
+      "Tags": ["production", "hetzner", "root", "emergency"],
+
+      "Triggers": [
+        {
+          "regex": "\\b(ERROR|CRITICAL|FATAL|FAIL(ed|ure)?|WARN(ING)?)\\b",
+          "action": "HighlightTrigger",
+          "parameter": {
+            "Red Component": 1.0,
+            "Green Component": 0.1,
+            "Blue Component": 0.1,
+            "Alpha Component": 0.6
+          },
+          "instant": false,
+          "enabled": true
+        },
+        {
+          "regex": "rm\\s+(-rf?|--recursive)\\s+",
+          "action": "RingBellAction",
+          "instant": false,
+          "enabled": true
+        },
+        {
+          "regex": "(docker|systemctl|service)\\s+(stop|restart|kill)",
+          "action": "BounceDockIconAction",
+          "instant": false,
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "Name": "SSH — Hetzner Tailscale (Mesh)",
+      "Guid": "C9D4F1H3-HETZ-TAILSCALE",
+      "Badge Text": "TAILSCALE • MESH",
+      "Custom Command": "Yes",
+      "Command": "/usr/bin/ssh",
+      "Initial Text": "",
+      "Custom Directory": "No",
+      "Working Directory": "~",
+      "Use Custom Command": "Yes",
+      "Arguments": ["hetzner-hq"],
+
+      "Unlimited Scrollback": true,
+      "Scrollback Lines": 0,
+
+      "Use Bright Bold": true,
+      "Minimum Contrast": 0,
+      "Cursor Guide Color": {
+        "Red Component": 0.5,
+        "Green Component": 0.5,
+        "Blue Component": 0.9,
+        "Alpha Component": 0.25
+      },
+      "Badge Color": {
+        "Red Component": 0.3,
+        "Green Component": 0.3,
+        "Blue Component": 0.9,
+        "Alpha Component": 0.6
+      },
+      "Background Color": {
+        "Red Component": 0.0,
+        "Green Component": 0.0,
+        "Blue Component": 0.1,
+        "Alpha Component": 1.0
+      },
+      "Foreground Color": {
+        "Red Component": 0.9,
+        "Green Component": 0.9,
+        "Blue Component": 0.9,
+        "Alpha Component": 1.0
+      },
+
+      "Show Status Bar": true,
+      "Status Bar Layout": {
+        "components": [
+          {
+            "class": "iTermStatusBarHostnameComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5,
+                "shared text color": {
+                  "Red Component": 0.5,
+                  "Green Component": 0.5,
+                  "Blue Component": 1.0,
+                  "Alpha Component": 1.0
+                }
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarWorkingDirectoryComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5,
+                "path": "path"
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarCPUUtilizationComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarMemoryUtilizationComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 5
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          },
+          {
+            "class": "iTermStatusBarClockComponent",
+            "configuration": {
+              "knobs": {
+                "base: priority": 3,
+                "format": "M/d h:mm a"
+              },
+              "layout advanced configuration dictionary value": {
+                "algorithm": 0
+              }
+            }
+          }
+        ],
+        "advanced configuration": {
+          "algorithm": 0,
+          "auto-rainbow style": 0
+        }
+      },
+
+      "Automatic Profile Switching Rules": [
+        "hostname=100.84.151.58"
+      ],
+
+      "Non Ascii Font": "Unspecified",
+      "Normal Font": "Unspecified",
+      "Use Non-ASCII Font": false,
+      "Use Custom Window Title": true,
+      "Custom Window Title": "Hetzner (Tailscale Mesh)",
+
+      "Silence Bell": false,
+      "Visual Bell": true,
+      "Flashing Bell": false,
+
+      "Close Sessions On End": true,
+      "Prompt Before Closing 2": 1,
+
+      "Tags": ["production", "hetzner", "tailscale", "mesh"],
+
+      "Triggers": [
+        {
+          "regex": "\\b(ERROR|CRITICAL|FATAL|FAIL(ed|ure)?)\\b",
+          "action": "HighlightTrigger",
+          "parameter": {
+            "Red Component": 1.0,
+            "Green Component": 0.3,
+            "Blue Component": 0.3,
+            "Alpha Component": 0.4
+          },
+          "instant": false,
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ Migration from current repo layout to the structure defined in `system-plan-draf
 
 ```yaml
 status: IN PROGRESS
-current_phase: "Phase 1 complete — Phase 2 next"
+current_phase: "Phase 2 complete — Phase 3 next"
 specs:
   - system-plan-draft.md        # DEVMACHINE-SPEC — shell, chezmoi, iTerm2, homebrew, mise
   - MIGRATION-PLAN.md           # ~/Organizations/the-nash-group/.archive/planning/
@@ -457,7 +457,7 @@ ng-doctor | grep -E 'shell|path|agentic' # all ✓
 
 ## Phase 2: iTerm2 Profiles — NEXT
 
-**Status**: P2-0 complete. Remaining tasks not started.
+**Status**: Complete. Commit TBD. ng-doctor: 31 pass, 5 fail (1 agentic startup, 3 hygiene/P3, 1 uncommitted), 3 skip.
 
 **Goal**: Three-profile system via Dynamic Profiles.
 
@@ -498,22 +498,46 @@ Template deleted from source tree; deployed file removed.
 | ID | Action | Spec Citation | Status | Details |
 |----|--------|---------------|--------|---------|
 | P2-0 | Resolve iTerm2 ownership + purge GUID duplicates | iTerm2 docs, P5 | DONE | Backed up plist, removed 13 conflicting static bookmarks, documented ownership policy. |
-| P2-1 | Create `iterm2/profiles/` (3 files) | Section 4 | — | `dev-zsh.json`, `agentic-zsh.json`, `human-fish.json`. |
-| P2-2 | Create `iterm2/themes/` (3 files) | OQ-02 | — | Move+rename: tokyonight-moon, tokyonight-storm, wild-cherry. |
-| P2-3 | Create `scripts/install-iterm2-profiles.sh` | Section 4 | — | Symlinks into DynamicProfiles/. Idempotent. |
-| P2-4 | Create `iterm2/README.md` | Section 2 layout | — | Setup instructions. |
-| P2-5 | Delete root-level iTerm2 files | OQ-02, P5 | — | `git rm`: Default.json, iterm2-profile.json, tokyonight-profile.json, tokyonightmoon-profile.json, tokyonightsoftdark.json, tokyonightstorm-profile.json, wild-cherry-profile.json, iTerm2State.itermexport. |
-| P2-6 | Verify agentic profile | Section 4 | — | Startup < 200ms. POSIX coreutils in PATH. Static prompt. |
-| P2-7 | Run ng-doctor | — | — | iterm2, agentic categories: all green. |
+| P2-0a | Disable `LoadPrefsFromCustomFolder` | iTerm2 docs | DONE | Disabled custom prefs folder. Cleaned `~/.config/iterm2/` old scripts/plists. Standard macOS prefs path restored. |
+| P2-0b | Disposition existing DynamicProfiles files | P5 | DONE | Removed 5 old files (3 symlinks, local-fish, orbstack-ubuntu). Archived hetzner to system-config. OrbStack.json left as app-managed. |
+| P2-1 | Create `iterm2/profiles/` (5 files) | Section 4 | DONE | Parent-child pattern: `00-base.json` (tokyonight-moon colors, shared terminal settings), `01-dev-zsh.json`, `02-agentic-zsh.json`, `03-human-fish.json` (thin children), `10-servers.json` (3 Hetzner SSH, standalone). |
+| P2-2 | Create `iterm2/themes/` (3 files) | OQ-02 | DONE | Extracted color-only presets: tokyonight-moon, tokyonight-storm, wild-cherry. |
+| P2-3 | Create `scripts/install-iterm2-profiles.sh` | Section 4 | DONE | Symlinks directly into DynamicProfiles/. Idempotent. Includes GUID conflict check. shellcheck clean. |
+| P2-4 | Create `iterm2/README.md` | Section 2 layout | DONE | Ownership table, profile map, policy documentation. |
+| P2-5 | Delete root-level iTerm2 files | OQ-02, P5 | DONE | `git rm`: 8 files (Default.json, iterm2-profile.json, iTerm2State.itermexport, 4 tokyonight variants, wild-cherry-profile.json). |
+| P2-6 | Verify agentic profile | Section 4 | PARTIAL | Startup 537ms > 200ms target. POSIX coreutils on PATH: yes. Static prompt: yes. Startup time is shell-init cost, not iTerm2 — deferred to profiling. |
+| P2-7 | Run ng-doctor | — | DONE | iterm2: 4/4 pass. agentic: 2/3 pass (startup time). |
 
 ### Verify
 ```bash
-ls iterm2/profiles/*.json | wc -l       # 3
+ls iterm2/profiles/*.json | wc -l       # 5
 ls iterm2/themes/*.json | wc -l         # 3
 ls -1 *.json 2>/dev/null                 # empty (no root-level JSONs)
 test ! -f iTerm2State.itermexport        # deleted
-ng-doctor | grep -E 'iterm2|agentic'    # all ✓
+scripts/install-iterm2-profiles.sh       # idempotent, no conflicts
+ng-doctor | grep -E 'iterm2|agentic'    # iterm2 all ✓, agentic 2/3
 ```
+
+### ng-doctor Post-Phase 2 (2026-03-07)
+
+```
+31 passed, 5 failed, 3 skipped
+
+Remaining failures (Phase 3+):
+  agentic:    agentic_startup_under_200ms (537ms — shell-init cost, not iTerm2)
+  hygiene:    no_orphan_lockfiles (package-lock.json), no_nvmrc, no_node_version (Phase 3)
+              chezmoi_source_clean (Phase 2 work uncommitted at time of check)
+```
+
+### Key Decisions
+
+- **`LoadPrefsFromCustomFolder`**: Disabled. iTerm2 uses standard `~/Library/Preferences/`.
+- **Parent-child profiles**: Base profile carries colors/font/terminal settings; children override
+  only command, env, working directory. Files numbered for alphabetical load order.
+- **Hetzner SSH profiles**: Imported as standalone (own colors for visual safety distinction).
+- **OrbStack.json**: Left as app-managed. Documented in README.
+- **Policy**: iTerm2 is an adapter layer, not a system boundary. Shell/runtime policy lives in
+  chezmoi-managed shell config. iTerm2 artifacts limited to presentation and session entrypoints.
 
 ---
 

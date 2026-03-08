@@ -1,0 +1,17 @@
+{
+  "Profiles": [{
+    "Name": "Agentic (zsh)",
+    "Guid": "ng-agentic-zsh",
+    "Dynamic Profile Parent Name": "NG Base",
+    "Custom Command": "Yes",
+    "Command": "/bin/zsh -l",
+    "Tags": ["nash-group", "agentic"],
+    "Working Directory": "~/Organizations",
+    "Custom Directory": "Yes",
+    "Set Environment Variables": {
+      "NG_MODE": "agentic"
+    },
+    "Title Components": 2,
+    "Badge Text": "AGENTIC"
+  }]
+}

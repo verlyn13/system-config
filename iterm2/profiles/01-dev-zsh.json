@@ -1,0 +1,12 @@
+{
+  "Profiles": [{
+    "Name": "Dev (zsh)",
+    "Guid": "ng-dev-zsh",
+    "Dynamic Profile Parent Name": "NG Base",
+    "Custom Command": "Yes",
+    "Command": "/bin/zsh -l",
+    "Tags": ["nash-group", "dev"],
+    "Working Directory": "~/Organizations",
+    "Custom Directory": "Yes"
+  }]
+}

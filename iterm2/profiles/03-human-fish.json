@@ -1,0 +1,12 @@
+{
+  "Profiles": [{
+    "Name": "Human (fish)",
+    "Guid": "ng-human-fish",
+    "Dynamic Profile Parent Name": "NG Base",
+    "Custom Command": "Yes",
+    "Command": "/opt/homebrew/bin/fish -l",
+    "Tags": ["nash-group", "human"],
+    "Working Directory": "~/Organizations",
+    "Custom Directory": "Yes"
+  }]
+}
