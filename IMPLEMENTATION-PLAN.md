@@ -410,7 +410,7 @@ chezmoi source-path                      # .../system-config/home
 | P1-6 | Create zshrc.d/ modules (13 files) | Section 3.4, OQ-01 | DONE | `00-xdg`, `01-path`, `02-mise`, `03-direnv`, `10-aliases`, `15-coreutil-aliases` (GATED), `20-interactive` (GATED), `21-completion` (GATED), `22-prompt` (GATED), `30-agentic` (AGENTIC-ONLY), `40-orbstack`, `41-tailscale`, `99-local`. |
 | P1-7 | Create fish conf.d/ modules (13 files) | Section 3.5, OQ-01 | DONE | `00-xdg`, `01-path`, `02-mise`, `03-direnv`, `10-aliases`, `15-coreutil-aliases`, `20-prompt`, `25-keybindings`, `30-iterm2`, `40-orbstack`, `41-tailscale`, `50-system-update`, `99-local`. Plus `config.fish.tmpl`. Note: grep→rg alias omitted in fish (breaks iTerm2 shell integration). |
 | P1-8 | Create minimal bash config | Section 3.6 | DONE | `dot_bash_profile.tmpl` + `dot_bashrc.tmpl`. XDG, Homebrew, mise, direnv. |
-| P1-9 | Move remaining chezmoi templates | Section 2 map | DONE | `git mv` .chezmoiignore, dot_envrc.tmpl, starship, direnv, mise, system-update. DELETE dot_tmux.conf.tmpl. |
+| P1-9 | Move remaining chezmoi templates | Section 2 map | DONE | `git mv` .chezmoiignore, dot_envrc.tmpl, starship, direnv, mise, system-update. DELETE dot_tmux.conf.tmpl. Note: `dot_envrc.tmpl` subsequently deleted (P2-0 pre-flight — global `~/.envrc` is wrong scope for direnv). |
 | P1-10 | Delete old fish conf.d files | OQ-01, P15 | DONE | 10 dropped + 11 superseded = 21 files deleted. Orphaned live files cleaned from ~/.config/fish/conf.d/. |
 | P1-11 | Delete old monolithic dot_zshrc.tmpl | Section 3.3 | DONE | + dot_bashrc.tmpl. Decomposition complete. |
 | P1-12 | Run ng-doctor | — | DONE | shell 7/7, path 4/4, agentic 2/3 (startup 557ms > 200ms target). |
@@ -457,7 +457,7 @@ ng-doctor | grep -E 'shell|path|agentic' # all ✓
 
 ## Phase 2: iTerm2 Profiles — NEXT
 
-**Status**: Not started. This is the next phase to execute.
+**Status**: P2-0 complete. Remaining tasks not started.
 
 **Goal**: Three-profile system via Dynamic Profiles.
 
@@ -465,17 +465,46 @@ ng-doctor | grep -E 'shell|path|agentic' # all ✓
 
 **Depends on**: Phase 1 (complete).
 
+### Pre-flight Corrections (2026-03-07)
+
+Two boundary violations discovered and fixed before Phase 2 execution:
+
+**1. iTerm2 GUID Conflict (P2-0)**
+Dynamic profiles (JSON files in `DynamicProfiles/`) had their GUIDs duplicated as static
+bookmarks in the iTerm2 plist — likely from UI edits being saved to preferences. iTerm2
+docs require each GUID to exist in exactly one place. 13 conflicting static bookmarks
+removed from the plist; dynamic JSON files remain as sole source of truth.
+
+Backup: `~/Library/Preferences/com.googlecode.iterm2.plist.bak.20260307-*`
+
+**2. Global `~/.envrc` Removed**
+`home/dot_envrc.tmpl` deployed a `~/.envrc` that ran `use mise`, `PATH_add bin`, and
+`dotenv_if_exists` at home-directory scope — making every shell session inherit
+project-style behavior. This contradicts the plan's boundary model (global shell
+foundation at user level, project activation at project boundary). The helpers already
+live in `~/.config/direnv/direnvrc` (managed by `home/dot_config/direnv/direnvrc.tmpl`).
+Template deleted from source tree; deployed file removed.
+
+**iTerm2 Ownership Policy (binding for Phase 2+)**
+- `system-config` owns active iTerm2 profiles (Phase 2 creates the target set)
+- Old dotfiles repo (`~/.local/share/chezmoi/`) retains archived iTerm2 templates but
+  does NOT feed `DynamicProfiles/` — its `run_once_07` is inert (already ran, won't re-run)
+- Each active profile GUID exists in exactly one place: dynamic JSON OR static plist, never both
+- Dynamic profiles use `Rewritable: false` (omitted = default) — JSON files are source of truth,
+  not the iTerm2 UI
+
 ### Tasks
 
-| ID | Action | Spec Citation | Details |
-|----|--------|---------------|---------|
-| P2-1 | Create `iterm2/profiles/` (3 files) | Section 4 | `dev-zsh.json`, `agentic-zsh.json`, `human-fish.json`. |
-| P2-2 | Create `iterm2/themes/` (3 files) | OQ-02 | Move+rename: tokyonight-moon, tokyonight-storm, wild-cherry. |
-| P2-3 | Create `scripts/install-iterm2-profiles.sh` | Section 4 | Symlinks into DynamicProfiles/. Idempotent. |
-| P2-4 | Create `iterm2/README.md` | Section 2 layout | Setup instructions. |
-| P2-5 | Delete root-level iTerm2 files | OQ-02, P5 | `git rm`: Default.json, iterm2-profile.json, tokyonight-profile.json, tokyonightmoon-profile.json, tokyonightsoftdark.json, tokyonightstorm-profile.json, wild-cherry-profile.json, iTerm2State.itermexport. |
-| P2-6 | Verify agentic profile | Section 4 | Startup < 200ms. POSIX coreutils in PATH. Static prompt. |
-| P2-7 | Run ng-doctor | — | iterm2, agentic categories: all green. |
+| ID | Action | Spec Citation | Status | Details |
+|----|--------|---------------|--------|---------|
+| P2-0 | Resolve iTerm2 ownership + purge GUID duplicates | iTerm2 docs, P5 | DONE | Backed up plist, removed 13 conflicting static bookmarks, documented ownership policy. |
+| P2-1 | Create `iterm2/profiles/` (3 files) | Section 4 | — | `dev-zsh.json`, `agentic-zsh.json`, `human-fish.json`. |
+| P2-2 | Create `iterm2/themes/` (3 files) | OQ-02 | — | Move+rename: tokyonight-moon, tokyonight-storm, wild-cherry. |
+| P2-3 | Create `scripts/install-iterm2-profiles.sh` | Section 4 | — | Symlinks into DynamicProfiles/. Idempotent. |
+| P2-4 | Create `iterm2/README.md` | Section 2 layout | — | Setup instructions. |
+| P2-5 | Delete root-level iTerm2 files | OQ-02, P5 | — | `git rm`: Default.json, iterm2-profile.json, tokyonight-profile.json, tokyonightmoon-profile.json, tokyonightsoftdark.json, tokyonightstorm-profile.json, wild-cherry-profile.json, iTerm2State.itermexport. |
+| P2-6 | Verify agentic profile | Section 4 | — | Startup < 200ms. POSIX coreutils in PATH. Static prompt. |
+| P2-7 | Run ng-doctor | — | — | iterm2, agentic categories: all green. |
 
 ### Verify
 ```bash
@@ -827,7 +856,7 @@ Every tracked file and significant untracked file is dispositioned. Verb is one 
 |------|------|--------|----------|
 | `.chezmoiignore` | MOVE | `home/.chezmoiignore` | P1-9 |
 | `dot_bashrc.tmpl` | REPLACE | `home/dot_bashrc.tmpl` (rewritten per §3.6) | P1-8 |
-| `dot_envrc.tmpl` | MOVE | `home/dot_envrc.tmpl` | P1-9 |
+| `dot_envrc.tmpl` | DELETE | Global `~/.envrc` is wrong scope for direnv; helpers in `direnvrc.tmpl` | P2-0 pre-flight |
 | `dot_tmux.conf.tmpl` | DELETE | tmux removed from this system | G-05 |
 | `dot_zshrc.tmpl` | REPLACE | Decomposed into `home/dot_zshrc.tmpl` (thin) + `home/dot_config/zshrc.d/` | P1-5, P1-6, §3.3 |
 | `dot_config/direnv/direnv.toml.tmpl` | MOVE | `home/dot_config/direnv/` | P1-9 |
@@ -998,7 +1027,6 @@ system-config/
 │   ├── dot_zshrc.tmpl
 │   ├── dot_bash_profile.tmpl
 │   ├── dot_bashrc.tmpl
-│   ├── dot_envrc.tmpl
 │   ├── dot_config/
 │   │   ├── fish/
 │   │   │   ├── config.fish.tmpl
