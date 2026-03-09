@@ -20,6 +20,7 @@
 #   --config <path> load config file (overrides defaults, CLI still wins)
 #   --no-plugins   skip loading plugins in system-update.d/
 
+# Note: set -e is intentionally absent — steps use keep-going error handling
 set -uo pipefail
 
 # =============================================================================
@@ -463,7 +464,7 @@ normalize_config_arrays() {
 normalize_config_arrays
 
 if [[ ${#SYSTEM_UPDATE_PIP_PACKAGES[@]} -eq 0 ]]; then
-  SYSTEM_UPDATE_PIP_PACKAGES=(huggingface_hub)
+  SYSTEM_UPDATE_PIP_PACKAGES=()
 fi
 
 if bool_true "${SYSTEM_UPDATE_NOTIFY}"; then
@@ -839,7 +840,9 @@ run_step() {
   log step "$name"
   ndjson info step_start "$name" "\"cmd\":\"$*\""
 
-  # Run: capture stdout+stderr to temp file only
+  # Run in subshell: captures stdout+stderr to temp file.
+  # Side-effect: global mutations inside step functions are lost;
+  # notices/actions are recovered via output scraping after the step.
   ("$@") >"$tmp" 2>&1 || rc=$?
 
   end_ts="$(date +%s)"

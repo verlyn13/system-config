@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# system-update — Unified system update command
+# Delivered via chezmoi from home/dot_local/bin/executable_system-update.tmpl
+#
+# Delegates to the main script in the system-config repo.
+# Usage: system-update [--check] [--verbose] [--list] [--only <ids>] ...
+
+exec bash "{{ .chezmoi.workingTree }}/scripts/system-update.sh" "$@"

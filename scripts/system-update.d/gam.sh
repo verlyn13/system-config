@@ -7,11 +7,11 @@ run_gam() {
     return 0
   fi
   if [[ ! -d "$HOME/bin/gam7" ]]; then
-    log info "GAM not installed, skipping (install: bash <(curl -s -S -L https://git.io/gam-install))"
+    log info "GAM not installed, skipping (install: https://github.com/GAM-team/GAM)"
     return 0
   fi
   log info "Updating GAM..."
-  bash <(curl -s -S -L https://git.io/gam-install) -l
+  bash <(curl -s -S -L https://raw.githubusercontent.com/GAM-team/GAM/main/src/gam-install.sh) -l
 }
 
 check_gam() {

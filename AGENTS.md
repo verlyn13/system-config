@@ -16,7 +16,7 @@ system-config/
 │   ├── dot_bash_profile.tmpl
 │   ├── dot_bashrc.tmpl
 │   ├── dot_config/
-│   │   ├── fish/          # config.fish.tmpl + 13 conf.d/ modules
+│   │   ├── fish/          # config.fish.tmpl + 12 conf.d/ modules
 │   │   ├── zshrc.d/       # 13 zsh modules (NG_MODE gated)
 │   │   ├── direnv/        # direnvrc.tmpl + direnv.toml.tmpl
 │   │   ├── mise/          # global config.toml.tmpl
@@ -28,7 +28,7 @@ system-config/
 ├── scripts/               # system-update.sh, install-iterm2-profiles.sh, sync-mcp.sh
 │   └── system-update.d/   # Drop-in update plugins
 ├── policies/              # OPA policies, version policy
-├── docs/                  # Setup guides, gopass, maintenance, agent handoff
+├── docs/                  # Setup guides, gopass, agent handoff
 ├── AGENTS.md              # This file — canonical project contract
 ├── CLAUDE.md              # Claude Code shim (imports AGENTS.md)
 ├── DEVMACHINE-SPEC.md     # Source of truth spec
@@ -92,7 +92,7 @@ system-update --skip pip-packages
 
 **Core steps** (8): Homebrew index, Homebrew formulae, npm globals, pip packages, Claude Code, gh extensions, mise runtimes, Cleanup.
 
-**Plugins** (`scripts/system-update.d/*.sh`): Default: `rustup`, `pipx`, `uv`. Optional: `brew-casks`, `mas`, `gem`, `go-tools`.
+**Plugins** (`scripts/system-update.d/*.sh`): Default: `rustup`, `pipx`, `uv`. Optional: `brew-casks`, `mas`, `gem`, `go-tools`, `gam`, `android-studio-canary`.
 
 **Logging**: `~/Library/Logs/system-update/run-*.log` + NDJSON.
 
