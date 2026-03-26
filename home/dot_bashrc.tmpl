@@ -8,6 +8,9 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:-{{ .xdg.cache_home }}}"
 # Homebrew
 [[ -x {{ .homebrew.prefix }}/bin/brew ]] && eval "$({{ .homebrew.prefix }}/bin/brew shellenv)"
 
+# npm global packages
+[[ -d "$HOME/.npm-global/bin" ]] && export PATH="$HOME/.npm-global/bin:$PATH"
+
 # mise
 command -v mise &>/dev/null && eval "$(mise activate bash)"
 

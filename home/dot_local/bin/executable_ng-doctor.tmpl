@@ -413,11 +413,11 @@ check_organizations_dir_exists() {
   fi
 }
 
-check_development_dir_exists() {
-  if [[ -d "$HOME/Development" ]]; then
-    pass "development_dir_exists" "~/Development exists"
+check_repos_dir_exists() {
+  if [[ -d "$HOME/Repos" ]]; then
+    pass "repos_dir_exists" "~/Repos exists"
   else
-    fail "development_dir_exists" "Development dir" "exists" "not found"
+    fail "repos_dir_exists" "Repos dir" "exists" "not found"
   fi
 }
 
@@ -456,7 +456,7 @@ run_filesystem_checks() {
   section "filesystem"
   check_xdg_dirs_exist
   check_organizations_dir_exists
-  check_development_dir_exists
+  check_repos_dir_exists
   check_system_config_in_correct_location
   check_chezmoi_source_is_repo
   check_no_repos_in_desktop_documents
@@ -606,7 +606,7 @@ list_checks() {
   printf "%-14s %s\n" "agentic" "agentic_startup_under_200ms"
   printf "%-14s %s\n" "filesystem" "xdg_dirs_exist"
   printf "%-14s %s\n" "filesystem" "organizations_dir_exists"
-  printf "%-14s %s\n" "filesystem" "development_dir_exists"
+  printf "%-14s %s\n" "filesystem" "repos_dir_exists"
   printf "%-14s %s\n" "filesystem" "system_config_in_correct_location"
   printf "%-14s %s\n" "filesystem" "chezmoi_source_is_repo"
   printf "%-14s %s\n" "filesystem" "no_repos_in_desktop_documents"

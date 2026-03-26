@@ -9,5 +9,8 @@ fi
 # User binaries
 [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
 
+# npm global packages
+[[ -d "$HOME/.npm-global/bin" ]] && export PATH="$HOME/.npm-global/bin:$PATH"
+
 # mise shims (global tool versions)
 [[ -d "$XDG_DATA_HOME/mise/shims" ]] && export PATH="$XDG_DATA_HOME/mise/shims:$PATH"

@@ -12,14 +12,15 @@ java = "{{ .versions.java | default "temurin-21" }}"
 # java = "{{ .versions.java | default "temurin-21" }}"
 {{ end -}}
 uv = "latest"
+"npm:tsx" = "latest"
 
 [settings]
 # Keep experimental features enabled for task runner and direnv integration
 experimental = true
 # Trust common development roots so mise doesn't prompt repeatedly
 trusted_config_paths = [
-  "~/Development/**",
-  "~/workspace/**"
+  "~/Repos/**",
+  "~/ai/**"
 ]
 # Prefer mise-native files over legacy managers by default
 legacy_version_file = false

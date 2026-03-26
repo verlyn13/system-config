@@ -11,6 +11,7 @@ xdg:
 paths:
   prepend:
     - "$HOME/.local/bin"
+    - "$HOME/.npm-global/bin"
     - "$HOME/.local/share/mise/shims"
 
 homebrew:
