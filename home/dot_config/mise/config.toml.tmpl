@@ -6,7 +6,7 @@ bun = "latest"
 python = "{{ .versions.python | default "3.13" }}"
 # go = "latest"
 # rust = "stable"  # Commented out - install with: mise install rust@stable
-{{ if .android -}}
+{{ if (.android | default false) -}}
 java = "{{ .versions.java | default "temurin-21" }}"
 {{ else -}}
 # java = "{{ .versions.java | default "temurin-21" }}"
@@ -17,10 +17,11 @@ uv = "latest"
 [settings]
 # Keep experimental features enabled for task runner and direnv integration
 experimental = true
-# Trust common development roots so mise doesn't prompt repeatedly
+# Trust current development roots so mise doesn't prompt repeatedly
 trusted_config_paths = [
-  "~/Repos/**",
-  "~/ai/**"
+  "~/Organizations/**",
+  "~/Development/**",
+  "~/Projects/**"
 ]
 # Prefer mise-native files over legacy managers by default
 legacy_version_file = false
@@ -32,7 +33,6 @@ plugin_autoupdate_last_check_duration = "7d"
 jobs = 8
 
 [env]
-MISE_FISH_AUTO_ACTIVATE = "1"
 MISE_LOG_LEVEL = "info"
 MISE_EXPERIMENTAL = "1"
 EDITOR = "nvim"
@@ -42,4 +42,7 @@ CARGO_BUILD_JOBS = "10"
 NODE_OPTIONS = "--max-old-space-size=4096"
 BUN_INSTALL = "~/.bun"
 GOPATH = "~/.local/share/go/workspace"
-
+{{ if (.android | default false) -}}
+ANDROID_HOME = "~/Library/Android/sdk"
+ANDROID_SDK_ROOT = "~/Library/Android/sdk"
+{{ end -}}

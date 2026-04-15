@@ -9,3 +9,9 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:-{{ .xdg.cache_home }}}"
 # Point tools at XDG locations
 export HISTFILE="$XDG_STATE_HOME/zsh/history"
 export LESSHISTFILE="$XDG_STATE_HOME/less/history"
+{{ if (.android | default false) -}}
+
+# Android SDK
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+{{ end -}}

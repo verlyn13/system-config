@@ -1,162 +1,171 @@
 # AGENTS.md
 
-Reproducible macOS development environment. Chezmoi-managed shell config, Homebrew packages, mise runtimes, iTerm2 dynamic profiles.
+Reproducible macOS development environment. `system-config` is the active chezmoi source for the zsh-first shell surface, global mise defaults, direnv helpers, iTerm2 dynamic profiles, and the user-level MCP baseline.
+
+## Migration Status
+
+- Active secrets migration: gopass -> 1Password CLI (`op`)
+- Source of truth for this migration: `docs/1password-migration-plan.md`
+- New secret integrations in this repo must target `op`, not gopass
+- gopass is being retained only as a cold archive during migration
 
 ## Architecture
 
 ### Directory Layout
-```
+```text
 system-config/
-├── home/                  # Chezmoi source (sourceDir)
-│   ├── .chezmoidata.yaml  # Shared data for zsh + fish templates
-│   ├── .chezmoiignore     # Ignore patterns
+├── home/                  # Active chezmoi source (sourceDir)
+│   ├── .chezmoidata.yaml  # Shared data for shell templates
+│   ├── .chezmoiignore
 │   ├── dot_zshenv.tmpl    # XDG exports only
-│   ├── dot_zprofile.tmpl  # PATH bootstrap (brew, mise, local/bin)
-│   ├── dot_zshrc.tmpl     # Thin loader → zshrc.d/
+│   ├── dot_zprofile.tmpl  # PATH bootstrap
+│   ├── dot_zshrc.tmpl     # Thin loader -> zshrc.d/
 │   ├── dot_bash_profile.tmpl
 │   ├── dot_bashrc.tmpl
 │   ├── dot_config/
-│   │   ├── fish/          # config.fish.tmpl + 12 conf.d/ modules
-│   │   ├── zshrc.d/       # 13 zsh modules (NG_MODE gated)
+│   │   ├── zshrc.d/       # Modular zsh config (NG_MODE gated)
 │   │   ├── direnv/        # direnvrc.tmpl + direnv.toml.tmpl
 │   │   ├── mise/          # global config.toml.tmpl
 │   │   └── starship.toml.tmpl
-│   └── dot_local/bin/     # ng-doctor, system-update
+│   └── dot_local/bin/     # ng-doctor, system-update, MCP wrappers
 ├── iterm2/
-│   ├── profiles/          # Dynamic profile JSONs (parent-child)
-│   └── themes/            # Color-only presets (reference)
-├── scripts/               # system-update.sh, install-iterm2-profiles.sh, sync-mcp.sh
+│   ├── profiles/          # Dynamic profile JSONs
+│   └── themes/            # Color-only presets
+├── scripts/               # sync-mcp.sh, system-update.sh, install-iterm2-profiles.sh
 │   └── system-update.d/   # Drop-in update plugins
-├── policies/              # OPA policies, version policy
-├── docs/                  # Setup guides, gopass, agent handoff
-├── AGENTS.md              # This file — canonical project contract
+├── docs/                  # Current guides + archived historical notes
+├── AGENTS.md              # Canonical project contract
 ├── CLAUDE.md              # Claude Code shim (imports AGENTS.md)
-├── DEVMACHINE-SPEC.md     # Source of truth spec
-└── IMPLEMENTATION-PLAN.md # Execution tracker
+├── DEVMACHINE-SPEC.md     # Historical archive, not the live contract
+└── IMPLEMENTATION-PLAN.md # Historical archive, not the live contract
 ```
 
+### Shell Policy
+- zsh is the only managed interactive shell.
+- bash is a script/runtime shell only.
+- fish is not part of the managed config surface. Do not add fish templates, fish aliases, or fish-only agent workflows back into this repo.
+
 ### Chezmoi Configuration
-- **Source**: `system-config/home/` (set via `sourceDir` in chezmoi.toml)
-- **Data**: `~/.config/chezmoi/chezmoi.toml` — machine-specific values
-- **Shared data**: `home/.chezmoidata.yaml` — aliases, paths, coreutil mappings
-- **Templates**: Go template syntax with guards like `(.headless | default false)`
-- **Old dotfiles**: `~/.local/share/chezmoi/` — archived, retains SSH/GPG/git/Brewfiles
+- Source: `system-config/home/`
+- Machine data: `~/.config/chezmoi/chezmoi.toml`
+- Shared data: `home/.chezmoidata.yaml`
+- Old dotfiles repo: `~/.local/share/chezmoi/` is legacy archival state for SSH/GPG/git/Brewfiles. It is not the active shell or MCP control plane.
 
 ## Common Commands
 
 ```bash
-# Apply chezmoi changes
-chezmoi apply --dry-run    # Preview first
+chezmoi apply --dry-run
 chezmoi apply
 
-# Machine health
-ng-doctor                  # 37-check verification harness
+ng-doctor
+ng-doctor --summary
 
-# System update
-system-update              # All packages, tools, runtimes
-system-update --check      # Dry-run
+system-update
+system-update --check
+system-update --list
 
-# iTerm2 profiles
 scripts/install-iterm2-profiles.sh
 
-# MCP server sync
-scripts/sync-mcp.sh        # Sync to Claude Code CLI, Cursor, etc.
+scripts/sync-mcp.sh
 scripts/sync-mcp.sh --dry-run
 ```
 
-## Template Syntax Rules
+## Template Rules
 
-### Always use default guards
+Always use `| default` for optional keys.
+
 ```go
 // CORRECT
 {{ if not (.headless | default false) -}}
-{{ if eq (.shell | default "fish") "fish" -}}
+{{ if (.android | default false) -}}
 
-// INCORRECT — fails if key doesn't exist
+// INCORRECT
 {{ if not .headless -}}
+{{ if .android -}}
 ```
 
-### Required data keys in chezmoi.toml
-- `headless` (bool): Whether this is a headless server
-- `shell` (string): Default shell choice (usually "fish")
+Required machine data keys:
+- `headless` (bool)
+- `android` (bool)
+
+## MCP Ownership
+
+Global MCP servers live in `scripts/mcp-servers.json` and are synced by `scripts/sync-mcp.sh`.
+
+Approved global baseline:
+- `context7`
+- `github`
+- `memory`
+- `sequential-thinking`
+- `brave-search`
+- `firecrawl`
+
+User-level sync targets:
+- Claude Code CLI: `~/.claude.json`
+- Cursor: `~/.cursor/mcp.json`
+- Windsurf: `~/.codeium/windsurf/mcp_config.json`
+- GitHub Copilot CLI: `~/.copilot/mcp-config.json`
+- Codex CLI: `~/.codex/config.toml`
+
+Policy:
+- Project-specific MCP servers belong in each project’s `.mcp.json`.
+- `scripts/sync-mcp.sh` manages only the global baseline.
+- User configs must not contain expanded API keys or tokens.
+- Auth-required global servers use runtime wrapper commands in `home/dot_local/bin/` and load secrets from env vars or 1Password CLI (`op read`) at launch time. During migration, do not add new gopass dependencies. See `docs/1password-migration-plan.md` and `docs/agentic-tooling.md` for the current secret-loading contract.
+- Claude Desktop is a separate config plane and is not a sync target.
+- Gemini CLI is currently unmanaged for MCP sync; keep it tool-native and project-local where possible.
 
 ## System Update
 
+Core steps:
+- Homebrew index
+- Homebrew formulae
+- npm globals
+- pip packages
+- Claude Code
+- gh extensions
+- mise runtimes
+- Cleanup
+
+Plugins live in `scripts/system-update.d/*.sh`.
+
+Logging:
+- Preferred: `~/Library/Logs/system-update/`
+- Fallback: `${TMPDIR:-/tmp}/system-update-$USER/`
+- Example user config: `scripts/system-update.config.example`
+
+## Source Of Truth
+
+| Surface | Owner | Notes |
+|---------|-------|-------|
+| `system-config/home/` | system-config | Active chezmoi source for shell, direnv, mise global, starship, MCP wrappers |
+| `scripts/` | system-config | Operational tooling: system update, MCP sync, iTerm2 profile install |
+| `iterm2/profiles/` | system-config | Dynamic profile definitions only |
+| `~/.local/share/chezmoi/` | legacy dotfiles repo | SSH/GPG/git/Brewfiles, not shell/MCP SSOT |
+| `.mise.toml`, `.envrc`, `.mcp.json` in a project | project repo | Version pins, env vars, project MCP servers |
+
+Workflow:
+
 ```bash
-system-update              # Quiet console, full transcript in log
-system-update --verbose    # Step headers and inline summaries
-system-update --list       # Show available steps/plugins
-system-update --only brew-index,brew-formulae
-system-update --skip pip-packages
+chezmoi apply --dry-run
+chezmoi apply
 ```
-
-**Core steps** (8): Homebrew index, Homebrew formulae, npm globals, pip packages, Claude Code, gh extensions, mise runtimes, Cleanup.
-
-**Plugins** (`scripts/system-update.d/*.sh`): Default: `rustup`, `pipx`, `uv`. Optional: `brew-casks`, `mas`, `gem`, `go-tools`, `gam`, `android-studio-canary`.
-
-**Logging**: `~/Library/Logs/system-update/run-*.log` + NDJSON.
 
 ## Secrets
 
-- **Gopass guide**: `docs/gopass-guide.md`
-- **Quick reference**: `~/.config/gopass/README-AGENTS.md`
-- **Passphrase**: `escapable diameter silk discover`
+- 1Password migration plan: `docs/1password-migration-plan.md`
+- Preferred retrieval pattern: `op read "op://Dev/<item>/<field>"`
+- Gopass remains archive-only during migration; do not introduce new gopass usage in this repo
+- Never commit passphrases, tokens, or API keys.
+- Never design sync tooling that materializes secrets into persistent user config files.
 
-## MCP Server Management
-
-Global MCP servers in `scripts/mcp-servers.json`, synced to tools via `scripts/sync-mcp.sh`.
-
-**Scope**: Syncs to Claude Code CLI (`~/.claude.json`) and other terminal dev tools. Claude Desktop configured via its own UI.
-
-**Secrets pulled from gopass at sync time**: `github/dev-tools-token`, `brave/api-key`, `firecrawl/api-key`.
-
-Project-specific MCP servers belong in each project's `.mcp.json`.
-
-## Source of Truth
-
-### SSOT Table
-
-| Repo | Manages | Does NOT manage |
-|------|---------|-----------------|
-| **system-config** (`home/`) | Shell config (zsh, fish, bash), zshrc.d/ modules, fish conf.d/, direnv, mise global, starship, ng-doctor, iTerm2 dynamic profiles | SSH, GPG, git configs, Brewfiles, private data |
-| **dotfiles** (`~/.local/share/chezmoi/`) | SSH/GPG/git configs, Brewfiles, `.chezmoitemplates/` | Shell config (owned by system-config) |
-| **Project-level** (`.mise.toml`, `.envrc`) | Tool version pins, project API keys, per-project env | Global shell behavior |
-
-### Workflow
-
-Edit in `system-config/home/` → `chezmoi apply`.
-
-```bash
-chezmoi apply --dry-run    # Preview
-chezmoi apply              # Deploy
-```
-
-### iTerm2 Policy
-
-iTerm2 is an adapter layer, not a system boundary. Shell/runtime policy lives in chezmoi-managed shell config. iTerm2 artifacts are limited to profile presentation and session entrypoints.
-
-- Profiles managed via `iterm2/profiles/` → symlinked to DynamicProfiles/
-- `LoadPrefsFromCustomFolder`: disabled. Standard macOS preferences.
-- Never manage `com.googlecode.iterm2.plist` — machine-specific.
-- OrbStack.json in DynamicProfiles is app-managed (do not modify).
-
-### Project-Scope Guide
-
-Push per-tool decisions to project scope — do not inflate global shell config:
-
-| What | Where |
-|------|-------|
-| Tool version pins | `.mise.toml` in project root |
-| Project API keys and env vars | `.envrc` via `gopass` |
-| Project-specific MCP servers | `.mcp.json` in project root |
-| Project Claude instructions | `CLAUDE.md` in project root |
-
-## Definition of Done
+## Definition Of Done
 
 - `shellcheck` clean on all `.sh` files
-- Chezmoi templates use `| default` guards for all optional keys
-- `chezmoi apply --dry-run` produces no errors
-- Scripts are executable (`chmod +x`)
+- Chezmoi templates use `| default` for optional keys
+- `chezmoi apply --dry-run` completes without template errors
+- Scripts are executable
+- Global MCP sync writes only structure, not secret material
 
 ## Boundaries
 
@@ -164,7 +173,6 @@ Push per-tool decisions to project scope — do not inflate global shell config:
 - Use conventional commits: `type(scope): description`
 - GPG-sign commits
 - Run `shellcheck` on shell scripts before committing
-- Use `fish_indent` for Fish scripts
 
 ### Ask first
 - Deleting or renaming files outside `scripts/` and `docs/`
@@ -172,18 +180,19 @@ Push per-tool decisions to project scope — do not inflate global shell config:
 - Changes to `system-update.sh` core step logic
 
 ### Never
-- Commit secrets, tokens, or API keys
-- Modify `~/.config/chezmoi/chezmoi.toml` directly (use `chezmoi init`)
+- Commit secrets, tokens, API keys, or passphrases
+- Modify `~/.config/chezmoi/chezmoi.toml` directly
 - Run `chezmoi apply` without `--dry-run` first in unfamiliar contexts
-- Create a global `~/.envrc` (direnv is project-scope only)
+- Create a global `~/.envrc`
+- Reintroduce a fish-managed shell surface
 
 ## Known Issues
 
 ### Template errors
-"map has no entry for key" — add missing keys to `~/.config/chezmoi/chezmoi.toml`, update templates with `| default` guards, re-run `chezmoi apply`.
+`map has no entry for key` means a template is missing a `| default` guard or the local chezmoi data needs the expected key.
 
 ### macOS plist cache
-Must `killall cfprefsd` before modifying plists on disk, or changes get overwritten.
+Run `killall cfprefsd` before modifying cached plist-backed preferences on disk.
 
 ### Agentic startup time
-Currently ~537ms (target: 200ms). Shell-init cost, not iTerm2. Profile with `zsh -xlic exit 2>&1`.
+zsh startup is still above target. Profile with `zsh -xlic exit 2>&1` before adding more shell init.

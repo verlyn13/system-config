@@ -15,6 +15,17 @@ fi
 
 mkdir -p "$DYN_DIR"
 
+# Remove stale managed symlinks that no longer have a source profile.
+for target in "$DYN_DIR"/*.json; do
+  [[ -e "$target" ]] || continue
+  if [[ -L "$target" ]]; then
+    resolved="$(readlink "$target")"
+    if [[ "$resolved" == "$PROFILES_SRC/"* ]] && [[ ! -e "$resolved" ]]; then
+      rm "$target"
+    fi
+  fi
+done
+
 installed=0
 for src in "$PROFILES_SRC"/*.json; do
   name=$(basename "$src")

@@ -1,0 +1,64 @@
+# system-update config
+# Copy to ~/.config/system-update/config (or load via --config <path>).
+# This file is sourced as bash — only variable assignments are safe here.
+# CLI flags always override values set in this file.
+#
+# Drop-in overrides: ~/.config/system-update/config.d/*.sh
+# Environment variables (SYSTEM_UPDATE_*) override config-file values.
+# Precedence: env vars < config file < CLI flags.
+
+# ---------------------------------------------------------------------------
+# Global toggles
+# ---------------------------------------------------------------------------
+
+# Load plugins from scripts/system-update.d/ (default: true)
+SYSTEM_UPDATE_ENABLE_PLUGINS=true
+
+# Send macOS notification on completion (default: false, or use --notify)
+SYSTEM_UPDATE_NOTIFY=false
+
+# Emit JSON summary to stdout after the run (default: false, or use --json)
+SYSTEM_UPDATE_JSON=false
+
+# ---------------------------------------------------------------------------
+# Step selection
+# ---------------------------------------------------------------------------
+
+# Enable steps/plugins that are default-off (see: system-update --list)
+SYSTEM_UPDATE_ENABLE=(
+  # brew-casks
+  # mas
+  # gem
+  # go-tools
+  # android-studio-canary
+  # gam
+)
+
+# Disable steps/plugins that are default-on
+SYSTEM_UPDATE_DISABLE=(
+  # pip-packages
+)
+
+# Run only these steps (empty = use defaults). Equivalent to --only.
+SYSTEM_UPDATE_ONLY=()
+
+# Skip these steps (empty = skip nothing). Equivalent to --skip.
+SYSTEM_UPDATE_SKIP=()
+
+# Override execution order. Steps not listed here are appended in default order.
+SYSTEM_UPDATE_STEP_ORDER=()
+
+# ---------------------------------------------------------------------------
+# Step-specific configuration
+# ---------------------------------------------------------------------------
+
+# Packages for the core pip step (pip install -U). Empty = step is skipped.
+SYSTEM_UPDATE_PIP_PACKAGES=(
+  # huggingface_hub
+)
+
+# Go tools for the go-tools plugin (go install <tool>@latest)
+SYSTEM_UPDATE_GO_TOOLS=(
+  # golang.org/x/tools/gopls
+  # github.com/golangci/golangci-lint/cmd/golangci-lint
+)

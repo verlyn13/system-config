@@ -4,106 +4,95 @@ category: reference
 component: overview
 status: active
 version: 3.0.0
-last_updated: 2026-02-23
-tags: [overview, setup, chezmoi, mise, fish]
+last_updated: 2026-04-08
+tags: [overview, setup, chezmoi, mise, zsh, mcp]
 priority: critical
 ---
 
 # system-config
 
 macOS development environment configuration, templates, and tooling.
-Managed with chezmoi (dotfiles), mise (runtimes), and Fish shell.
+Managed with chezmoi, mise, zsh, and a minimal user-level MCP baseline.
 
-See [AGENTS.md](AGENTS.md) for the canonical project contract and [REPO-STRUCTURE.md](REPO-STRUCTURE.md) for the full directory layout.
-
----
+See [AGENTS.md](AGENTS.md) for the canonical contract and [`docs/agentic-tooling.md`](docs/agentic-tooling.md) for tool-specific ownership.
 
 ## Quick Start
 
 ```bash
-# Apply dotfiles to live system
-chezmoi apply --dry-run    # preview first
+chezmoi apply --dry-run
 chezmoi apply
 
-# Update all packages, tools, and runtimes
+ng-doctor --summary
+workspace doctor
+
 system-update
 
-# Sync system-config templates into dotfiles source (SSOT workflow)
-~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh
+scripts/sync-mcp.sh --dry-run
+scripts/sync-mcp.sh
 ```
-
----
 
 ## Key Locations
 
 | What | Where |
 |------|-------|
-| Chezmoi templates (SSOT) | `06-templates/chezmoi/` |
-| Chezmoi source (live) | `~/.local/share/chezmoi/` |
+| Active chezmoi source | `home/` |
 | Chezmoi data | `~/.config/chezmoi/chezmoi.toml` |
-| Fish config | `~/.config/fish/conf.d/` |
-| Global MCP servers | `ai-tools/mcp-servers.json` |
-| system-update config | `~/.config/system-update/config` |
-| system-update logs | `~/Library/Logs/system-update/` |
+| Legacy dotfiles repo | `~/.local/share/chezmoi/` |
+| zsh modules | `home/dot_config/zshrc.d/` |
+| Global MCP baseline | `scripts/mcp-servers.json` |
+| MCP sync script | `scripts/sync-mcp.sh` |
+| Workspace config template | `home/dot_config/workspaces/config.toml.tmpl` |
+| Workspace launcher | `home/dot_local/bin/executable_workspace.tmpl` |
+| Workspace doctor | `home/dot_local/bin/executable_workspace-doctor.tmpl` |
+| Example system-update config | `scripts/system-update.config.example` |
+| system-update logs | `~/Library/Logs/system-update/` or `${TMPDIR:-/tmp}/system-update-$USER/` |
 
----
+## Current Model
 
-## SSOT Workflow
+- zsh is the only managed interactive shell.
+- bash is a script/runtime shell only.
+- fish is no longer a managed shell surface in this repo.
+- Global MCP config is intentionally small and user-level only.
+- Project runtime, env, and MCP decisions belong in `.mise.toml`, `.envrc`, and `.mcp.json`.
 
-`system-config/06-templates/chezmoi/` is the source of truth for all shell integration,
-global mise config, and run_once installers.
+## AI Tooling
 
-```
-Edit in system-config → sync-chezmoi-templates.sh → chezmoi apply
-```
+| Tool | User-level config | Project-level config |
+|------|-------------------|----------------------|
+| Claude Code | `~/.claude.json` | `.mcp.json`, `.claude/` |
+| Codex CLI | `~/.codex/config.toml` | project-local only when explicitly needed |
+| Cursor | `~/.cursor/mcp.json` | workspace/project config if supported |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | workspace/project config if supported |
+| GitHub Copilot CLI | `~/.copilot/mcp-config.json` | tool-native/manual only |
+| Gemini CLI | unmanaged by this repo | tool-native/manual only |
 
-```bash
-# Check for divergence without writing (suitable for pre-commit hook)
-~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh --check
+Current tooling docs:
+- [`docs/agentic-tooling.md`](docs/agentic-tooling.md)
+- [`docs/claude-cli-setup.md`](docs/claude-cli-setup.md)
+- [`docs/codex-cli-setup.md`](docs/codex-cli-setup.md)
+- [`docs/copilot-cli-setup.md`](docs/copilot-cli-setup.md)
+- [`docs/claude-desktop-setup.md`](docs/claude-desktop-setup.md)
+- [`docs/workspace-management.md`](docs/workspace-management.md)
 
-# Sync and overwrite even if dotfiles file is newer
-~/Organizations/jefahnierocks/system-config/scripts/sync-chezmoi-templates.sh --force
-```
+## Workspace POC
 
----
-
-## AI CLI Tools
-
-| Tool | Location | Version | Update |
-|------|----------|---------|--------|
-| Claude Code CLI | `~/.local/bin/claude` | 2.1.50 | `claude update` or `system-update` |
-| Codex CLI | `/opt/homebrew/bin/codex` | — | `brew upgrade codex` |
-
-Claude Code fish config: `~/.config/fish/conf.d/10-claude.fish` (managed via chezmoi)
-Claude Code docs: [`docs/claude-cli-setup.md`](docs/claude-cli-setup.md)
-
----
-
-## Phase Status
-
-Phases 0-9 complete (Phase 7 Android skipped by choice). Phase 10 (System Optimization) not started.
-See [AGENTS.md § Phase Status](AGENTS.md#phase-status) for details.
-
----
+- v1 workspace management is local-only and uses one dedicated OrbStack workspace host with Podman inside that host.
+- Project compatibility rules live in [`docs/agentic-tooling.md`](docs/agentic-tooling.md).
+- The current operator surface is `workspace list`, `workspace show <slug>`, `workspace host-shell`, `workspace host-run ...`, and `workspace doctor`.
 
 ## Common Fixes
 
 ```bash
-# PATH not resolving claude/mise/node
-fish -c 'echo $PATH | tr " " "\n" | grep local'
-
-# Template "map has no entry for key" error
-cat ~/.config/chezmoi/chezmoi.toml    # ensure headless, android, shell keys present
-
-# Brew GUI bundle timed out
-cd ~/.local/share/chezmoi/workspace/dotfiles && brew bundle --file=Brewfile.gui
-
-# Check what chezmoi would change
 chezmoi diff
+cat ~/.config/chezmoi/chezmoi.toml
+workspace list
+workspace doctor
+scripts/install-iterm2-profiles.sh
+scripts/sync-mcp.sh --dry-run
+system-update --list
 ```
-
----
 
 ## Secrets
 
-Managed via gopass. See [`docs/guides/GOPASS-DEFINITIVE-GUIDE.md`](docs/guides/GOPASS-DEFINITIVE-GUIDE.md).
+Secrets are managed with 1Password CLI (`op`) and project `.envrc` files.
+See [`docs/1password-migration-plan.md`](docs/1password-migration-plan.md). The repo must not contain plaintext passphrases or API keys.

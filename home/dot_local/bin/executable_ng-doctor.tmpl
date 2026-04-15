@@ -2,7 +2,7 @@
 # shellcheck disable=SC2088
 # ng-doctor — Nash Group development machine verification harness
 # Delivered via chezmoi from home/dot_local/bin/ng-doctor.tmpl
-# Spec: DEVMACHINE-SPEC Section 7
+# Contract: AGENTS.md
 #
 # Exit codes:
 #   0 — all checks passed (or skipped)
@@ -18,9 +18,10 @@ set -euo pipefail
 
 # --- Configuration -----------------------------------------------------------
 
-SYSTEM_CONFIG_DIR="{{ .chezmoi.workingTree }}"
-HOMEBREW_PREFIX="{{ .homebrew_prefix | default "/opt/homebrew" }}"
-CHEZMOI_SOURCE="{{ .chezmoi.sourceDir }}"
+SYSTEM_CONFIG_DIR='{{ .chezmoi.workingTree }}'
+HOMEBREW_PREFIX='{{ .homebrew_prefix | default "/opt/homebrew" }}'
+CHEZMOI_SOURCE='{{ .chezmoi.sourceDir }}'
+OP_ACCOUNT="my.1password.com"
 
 # --- Output helpers -----------------------------------------------------------
 
@@ -52,9 +53,29 @@ section() {
 
 # --- Category: shell ----------------------------------------------------------
 
+get_login_shell() {
+  local actual=""
+
+  if command -v dscl &>/dev/null; then
+    actual=$(dscl . -read /Users/"$USER" UserShell 2>/dev/null | awk '{print $2}' || true)
+  fi
+
+  if [[ -z "$actual" ]] && command -v python3 &>/dev/null; then
+    actual=$(python3 - <<'PY' 2>/dev/null || true
+import os
+import pwd
+
+print(pwd.getpwnam(os.environ["USER"]).pw_shell)
+PY
+)
+  fi
+
+  printf '%s' "$actual"
+}
+
 check_login_shell_is_zsh() {
   local actual
-  actual=$(dscl . -read /Users/"$USER" UserShell 2>/dev/null | awk '{print $2}')
+  actual="$(get_login_shell)"
   if [[ "$actual" == "/bin/zsh" ]]; then
     pass "login_shell_is_zsh" "Login shell is /bin/zsh"
   else
@@ -67,14 +88,6 @@ check_homebrew_bash_installed() {
     pass "homebrew_bash_installed" "Homebrew bash installed"
   else
     fail "homebrew_bash_installed" "Homebrew bash" "${HOMEBREW_PREFIX}/bin/bash" "not found"
-  fi
-}
-
-check_fish_installed() {
-  if command -v fish &>/dev/null; then
-    pass "fish_installed" "Fish shell installed"
-  else
-    fail "fish_installed" "Fish shell" "installed" "not found"
   fi
 }
 
@@ -140,7 +153,6 @@ run_shell_checks() {
   section "shell"
   check_login_shell_is_zsh
   check_homebrew_bash_installed
-  check_fish_installed
   check_zshenv_is_minimal
   check_zshrc_loads_modules
   check_zshrc_d_modules_present
@@ -207,7 +219,38 @@ check_mise_installed() { _check_tool "mise_installed" "mise"; }
 check_direnv_installed() { _check_tool "direnv_installed" "direnv"; }
 check_chezmoi_installed() { _check_tool "chezmoi_installed" "chezmoi"; }
 check_starship_installed() { _check_tool "starship_installed" "starship"; }
-check_gopass_installed() { _check_tool "gopass_installed" "gopass"; }
+check_op_installed() { _check_tool "op_installed" "op"; }
+
+check_op_ready() {
+  if ! command -v op &>/dev/null; then
+    skip "op_ready" "1Password CLI (op) not installed"
+    return
+  fi
+
+  local output=""
+  if output="$(op whoami --account "$OP_ACCOUNT" 2>&1)"; then
+    pass "op_ready" "1Password CLI is ready for ${OP_ACCOUNT}"
+    return
+  fi
+
+  case "$output" in
+    *"not currently signed in"*|*"not signed in"*|*"signin"*|*"sign in"*)
+      fail "op_ready" "1Password CLI session" "authenticated as ${OP_ACCOUNT}" "no authenticated account"
+      ;;
+    *"desktop app"*|*"CLI integration"*|*"app integration"*|*"Connect with 1Password in the browser"*|*"Integrate with 1Password CLI"*)
+      fail "op_ready" "1Password CLI integration" "desktop app integration enabled" "integration not enabled"
+      ;;
+    *"not found"*|*"unknown account"*|*"no account"*)
+      fail "op_ready" "1Password account selection" "${OP_ACCOUNT} available to op" "wrong account or account not added"
+      ;;
+    *"connect"*|*"background"*|*"not running"*|*"IPC"*|*"socket"*)
+      fail "op_ready" "1Password app connectivity" "desktop app running in background" "desktop app not running"
+      ;;
+    *)
+      fail "op_ready" "1Password CLI readiness" "desktop app integration with ${OP_ACCOUNT}" "${output:-unknown error}"
+      ;;
+  esac
+}
 
 check_mise_activated() {
   if ! command -v mise &>/dev/null; then
@@ -235,9 +278,6 @@ check_direnv_hooked() {
   if [[ -d "$HOME/.config/zshrc.d" ]] && grep -rl 'direnv' "$HOME/.config/zshrc.d" &>/dev/null; then
     hooked=true
   fi
-  if [[ -d "$HOME/.config/fish/conf.d" ]] && grep -rl 'direnv' "$HOME/.config/fish/conf.d" &>/dev/null; then
-    hooked=true
-  fi
   if $hooked; then
     pass "direnv_hooked" "direnv hook found in shell config"
   else
@@ -253,7 +293,8 @@ run_tools_checks() {
   check_direnv_hooked
   check_chezmoi_installed
   check_starship_installed
-  check_gopass_installed
+  check_op_installed
+  check_op_ready
 }
 
 # --- Category: iterm2 --------------------------------------------------------
@@ -293,25 +334,11 @@ check_agentic_profile_installed() {
   fi
 }
 
-check_human_fish_profile_installed() {
-  local dp_dir="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
-  if [[ ! -d "$dp_dir" ]]; then
-    skip "human_fish_profile_installed" "DynamicProfiles dir missing"
-    return
-  fi
-  if find "$dp_dir" -name '*.json' -exec grep -l -E '"Name".*(([Hh]uman.*[Ff]ish)|([Ff]ish.*[Hh]uman))' {} + &>/dev/null; then
-    pass "human_fish_profile_installed" "Human-Fish profile found in DynamicProfiles"
-  else
-    fail "human_fish_profile_installed" "Human-Fish profile" "installed" "not found"
-  fi
-}
-
 run_iterm2_checks() {
   section "iterm2"
   check_dynamic_profiles_dir_exists
   check_dev_profile_installed
   check_agentic_profile_installed
-  check_human_fish_profile_installed
 }
 
 # --- Category: agentic -------------------------------------------------------
@@ -413,14 +440,6 @@ check_organizations_dir_exists() {
   fi
 }
 
-check_repos_dir_exists() {
-  if [[ -d "$HOME/Repos" ]]; then
-    pass "repos_dir_exists" "~/Repos exists"
-  else
-    fail "repos_dir_exists" "Repos dir" "exists" "not found"
-  fi
-}
-
 check_system_config_in_correct_location() {
   if [[ -d "$SYSTEM_CONFIG_DIR" ]] && [[ -d "$SYSTEM_CONFIG_DIR/.git" ]]; then
     pass "system_config_in_correct_location" "system-config at ${SYSTEM_CONFIG_DIR}"
@@ -456,7 +475,6 @@ run_filesystem_checks() {
   section "filesystem"
   check_xdg_dirs_exist
   check_organizations_dir_exists
-  check_repos_dir_exists
   check_system_config_in_correct_location
   check_chezmoi_source_is_repo
   check_no_repos_in_desktop_documents
@@ -581,7 +599,6 @@ list_checks() {
   printf "%-14s %s\n" "────────" "─────"
   printf "%-14s %s\n" "shell" "login_shell_is_zsh"
   printf "%-14s %s\n" "shell" "homebrew_bash_installed"
-  printf "%-14s %s\n" "shell" "fish_installed"
   printf "%-14s %s\n" "shell" "zshenv_is_minimal"
   printf "%-14s %s\n" "shell" "zshrc_loads_modules"
   printf "%-14s %s\n" "shell" "zshrc_d_modules_present"
@@ -596,17 +613,16 @@ list_checks() {
   printf "%-14s %s\n" "tools" "direnv_hooked"
   printf "%-14s %s\n" "tools" "chezmoi_installed"
   printf "%-14s %s\n" "tools" "starship_installed"
-  printf "%-14s %s\n" "tools" "gopass_installed"
+  printf "%-14s %s\n" "tools" "op_installed"
+  printf "%-14s %s\n" "tools" "op_ready"
   printf "%-14s %s\n" "iterm2" "dynamic_profiles_dir_exists"
   printf "%-14s %s\n" "iterm2" "dev_profile_installed"
   printf "%-14s %s\n" "iterm2" "agentic_profile_installed"
-  printf "%-14s %s\n" "iterm2" "human_fish_profile_installed"
   printf "%-14s %s\n" "agentic" "agentic_mode_loads_minimal"
   printf "%-14s %s\n" "agentic" "agentic_prompt_is_static"
   printf "%-14s %s\n" "agentic" "agentic_startup_under_200ms"
   printf "%-14s %s\n" "filesystem" "xdg_dirs_exist"
   printf "%-14s %s\n" "filesystem" "organizations_dir_exists"
-  printf "%-14s %s\n" "filesystem" "repos_dir_exists"
   printf "%-14s %s\n" "filesystem" "system_config_in_correct_location"
   printf "%-14s %s\n" "filesystem" "chezmoi_source_is_repo"
   printf "%-14s %s\n" "filesystem" "no_repos_in_desktop_documents"

@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+# workspace — Local workspace config and host entrypoint
+# Delivered via chezmoi from home/dot_local/bin/executable_workspace.tmpl
+# Contract: docs/workspace-management.md, docs/agentic-tooling.md
+
+set -euo pipefail
+
+WORKSPACE_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/workspaces/config.toml"
+WORKSPACE_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/workspaces"
+WORKSPACE_DOCTOR_BIN="$HOME/.local/bin/workspace-doctor"
+
+die() {
+  printf 'workspace: %s\n' "$*" >&2
+  exit 1
+}
+
+need_python() {
+  command -v python3 >/dev/null 2>&1 || die "python3 is required"
+}
+
+need_config() {
+  [[ -f "$WORKSPACE_CONFIG" ]] || die "config not found at $WORKSPACE_CONFIG"
+}
+
+python_config() {
+  local mode="$1"
+  shift || true
+
+  python3 - "$WORKSPACE_CONFIG" "$mode" "$@" <<'PY'
+from __future__ import annotations
+
+import pathlib
+import sys
+import tomllib
+
+
+def load_config(path_str: str) -> dict:
+    path = pathlib.Path(path_str)
+    with path.open("rb") as handle:
+        return tomllib.load(handle)
+
+
+def manifest_summary(project_path: pathlib.Path) -> str:
+    manifest_path = project_path / ".workspace" / "workspace.toml"
+    if not manifest_path.is_file():
+        return "missing"
+
+    try:
+        with manifest_path.open("rb") as handle:
+            manifest = tomllib.load(handle)
+    except tomllib.TOMLDecodeError:
+        return "invalid"
+
+    workspace = manifest.get("workspace", {})
+    parts = [
+        workspace.get("class", "unknown"),
+        workspace.get("lifecycle", "unknown"),
+        workspace.get("driver", "unknown"),
+    ]
+    return ",".join(parts)
+
+
+config = load_config(sys.argv[1])
+mode = sys.argv[2]
+
+if mode == "host-machine":
+    print(config.get("host", {}).get("machine", ""))
+elif mode == "list":
+    projects = config.get("projects", {})
+    for slug in sorted(projects):
+        project = projects[slug]
+        project_path = pathlib.Path(project.get("path", ""))
+        print(
+            "\t".join(
+                [
+                    slug,
+                    str(project.get("enabled", False)).lower(),
+                    "present" if project_path.exists() else "missing",
+                    manifest_summary(project_path),
+                    project.get("notes", ""),
+                ]
+            )
+        )
+elif mode == "path":
+    slug = sys.argv[3]
+    projects = config.get("projects", {})
+    if slug not in projects:
+        raise SystemExit(1)
+    print(projects[slug].get("path", ""))
+elif mode == "show":
+    slug = sys.argv[3]
+    projects = config.get("projects", {})
+    if slug not in projects:
+        raise SystemExit(1)
+
+    project = projects[slug]
+    project_path = pathlib.Path(project.get("path", ""))
+    manifest_path = project_path / ".workspace" / "workspace.toml"
+
+    print(f"slug: {slug}")
+    print(f"enabled: {str(project.get('enabled', False)).lower()}")
+    print(f"path: {project.get('path', '')}")
+    print(f"notes: {project.get('notes', '')}")
+    print(f"exists: {str(project_path.exists()).lower()}")
+    print(f"manifest_path: {manifest_path}")
+    print(f"manifest_status: {manifest_summary(project_path)}")
+
+    if manifest_path.is_file():
+        with manifest_path.open("rb") as handle:
+            manifest = tomllib.load(handle)
+        workspace = manifest.get("workspace", {})
+        ownership = manifest.get("ownership", {})
+        print(f"workspace_id: {workspace.get('workspace_id', '')}")
+        print(f"class: {workspace.get('class', '')}")
+        print(f"lifecycle: {workspace.get('lifecycle', '')}")
+        print(f"driver: {workspace.get('driver', '')}")
+        print(f"primary_owner: {ownership.get('primary_owner', '')}")
+elif mode == "slugs":
+    projects = config.get("projects", {})
+    for slug in sorted(projects):
+        print(slug)
+else:
+    raise SystemExit(2)
+PY
+}
+
+usage() {
+  cat <<EOF
+Usage:
+  workspace list
+  workspace show <slug>
+  workspace path <slug>
+  workspace host-machine
+  workspace host-shell
+  workspace host-run <command> [args...]
+  workspace doctor
+  workspace config-path
+  workspace state-dir
+
+Notes:
+  - This initial launcher exposes config and host primitives only.
+  - Project lifecycle commands are not implemented yet.
+  - See {{ .chezmoi.workingTree }}/docs/workspace-management.md
+EOF
+}
+
+cmd_list() {
+  need_python
+  need_config
+
+  printf '%-18s %-8s %-8s %-28s %s\n' "PROJECT" "ENABLED" "ROOT" "MANIFEST" "NOTES"
+  while IFS=$'\t' read -r slug enabled root_status manifest notes; do
+    printf '%-18s %-8s %-8s %-28s %s\n' "$slug" "$enabled" "$root_status" "$manifest" "$notes"
+  done < <(python_config list)
+}
+
+cmd_show() {
+  local slug="${1:-}"
+  [[ -n "$slug" ]] || die "show requires a project slug"
+  need_python
+  need_config
+  python_config show "$slug" || die "unknown project slug: $slug"
+}
+
+cmd_path() {
+  local slug="${1:-}"
+  [[ -n "$slug" ]] || die "path requires a project slug"
+  need_python
+  need_config
+  python_config path "$slug" || die "unknown project slug: $slug"
+}
+
+cmd_host_machine() {
+  need_python
+  need_config
+  python_config host-machine
+}
+
+cmd_host_shell() {
+  command -v orb >/dev/null 2>&1 || die "orb is required"
+  local machine
+  machine="$(cmd_host_machine)"
+  [[ -n "$machine" ]] || die "host.machine is not configured"
+  exec orb -m "$machine"
+}
+
+cmd_host_run() {
+  command -v orb >/dev/null 2>&1 || die "orb is required"
+  (( $# > 0 )) || die "host-run requires a command"
+  local machine
+  machine="$(cmd_host_machine)"
+  [[ -n "$machine" ]] || die "host.machine is not configured"
+  exec orb -m "$machine" "$@"
+}
+
+cmd_doctor() {
+  [[ -x "$WORKSPACE_DOCTOR_BIN" ]] || die "workspace-doctor is not installed at $WORKSPACE_DOCTOR_BIN"
+  exec "$WORKSPACE_DOCTOR_BIN" "$@"
+}
+
+cmd_config_path() {
+  printf '%s\n' "$WORKSPACE_CONFIG"
+}
+
+cmd_state_dir() {
+  printf '%s\n' "$WORKSPACE_STATE_DIR"
+}
+
+main() {
+  local subcommand="${1:-help}"
+  if (( $# > 0 )); then
+    shift
+  fi
+
+  case "$subcommand" in
+    list) cmd_list "$@" ;;
+    show) cmd_show "$@" ;;
+    path) cmd_path "$@" ;;
+    host-machine) cmd_host_machine "$@" ;;
+    host-shell) cmd_host_shell "$@" ;;
+    host-run) cmd_host_run "$@" ;;
+    doctor) cmd_doctor "$@" ;;
+    config-path) cmd_config_path ;;
+    state-dir) cmd_state_dir ;;
+    help|-h|--help) usage ;;
+    *)
+      usage >&2
+      die "unknown subcommand: $subcommand"
+      ;;
+  esac
+}
+
+main "$@"

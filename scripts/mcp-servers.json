@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/mcp-servers.json",
-  "_comment": "Global MCP server definitions - propagated to tool-specific locations by sync-to-tools.sh",
+  "_comment": "Global MCP baseline synced by scripts/sync-mcp.sh. Project-specific servers belong in each project's .mcp.json.",
   "mcpServers": {
     "context7": {
       "type": "http",
@@ -9,11 +9,7 @@
     },
     "github": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-      },
+      "command": "${HOME}/.local/bin/mcp-github-server",
       "_description": "GitHub operations (PRs, issues, repos)"
     },
     "memory": {
@@ -33,20 +29,12 @@
     },
     "brave-search": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
-      "env": {
-        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
-      },
+      "command": "${HOME}/.local/bin/mcp-brave-search-server",
       "_description": "Web search via Brave"
     },
     "firecrawl": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "firecrawl-mcp"],
-      "env": {
-        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
-      },
+      "command": "${HOME}/.local/bin/mcp-firecrawl-server",
       "_description": "Web scraping/crawling"
     }
   }

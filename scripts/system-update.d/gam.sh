@@ -10,6 +10,10 @@ run_gam() {
     log info "GAM not installed, skipping (install: https://github.com/GAM-team/GAM)"
     return 0
   fi
+  # SECURITY: This pipes a remote script to bash (supply-chain risk).
+  # GAM does not provide checksums for the installer. This plugin is
+  # default-off for this reason. Review the script before enabling:
+  #   https://github.com/GAM-team/GAM/blob/main/src/gam-install.sh
   log info "Updating GAM..."
   bash <(curl -s -S -L https://raw.githubusercontent.com/GAM-team/GAM/main/src/gam-install.sh) -l
 }

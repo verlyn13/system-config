@@ -14,3 +14,10 @@ fi
 
 # mise shims (global tool versions)
 [[ -d "$XDG_DATA_HOME/mise/shims" ]] && export PATH="$XDG_DATA_HOME/mise/shims:$PATH"
+{{ if (.android | default false) -}}
+
+# Android SDK tools
+[[ -d "$ANDROID_HOME/platform-tools" ]] && export PATH="$ANDROID_HOME/platform-tools:$PATH"
+[[ -d "$ANDROID_HOME/emulator" ]] && export PATH="$ANDROID_HOME/emulator:$PATH"
+[[ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]] && export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+{{ end -}}

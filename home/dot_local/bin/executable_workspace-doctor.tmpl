@@ -1,0 +1,388 @@
+#!/usr/bin/env bash
+# workspace-doctor — Workspace host and project compatibility checks
+# Delivered via chezmoi from home/dot_local/bin/executable_workspace-doctor.tmpl
+# Contract: docs/workspace-management.md, docs/agentic-tooling.md
+
+set -euo pipefail
+
+WORKSPACE_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/workspaces/config.toml"
+WORKSPACE_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/workspaces"
+
+_pass=0
+_fail=0
+_skip=0
+
+pass() {
+  local name="$1" desc="$2"
+  printf '\033[32m✓\033[0m %s: %s\n' "$name" "$desc"
+  (( _pass++ )) || true
+}
+
+fail() {
+  local name="$1" desc="$2" expected="$3" got="$4"
+  printf '\033[31m✗\033[0m %s: %s — EXPECTED: %s, GOT: %s\n' "$name" "$desc" "$expected" "$got"
+  (( _fail++ )) || true
+}
+
+skip() {
+  local name="$1" reason="$2"
+  printf '\033[33m⊘\033[0m %s: skipped (%s)\n' "$name" "$reason"
+  (( _skip++ )) || true
+}
+
+section() {
+  printf '\n\033[1m[%s]\033[0m\n' "$1"
+}
+
+need_python() {
+  command -v python3 >/dev/null 2>&1 || {
+    fail "python3_available" "Python runtime for config parsing" "installed" "not found"
+    return 1
+  }
+  pass "python3_available" "python3 installed"
+  return 0
+}
+
+config_python() {
+  local mode="$1"
+  shift || true
+
+  python3 - "$WORKSPACE_CONFIG" "$mode" "$@" <<'PY'
+from __future__ import annotations
+
+import pathlib
+import sys
+import tomllib
+
+
+def load_toml(path: pathlib.Path) -> dict:
+    with path.open("rb") as handle:
+        return tomllib.load(handle)
+
+
+config_path = pathlib.Path(sys.argv[1])
+mode = sys.argv[2]
+config = load_toml(config_path)
+
+if mode == "host-machine":
+    print(config.get("host", {}).get("machine", ""))
+elif mode == "projects":
+    projects = config.get("projects", {})
+    for slug in sorted(projects):
+        project = projects[slug]
+        print(
+            "\t".join(
+                [
+                    slug,
+                    str(project.get("enabled", False)).lower(),
+                    project.get("path", ""),
+                    project.get("notes", ""),
+                ]
+            )
+        )
+elif mode == "manifest":
+    slug = sys.argv[3]
+    project = config.get("projects", {}).get(slug, {})
+    project_path = pathlib.Path(project.get("path", ""))
+    manifest_path = project_path / ".workspace" / "workspace.toml"
+    print(manifest_path)
+elif mode == "manifest-summary":
+    slug = sys.argv[3]
+    project = config.get("projects", {}).get(slug, {})
+    project_path = pathlib.Path(project.get("path", ""))
+    manifest_path = project_path / ".workspace" / "workspace.toml"
+    if not manifest_path.is_file():
+        print("")
+        raise SystemExit(0)
+    manifest = load_toml(manifest_path)
+    workspace = manifest.get("workspace", {})
+    ownership = manifest.get("ownership", {})
+    print(
+        "\t".join(
+            [
+                workspace.get("workspace_id", ""),
+                workspace.get("class", ""),
+                workspace.get("lifecycle", ""),
+                workspace.get("driver", ""),
+                ownership.get("primary_owner", ""),
+            ]
+        )
+    )
+else:
+    raise SystemExit(2)
+PY
+}
+
+check_workspace_config_exists() {
+  if [[ -f "$WORKSPACE_CONFIG" ]]; then
+    pass "workspace_config_exists" "Config present at $WORKSPACE_CONFIG"
+  else
+    fail "workspace_config_exists" "Workspace config" "$WORKSPACE_CONFIG" "not found"
+  fi
+}
+
+check_workspace_config_parses() {
+  if ! [[ -f "$WORKSPACE_CONFIG" ]]; then
+    skip "workspace_config_parses" "workspace config missing"
+    return
+  fi
+
+  if python3 - "$WORKSPACE_CONFIG" <<'PY' >/dev/null 2>&1
+from __future__ import annotations
+
+import pathlib
+import sys
+import tomllib
+
+with pathlib.Path(sys.argv[1]).open("rb") as handle:
+    tomllib.load(handle)
+PY
+  then
+    pass "workspace_config_parses" "Workspace config parses as TOML"
+  else
+    fail "workspace_config_parses" "Workspace config TOML" "valid" "parse error"
+  fi
+}
+
+check_workspace_state_parent() {
+  local parent_dir
+  parent_dir="$(dirname "$WORKSPACE_STATE_DIR")"
+
+  if [[ -d "$WORKSPACE_STATE_DIR" ]]; then
+    pass "workspace_state_dir_exists" "State dir present at $WORKSPACE_STATE_DIR"
+  elif [[ -d "$parent_dir" && -w "$parent_dir" ]]; then
+    pass "workspace_state_dir_parent_writable" "State dir can be created under $parent_dir"
+  else
+    fail "workspace_state_dir_parent_writable" "Writable state dir parent" "$parent_dir" "missing or not writable"
+  fi
+}
+
+check_host_machine_configured() {
+  if ! [[ -f "$WORKSPACE_CONFIG" ]]; then
+    skip "host_machine_configured" "workspace config missing"
+    return
+  fi
+
+  local machine
+  machine="$(config_python host-machine)"
+  if [[ -n "$machine" ]]; then
+    pass "host_machine_configured" "Configured host machine is $machine"
+  else
+    fail "host_machine_configured" "host.machine" "non-empty" "empty"
+  fi
+}
+
+check_orb_installed() {
+  if command -v orb >/dev/null 2>&1; then
+    pass "orb_installed" "orb installed"
+  else
+    fail "orb_installed" "OrbStack CLI" "installed" "not found"
+  fi
+}
+
+check_orbstack_running() {
+  if ! command -v orb >/dev/null 2>&1; then
+    skip "orbstack_running" "orb not installed"
+    return
+  fi
+
+  local status
+  status="$(orb status 2>/dev/null || true)"
+  if [[ "$status" == "Running" ]]; then
+    pass "orbstack_running" "OrbStack is running"
+  else
+    fail "orbstack_running" "OrbStack status" "Running" "${status:-unknown}"
+  fi
+}
+
+check_host_machine_exists() {
+  if ! command -v orbctl >/dev/null 2>&1; then
+    skip "host_machine_exists" "orbctl not installed"
+    return
+  fi
+
+  if ! [[ -f "$WORKSPACE_CONFIG" ]]; then
+    skip "host_machine_exists" "workspace config missing"
+    return
+  fi
+
+  local machine
+  machine="$(config_python host-machine)"
+  if [[ -z "$machine" ]]; then
+    skip "host_machine_exists" "host.machine not configured"
+    return
+  fi
+
+  if orbctl list 2>/dev/null | awk '{print $1}' | grep -Fxq "$machine"; then
+    pass "host_machine_exists" "Configured machine $machine exists"
+  else
+    fail "host_machine_exists" "Configured machine" "$machine" "not found"
+  fi
+}
+
+check_host_machine_running() {
+  if ! command -v orbctl >/dev/null 2>&1; then
+    skip "host_machine_running" "orbctl not installed"
+    return
+  fi
+
+  if ! [[ -f "$WORKSPACE_CONFIG" ]]; then
+    skip "host_machine_running" "workspace config missing"
+    return
+  fi
+
+  local machine
+  machine="$(config_python host-machine)"
+  if [[ -z "$machine" ]]; then
+    skip "host_machine_running" "host.machine not configured"
+    return
+  fi
+
+  local status
+  status="$(orbctl list 2>/dev/null | awk -v target="$machine" '$1 == target {print $2}')"
+  if [[ -z "$status" ]]; then
+    skip "host_machine_running" "configured machine not present"
+  elif [[ "$status" == "running" ]]; then
+    pass "host_machine_running" "Configured machine $machine is running"
+  else
+    fail "host_machine_running" "Configured machine status" "running" "$status"
+  fi
+}
+
+check_podman_in_host() {
+  if ! command -v orbctl >/dev/null 2>&1; then
+    skip "podman_in_host" "orbctl not installed"
+    return
+  fi
+
+  if ! [[ -f "$WORKSPACE_CONFIG" ]]; then
+    skip "podman_in_host" "workspace config missing"
+    return
+  fi
+
+  local machine
+  machine="$(config_python host-machine)"
+  if [[ -z "$machine" ]]; then
+    skip "podman_in_host" "host.machine not configured"
+    return
+  fi
+
+  if ! orbctl list 2>/dev/null | awk '{print $1}' | grep -Fxq "$machine"; then
+    skip "podman_in_host" "configured machine does not exist yet"
+    return
+  fi
+
+  if orbctl run -m "$machine" command -v podman >/dev/null 2>&1; then
+    pass "podman_in_host" "podman available in $machine"
+  else
+    fail "podman_in_host" "podman in configured machine" "installed" "not found"
+  fi
+}
+
+check_projects() {
+  if ! [[ -f "$WORKSPACE_CONFIG" ]]; then
+    skip "projects_checked" "workspace config missing"
+    return
+  fi
+
+  while IFS=$'\t' read -r slug enabled project_path notes; do
+    if [[ -d "$project_path" ]]; then
+      pass "project_path_${slug}" "Project path exists: $project_path"
+    else
+      fail "project_path_${slug}" "Configured project path" "$project_path" "missing"
+      continue
+    fi
+
+    if [[ "$enabled" != "true" ]]; then
+      skip "project_contract_${slug}" "project is configured but not enabled"
+      continue
+    fi
+
+    if [[ -f "$project_path/.mise.toml" ]]; then
+      pass "project_mise_${slug}" ".mise.toml present"
+    else
+      fail "project_mise_${slug}" ".mise.toml" "present" "missing"
+    fi
+
+    if [[ -f "$project_path/.envrc" ]]; then
+      pass "project_envrc_${slug}" ".envrc present"
+    else
+      skip "project_envrc_${slug}" ".envrc not present"
+    fi
+
+    if [[ -f "$project_path/AGENTS.md" ]]; then
+      pass "project_agents_${slug}" "AGENTS.md present"
+    else
+      skip "project_agents_${slug}" "AGENTS.md not present"
+    fi
+
+    local manifest_path
+    manifest_path="$(config_python manifest "$slug")"
+
+    if [[ -f "$manifest_path" ]]; then
+      pass "project_workspace_manifest_${slug}" "Workspace manifest present"
+      local manifest_summary
+      manifest_summary="$(config_python manifest-summary "$slug")"
+      if [[ -n "$manifest_summary" ]]; then
+        local workspace_id workspace_class lifecycle driver primary_owner
+        IFS=$'\t' read -r workspace_id workspace_class lifecycle driver primary_owner <<<"$manifest_summary"
+        if [[ -n "$workspace_id" && -n "$workspace_class" && -n "$lifecycle" ]]; then
+          pass "project_workspace_manifest_fields_${slug}" "workspace_id=$workspace_id class=$workspace_class lifecycle=$lifecycle driver=${driver:-unknown}"
+        else
+          fail "project_workspace_manifest_fields_${slug}" "Workspace manifest core fields" "workspace_id/class/lifecycle present" "$manifest_summary"
+        fi
+        if [[ -n "$primary_owner" ]]; then
+          pass "project_workspace_owner_${slug}" "primary_owner=$primary_owner"
+        else
+          fail "project_workspace_owner_${slug}" "Workspace manifest primary_owner" "present" "missing"
+        fi
+      else
+        fail "project_workspace_manifest_fields_${slug}" "Workspace manifest parse" "valid TOML" "parse error"
+      fi
+    else
+      fail "project_workspace_manifest_${slug}" "Workspace manifest" "$manifest_path" "missing"
+    fi
+
+    if [[ -f "$project_path/.mcp.json" ]]; then
+      pass "project_mcp_${slug}" ".mcp.json present"
+    else
+      skip "project_mcp_${slug}" ".mcp.json not present"
+    fi
+
+    if [[ -n "$notes" ]]; then
+      pass "project_notes_${slug}" "$notes"
+    fi
+  done < <(config_python projects)
+}
+
+main() {
+  section "workspace"
+
+  if ! need_python; then
+    printf '\nSummary: %d passed, %d failed, %d skipped\n' "$_pass" "$_fail" "$_skip"
+    exit 1
+  fi
+
+  check_workspace_config_exists
+  check_workspace_config_parses
+  check_workspace_state_parent
+  check_host_machine_configured
+
+  section "orbstack"
+  check_orb_installed
+  check_orbstack_running
+  check_host_machine_exists
+  check_host_machine_running
+  check_podman_in_host
+
+  section "projects"
+  check_projects
+
+  printf '\nSummary: %d passed, %d failed, %d skipped\n' "$_pass" "$_fail" "$_skip"
+
+  if (( _fail > 0 )); then
+    exit 1
+  fi
+}
+
+main "$@"

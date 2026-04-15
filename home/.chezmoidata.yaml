@@ -1,5 +1,4 @@
-# .chezmoidata.yaml — single source of truth for cross-shell values
-# Both zsh and fish templates render from this data.
+# .chezmoidata.yaml — shared values for managed shell templates
 # chezmoi templates reference these as .xdg.config_home, .aliases, etc.
 
 xdg:
@@ -30,3 +29,30 @@ coreutil_aliases:
   cat: "bat --paging=never"
   find: "fd"
   grep: "rg"
+
+workspaces:
+  version: 1
+  host:
+    machine: "workspace-host"
+  limits:
+    host_cpus: 8
+    host_memory: "16GiB"
+    default_project_cpus: 2
+    default_project_memory: "4GiB"
+  projects:
+    - slug: "manim"
+      path: "/Users/verlyn13/Repos/verlyn13/manim"
+      enabled: true
+      notes: "Simple workspace-contract proof of concept"
+    - slug: "budget-triage"
+      path: "/Users/verlyn13/Repos/verlyn13/budget-triage-11-5-2025"
+      enabled: false
+      notes: "Planned first real workspace-managed infra project"
+    - slug: "scopecam-engine"
+      path: "/Users/verlyn13/Repos/verlyn13/scopecam-engine"
+      enabled: false
+      notes: "Enrolled project; no containerized workspace by default"
+    - slug: "flux"
+      path: "/Users/verlyn13/ai/flux"
+      enabled: false
+      notes: "Planned first real workspace-managed infra project"

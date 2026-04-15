@@ -6,7 +6,15 @@ run_pipx() {
     log info "pipx not found, skipping"
     return 0
   fi
-  pipx upgrade-all
+  local rc=0
+  pipx upgrade-all 2>&1 || rc=$?
+  if [[ $rc -ne 0 ]]; then
+    # pipx exits 1 when any single package fails (e.g. stale interpreter),
+    # even if others upgraded successfully. Surface the actionable fix.
+    echo "pipx upgrade-all exited $rc (partial failure — see output above)"
+    echo "Hint: run 'pipx reinstall-all' to fix stale interpreters after a Python upgrade"
+  fi
+  return $rc
 }
 
 check_pipx() {

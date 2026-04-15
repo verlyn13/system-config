@@ -1,0 +1,24 @@
+# ~/.config/workspaces/config.toml — Local workspace host configuration
+# Delivered via chezmoi from home/dot_config/workspaces/config.toml.tmpl
+# Contract: docs/workspace-management.md, docs/agentic-tooling.md
+
+version = {{ .workspaces.version | default 1 }}
+
+[host]
+machine = "{{ .workspaces.host.machine | default "workspace-host" }}"
+
+[limits]
+host_cpus = {{ .workspaces.limits.host_cpus | default 8 }}
+host_memory = "{{ .workspaces.limits.host_memory | default "16GiB" }}"
+default_project_cpus = {{ .workspaces.limits.default_project_cpus | default 2 }}
+default_project_memory = "{{ .workspaces.limits.default_project_memory | default "4GiB" }}"
+
+{{ range $project := (.workspaces.projects | default (list)) -}}
+[projects.{{ $project.slug }}]
+path = "{{ $project.path }}"
+enabled = {{ $project.enabled | default false }}
+{{ if ($project.notes | default "") -}}
+notes = "{{ $project.notes }}"
+{{ end }}
+
+{{ end -}}

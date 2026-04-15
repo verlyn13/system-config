@@ -29,11 +29,12 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="${SCRIPT_DIR}/system-update.d"
-LOG_DIR="${HOME}/Library/Logs/system-update"
+LOG_DIR_DEFAULT="${HOME}/Library/Logs/system-update"
+LOG_DIR="${LOG_DIR_DEFAULT}"
 RUN_ID="$(date +%Y%m%d-%H%M%S)"
-LOG_FILE="${LOG_DIR}/run-${RUN_ID}.log"
-NDJSON_FILE="${LOG_DIR}/run-${RUN_ID}.ndjson"
-LOCK_FILE="${LOG_DIR}/system-update.lock"
+LOG_FILE=""
+NDJSON_FILE=""
+LOCK_FILE=""
 CONFIG_DIR="${HOME}/.config/system-update"
 CONFIG_FILE_DEFAULT="${CONFIG_DIR}/config"
 CONFIG_D_DIR="${CONFIG_DIR}/config.d"
@@ -219,8 +220,6 @@ fi
 # Color codes — $'...' ANSI C quoting for real ESC bytes
 # =============================================================================
 
-mkdir -p "${LOG_DIR}"
-
 if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
   C_RESET=$'\033[0m'
   C_GREEN=$'\033[0;32m'
@@ -236,8 +235,25 @@ fi
 # Logging infrastructure — FD 3 = transcript, stdout = console
 # =============================================================================
 
-# FD 3: dedicated transcript log (full output always)
-exec 3>>"${LOG_FILE}"
+init_logging() {
+  local fallback_dir="${TMPDIR:-/tmp}/system-update-${USER:-$(id -un)}"
+
+  if mkdir -p "${LOG_DIR_DEFAULT}" 2>/dev/null; then
+    LOG_DIR="${LOG_DIR_DEFAULT}"
+  elif mkdir -p "${fallback_dir}" 2>/dev/null; then
+    LOG_DIR="${fallback_dir}"
+  else
+    echo "Unable to initialize log directory at ${LOG_DIR_DEFAULT} or ${fallback_dir}" >&2
+    exit 1
+  fi
+
+  LOG_FILE="${LOG_DIR}/run-${RUN_ID}.log"
+  NDJSON_FILE="${LOG_DIR}/run-${RUN_ID}.ndjson"
+  LOCK_FILE="${LOG_DIR}/system-update.lock"
+
+  # FD 3: dedicated transcript log (full output always)
+  exec 3>>"${LOG_FILE}"
+}
 
 # Console-only output
 # shellcheck disable=SC2059  # format string is always a caller-supplied literal
@@ -246,6 +262,9 @@ consolef() { printf "$@"; }
 # Transcript-only output
 # shellcheck disable=SC2059  # format string is always a caller-supplied literal
 transcriptf() { printf "$@" >&3; }
+
+# Default transcript sink before real log initialization.
+exec 3>/dev/null
 
 # Log to both transcript and (selectively) console
 log() {
@@ -317,8 +336,6 @@ acquire_lock() {
   fi
 }
 
-acquire_lock
-
 # =============================================================================
 # Signal handling — clean up temp files and lock on interrupt
 # =============================================================================
@@ -328,9 +345,6 @@ _cleanup_on_exit() {
   # Clean any leftover temp files from run_step
   rm -f /tmp/tmp.system-update.* 2>/dev/null
 }
-trap '_cleanup_on_exit' EXIT
-trap 'echo ""; log warn "Interrupted (SIGINT)"; _cleanup_on_exit; exit 130' INT
-trap 'log warn "Terminated (SIGTERM)"; _cleanup_on_exit; exit 143' TERM
 
 # =============================================================================
 # Helpers
@@ -786,6 +800,11 @@ collect_notices() {
         add_notice "brew: service(s) may need restart (see log)"
       fi
       ;;
+    "pipx packages")
+      if grep -qi 'invalid python interpreter' "$tmp" 2>/dev/null; then
+        add_notice "pipx: stale interpreter detected — run 'pipx reinstall-all' to fix"
+      fi
+      ;;
   esac
 }
 
@@ -872,7 +891,7 @@ run_step() {
     STEP_RESULTS+=("${step_id}|${name}|ok|${duration}|${detail}")
   else
     local status="fail"
-    if grep -qiE 'Upgraded [0-9]+ tool|Successfully installed|changed [0-9]+ package|already satisfied' "$tmp" 2>/dev/null; then
+    if grep -qiE 'Upgraded [0-9]+ tool|Successfully installed|changed [0-9]+ package|already satisfied|upgraded package .* from .* to' "$tmp" 2>/dev/null; then
       status="warn"
     fi
 
@@ -890,6 +909,7 @@ run_step() {
         consolef "${C_RED}✗ %-22s %3ds  %s${C_RESET}\n" "$name" "$duration" "${detail:-exit $rc}"
         rm -f "$tmp"
         print_summary
+        symlink_latest
         exit "$rc"
       else
         show_failure_hint "$name" "$tmp"
@@ -1177,6 +1197,10 @@ load_plugins() {
   for plugin in "${plugins[@]}"; do
     local pname
     pname="$(basename "$plugin" .sh)"
+    if [[ ! "$pname" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+      log warn "Skipping plugin with unsafe name: ${pname}"
+      continue
+    fi
     log debug "Loading plugin: ${pname}"
 
     # shellcheck disable=SC1090
@@ -1334,6 +1358,11 @@ print_json_summary() {
   printf '}\n'
 }
 
+symlink_latest() {
+  ln -sf "run-${RUN_ID}.log" "${LOG_DIR}/latest.log"
+  ln -sf "run-${RUN_ID}.ndjson" "${LOG_DIR}/latest.ndjson"
+}
+
 send_notification() {
   if ! $NOTIFY; then
     return 0
@@ -1378,6 +1407,12 @@ if $LIST_ONLY; then
   exit 0
 fi
 
+init_logging
+acquire_lock
+trap '_cleanup_on_exit' EXIT
+trap 'echo ""; log warn "Interrupted (SIGINT)"; _cleanup_on_exit; exit 130' INT
+trap 'log warn "Terminated (SIGTERM)"; _cleanup_on_exit; exit 143' TERM
+
 # =============================================================================
 # Execute
 # =============================================================================
@@ -1403,6 +1438,4 @@ fi
 
 send_notification
 
-# Symlink latest
-ln -sf "run-${RUN_ID}.log" "${LOG_DIR}/latest.log"
-ln -sf "run-${RUN_ID}.ndjson" "${LOG_DIR}/latest.ndjson"
+symlink_latest

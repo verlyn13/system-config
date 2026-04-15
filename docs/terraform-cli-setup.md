@@ -3,114 +3,33 @@ title: Terraform CLI Setup
 category: reference
 component: terraform_cli_setup
 status: active
-version: 2.0.0
-last_updated: 2026-02-05
-tags: [cli, terraform, iac, homebrew]
+version: 3.0.0
+last_updated: 2026-04-08
+tags: [cli, terraform, iac]
 priority: medium
 ---
 
 # Terraform CLI Setup
 
-Standardized installation for HashiCorp Terraform CLI.
+Terraform is a CLI tool with tool-native config. This repo does not manage Terraform through fish shell snippets.
 
 ## Overview
 
-- **Installation**: Homebrew (exclusively)
-- **Location**: `/opt/homebrew/bin/terraform` (Apple Silicon)
-- **Config**: `~/.terraform.d/`
-- **Credentials**: `~/.terraform.d/credentials.tfrc.json`
-- **Official docs**: https://developer.hashicorp.com/terraform/cli
+- Binary: `terraform`
+- Config directory: `~/.terraform.d/`
+- Credentials: `~/.terraform.d/credentials.tfrc.json`
 
 ## Installation
 
-```bash
-./scripts/update-terraform-cli.sh
-```
-
-This script:
-- Taps `hashicorp/tap`
-- Installs/upgrades `hashicorp/tap/terraform`
-- Warns about mise conflicts
-
-Verify:
+Use the project’s preferred package flow or a direct Homebrew install:
 
 ```bash
-which terraform
+brew install hashicorp/tap/terraform
 terraform -version
 ```
 
-**Note**: Homebrew is the exclusive installation method. Terraform has been removed from `.mise.toml` to avoid PATH conflicts.
+## Policy
 
-## Authentication
-
-### Terraform Cloud/Enterprise
-
-Non-interactive (recommended):
-
-```bash
-export TF_TOKEN_app_terraform_io="your-token"
-./scripts/terraform-auth-setup.sh
-```
-
-Interactive:
-
-```bash
-terraform login app.terraform.io
-```
-
-Verify:
-
-```bash
-cat ~/.terraform.d/credentials.tfrc.json | jq '.credentials | keys[]'
-```
-
-## Common Commands
-
-```bash
-terraform init      # Initialize
-terraform validate  # Validate config
-terraform plan      # Preview changes
-terraform apply     # Apply changes
-```
-
-## Updates
-
-```bash
-./scripts/update-terraform-cli.sh
-```
-
-## Troubleshooting
-
-### Command not found
-
-```bash
-# Ensure Homebrew bin in PATH
-fish_add_path /opt/homebrew/bin
-```
-
-### Multiple terraform binaries
-
-```bash
-# Check all locations
-command -v -a terraform
-
-# Remove mise version if present
-mise uninstall terraform
-```
-
-### Auth issues
-
-```bash
-# Recreate credentials
-export TF_TOKEN_app_terraform_io="your-token"
-./scripts/terraform-auth-setup.sh
-
-# Or interactive
-terraform login
-```
-
-## Related
-
-- [Terraform CLI Docs](https://developer.hashicorp.com/terraform/cli)
-- [Update script](../scripts/update-terraform-cli.sh)
-- [Auth setup script](../scripts/terraform-auth-setup.sh)
+- Keep Terraform credentials out of shell startup files.
+- Prefer project `.envrc` or the tool-native credential file for auth.
+- Do not add Terraform-specific fish helpers to this repo.
