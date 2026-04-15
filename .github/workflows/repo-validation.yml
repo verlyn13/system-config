@@ -1,0 +1,37 @@
+name: Repo Validation
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq ripgrep shellcheck
+
+      - name: Validate JSON
+        run: jq empty scripts/mcp-servers.json
+
+      - name: Validate shell scripts
+        run: |
+          shellcheck scripts/*.sh
+          shellcheck scripts/system-update.d/*.sh
+          shellcheck home/dot_local/bin/executable_mcp-*.tmpl
+
+      - name: Validate repo contract
+        run: |
+          test ! -d home/dot_config/fish
+          ! rg -n 'sync-chezmoi-templates|06-templates/chezmoi|REPO-STRUCTURE\.md|ai-tools/sync-to-tools|ai-tools/mcp-servers' \
+            AGENTS.md README.md CLAUDE.md \
+            docs/agentic-tooling.md \
+            docs/claude-cli-setup.md \
+            docs/codex-cli-setup.md \
+            docs/copilot-cli-setup.md \
+            docs/claude-desktop-setup.md \
+            iterm2/README.md

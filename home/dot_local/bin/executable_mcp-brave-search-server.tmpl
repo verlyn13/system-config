@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# mcp-brave-search-server — runtime secret wrapper for the global Brave MCP server
+
+set -euo pipefail
+
+OP_ACCOUNT="my.1password.com"
+
+load_secret() {
+  if [[ -n "${BRAVE_API_KEY:-}" ]]; then
+    return 0
+  fi
+
+  if command -v op >/dev/null 2>&1; then
+    BRAVE_API_KEY="$(op read --account "$OP_ACCOUNT" 'op://Dev/brave-search/api-key' 2>/dev/null || true)"
+    export BRAVE_API_KEY
+  fi
+
+  if [[ -z "${BRAVE_API_KEY:-}" ]]; then
+    echo "mcp-brave-search-server: set BRAVE_API_KEY or store in op://Dev/brave-search/api-key" >&2
+    exit 1
+  fi
+}
+
+load_secret
+exec npx -y @modelcontextprotocol/server-brave-search "$@"

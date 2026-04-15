@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# mcp-github-server — runtime secret wrapper for the global GitHub MCP server
+
+set -euo pipefail
+
+OP_ACCOUNT="my.1password.com"
+
+load_secret() {
+  if [[ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]]; then
+    return 0
+  fi
+
+  if command -v op >/dev/null 2>&1; then
+    GITHUB_PERSONAL_ACCESS_TOKEN="$(op read --account "$OP_ACCOUNT" 'op://Dev/github-dev-tools/token' 2>/dev/null || true)"
+    export GITHUB_PERSONAL_ACCESS_TOKEN
+  fi
+
+  if [[ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]]; then
+    echo "mcp-github-server: set GITHUB_PERSONAL_ACCESS_TOKEN or store in op://Dev/github-dev-tools/token" >&2
+    exit 1
+  fi
+}
+
+load_secret
+exec npx -y @modelcontextprotocol/server-github "$@"

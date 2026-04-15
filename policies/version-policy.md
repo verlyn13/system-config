@@ -50,7 +50,7 @@ priority: medium
 ### Version Management
 - **mise** manages all runtimes (.mise.toml)
 - **direnv** loads project environments automatically
-- **gopass/age** provides secure credential management (never committed)
+- **1Password CLI** provides secure credential management (never committed)
 
 ### Automation
 - **Renovate** opens upgrade PRs with release notes and changelogs

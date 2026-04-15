@@ -2,12 +2,9 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(gopass show:*)",
-      "Bash(gopass ls:*)",
-      "Bash(gopass insert:*)",
+      "Bash(op read:*)",
+      "Bash(op whoami:*)",
       "Bash(brew:*)",
-      "Bash(fish:*)",
-      "Bash(fish_indent:*)",
       "Bash(shellcheck:*)",
       "Bash(chezmoi:*)",
       "Bash(mise:*)",
@@ -15,8 +12,6 @@
       "Bash(starship:*)",
       "Bash(zsh:*)",
       "Bash(./scripts/system-update.sh:*)",
-      "Bash(./scripts/doctor-path.sh:*)",
-      "Bash(./ai-tools/sync-to-tools.sh:*)",
       "mcp__firecrawl__firecrawl_search",
       "mcp__sequential-thinking__sequentialthinking"
     ],

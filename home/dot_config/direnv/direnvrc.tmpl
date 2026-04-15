@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Global direnv configuration (chezmoi)
 # Avoid redefining stdlib functions; provide helpers only.
 
@@ -28,3 +29,16 @@ dotenv_if_exists() {
   fi
 }
 
+# Validate 1Password CLI is available and authenticated for op:// secret references
+use_op() {
+  if ! command -v op >/dev/null 2>&1; then
+    log_error "1Password CLI (op) is required but not installed"
+    log_error "Install: brew install --cask 1password-cli"
+    return 1
+  fi
+  if ! op whoami --account my.1password.com >/dev/null 2>&1; then
+    log_error "1Password CLI is not authenticated for my.1password.com"
+    log_error "Open 1Password app and enable Settings > Developer > Integrate with 1Password CLI"
+    return 1
+  fi
+}

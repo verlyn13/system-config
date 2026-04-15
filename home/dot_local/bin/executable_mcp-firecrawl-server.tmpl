@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# mcp-firecrawl-server — runtime secret wrapper for the global Firecrawl MCP server
+
+set -euo pipefail
+
+OP_ACCOUNT="my.1password.com"
+
+load_secret() {
+  if [[ -n "${FIRECRAWL_API_KEY:-}" ]]; then
+    return 0
+  fi
+
+  if command -v op >/dev/null 2>&1; then
+    FIRECRAWL_API_KEY="$(op read --account "$OP_ACCOUNT" 'op://Dev/firecrawl/api-key' 2>/dev/null || true)"
+    export FIRECRAWL_API_KEY
+  fi
+
+  if [[ -z "${FIRECRAWL_API_KEY:-}" ]]; then
+    echo "mcp-firecrawl-server: set FIRECRAWL_API_KEY or store in op://Dev/firecrawl/api-key" >&2
+    exit 1
+  fi
+}
+
+load_secret
+exec npx -y firecrawl-mcp "$@"
