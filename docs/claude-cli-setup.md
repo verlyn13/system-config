@@ -3,8 +3,8 @@ title: Claude CLI Setup
 category: reference
 component: claude_cli_setup
 status: active
-version: 3.0.0
-last_updated: 2026-04-08
+version: 3.1.0
+last_updated: 2026-04-15
 tags: [cli, claude, ai, native, mcp, zsh]
 priority: high
 ---
@@ -67,6 +67,7 @@ claude update
 
 ## Related
 
+- [`docs/secrets.md`](./secrets.md)
 - [`docs/agentic-tooling.md`](./agentic-tooling.md)
 - [Official Claude Code Docs](https://docs.anthropic.com/en/docs/claude-code/overview)
 - [Claude Code Settings Reference](./claude-code-cli-settings-official.md)

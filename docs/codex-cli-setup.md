@@ -3,8 +3,8 @@ title: Codex CLI Setup
 category: reference
 component: codex_cli_setup
 status: active
-version: 3.0.0
-last_updated: 2026-04-08
+version: 3.1.0
+last_updated: 2026-04-15
 tags: [cli, codex, openai, ai, mcp, zsh]
 priority: medium
 ---
@@ -43,5 +43,6 @@ Rules:
 
 ## Related
 
+- [`docs/secrets.md`](./secrets.md)
 - [`docs/agentic-tooling.md`](./agentic-tooling.md)
 - [Official Codex Docs](https://developers.openai.com/codex/cli/)

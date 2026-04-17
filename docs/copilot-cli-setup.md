@@ -3,8 +3,8 @@ title: GitHub Copilot CLI Setup
 category: reference
 component: copilot_cli_setup
 status: active
-version: 3.0.0
-last_updated: 2026-04-08
+version: 3.0.1
+last_updated: 2026-04-15
 tags: [cli, copilot, ai, npm, mcp, zsh]
 priority: medium
 ---
@@ -41,9 +41,11 @@ npm update -g @github/copilot
 - Use Copilot’s native `/login` flow or the documented GitHub token flow.
 - If MCP state looks wrong, rerun `scripts/sync-mcp.sh`; do not hand-edit a project server into the user-global file.
 - Keep project tokens in `.envrc`, not in shell startup files.
+- For live system-wide secret-handling rules, use [`docs/secrets.md`](./secrets.md).
 
 ## Related
 
+- [`docs/secrets.md`](./secrets.md)
 - [`docs/agentic-tooling.md`](./agentic-tooling.md)
 - [Official Copilot CLI Docs](https://docs.github.com/copilot/concepts/agents/about-copilot-cli)
 - [Copilot Plans](https://github.com/features/copilot/plans)

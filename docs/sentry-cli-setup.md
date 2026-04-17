@@ -3,8 +3,8 @@ title: Sentry CLI Setup
 category: reference
 component: sentry_cli_setup
 status: active
-version: 2.0.0
-last_updated: 2026-04-08
+version: 2.1.0
+last_updated: 2026-04-15
 tags: [cli, sentry, envrc]
 priority: medium
 ---
@@ -31,3 +31,5 @@ Project auth example:
 ```bash
 export SENTRY_AUTH_TOKEN="$(op read "op://Dev/sentry/auth-token")"
 ```
+
+For the live system-wide secret-handling rules, see [`docs/secrets.md`](./secrets.md).

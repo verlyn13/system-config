@@ -3,8 +3,8 @@ title: Terraform CLI Setup
 category: reference
 component: terraform_cli_setup
 status: active
-version: 3.0.0
-last_updated: 2026-04-08
+version: 3.0.1
+last_updated: 2026-04-15
 tags: [cli, terraform, iac]
 priority: medium
 ---
@@ -33,3 +33,8 @@ terraform -version
 - Keep Terraform credentials out of shell startup files.
 - Prefer project `.envrc` or the tool-native credential file for auth.
 - Do not add Terraform-specific fish helpers to this repo.
+- For live system-wide secret-handling rules, use [`docs/secrets.md`](./secrets.md).
+
+## Related
+
+- [`docs/secrets.md`](./secrets.md)
