@@ -29,9 +29,15 @@ jobs:
           test ! -d home/dot_config/fish
           ! rg -n 'sync-chezmoi-templates|06-templates/chezmoi|REPO-STRUCTURE\.md|ai-tools/sync-to-tools|ai-tools/mcp-servers' \
             AGENTS.md README.md CLAUDE.md \
+            docs/secrets.md \
+            docs/1password-migration-plan.md \
             docs/agentic-tooling.md \
+            docs/sentry-cli-setup.md \
             docs/claude-cli-setup.md \
             docs/codex-cli-setup.md \
             docs/copilot-cli-setup.md \
             docs/claude-desktop-setup.md \
+            docs/terraform-cli-setup.md \
+            docs/vercel-cli-setup.md \
+            docs/workspace-management.md \
             iterm2/README.md
