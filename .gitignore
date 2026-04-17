@@ -34,3 +34,6 @@ node_modules/
 package-lock.json
 .nvmrc
 .node-version
+
+# Working reference material for in-flight migrations (not committed)
+github-mcp-docs/
