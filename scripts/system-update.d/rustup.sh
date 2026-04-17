@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-plugin_register "rustup" "Rust toolchains" "rustup" "true"
+plugin_register "rustup" "Legacy rustup toolchains" "rustup" "false"
 
 run_rustup() {
   if ! have rustup; then

@@ -5,7 +5,9 @@ node = "{{ .versions.node | default "24" }}"
 bun = "latest"
 python = "{{ .versions.python | default "3.13" }}"
 # go = "latest"
-# rust = "stable"  # Commented out - install with: mise install rust@stable
+# Keep a global stable Rust baseline available for cargo-based repos.
+# Projects that need a different toolchain should still pin it repo-locally.
+rust = { version = "{{ .versions.rust | default "stable" }}", profile = "default" }
 {{ if (.android | default false) -}}
 java = "{{ .versions.java | default "temurin-21" }}"
 {{ else -}}

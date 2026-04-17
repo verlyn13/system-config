@@ -41,7 +41,7 @@ Plugins have access to all core helpers:
 
 | Plugin | Description | Default | Requires |
 |--------|-------------|---------|----------|
-| `rustup` | Rust toolchains | enabled | `rustup` |
+| `rustup` | Legacy rustup toolchains | disabled | `rustup` |
 | `pipx` | pipx packages | enabled | `pipx` |
 | `uv` | uv tools | enabled | `uv` |
 | `brew-casks` | Homebrew casks | disabled | `brew` |
@@ -58,6 +58,10 @@ SYSTEM_UPDATE_ENABLE=(android-studio-canary brew-casks)
 # Or one-off via CLI
 system-update --only android-studio-canary
 ```
+
+`rustup` is kept only for legacy/manual installs. The normal Rust path on this
+system should be the global `mise` config so `system-update` upgrades it during
+the core `mise runtimes` step.
 
 ## Example
 

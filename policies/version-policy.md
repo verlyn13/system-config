@@ -3,9 +3,9 @@ title: Version Management Policy
 category: policy
 component: versions
 status: active
-version: 1.0.0
-last_updated: 2025-10-23
-tags: [policy, compliance]
+version: 1.1.0
+last_updated: 2026-04-15
+tags: [policy, compliance, versions]
 priority: medium
 ---
 
@@ -17,7 +17,7 @@ priority: medium
 ## Core Principles
 
 ### 1. Separation of Concerns
-- **Machine tools** (Homebrew, fish, mise, direnv, editors, OrbStack) are free to update anytime
+- **Machine tools** (Homebrew, zsh, mise, direnv, editors, OrbStack) are free to update anytime
 - **Project versions** are the single source of truth, defined and enforced by:
   - `.mise.toml` for runtime versions
   - Lockfiles for dependencies (`pnpm-lock.yaml`, `uv.lock`, `Cargo.lock`, `go.sum`)
@@ -131,7 +131,12 @@ go = "1.23"
 [tools]
 rust = "stable"
 ```
+- On this workstation, `system-config` also provides a global stable Rust
+  baseline via `mise` so `cargo`, `rustc`, and Clippy are available in the
+  managed shell.
 - `rust-toolchain.toml` for project overrides
+- If CI depends on deterministic Clippy behavior, pin Rust explicitly and make
+  CI use that same pinned toolchain
 - Lockfile: `Cargo.lock` (always committed)
 - CI uses `--locked` flag
 
@@ -193,15 +198,13 @@ All new projects must include:
 └── [lockfiles]          # Language-specific locks
 ```
 
-### Template Generator
-Use the `new-project` fish function:
-```fish
-new-project node my-api      # Node.js project
-new-project python ml-model  # Python project
-new-project go cli-tool      # Go project
-new-project rust wasm-lib    # Rust project
-new-project android my-app   # Android project
-```
+### Project Scaffolding
+`system-config` does not provide a repo-managed project generator.
+Use your preferred scaffold flow, then add the required files above as part
+of project bring-up.
+
+If you keep a personal scaffold helper, keep it outside this repo and
+shell-agnostic.
 
 ---
 
