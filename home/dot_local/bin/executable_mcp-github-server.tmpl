@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 # mcp-github-server — stdio wrapper that relays to GitHub's remote MCP server.
 #
+# This wrapper exists for Cursor, the only synced host that can't consume the
+# remote endpoint natively with env-backed auth. Claude Code, Codex, Windsurf,
+# and Copilot CLI all use native remote configs; see docs/mcp-config.md and
+# docs/github-mcp.md for the framework.
+#
 # Reads a fine-grained PAT from env or 1Password at launch and proxies
-# stdio MCP traffic to https://api.githubcopilot.com/mcp/x/all over
-# Streamable HTTP via `mcp-remote`.
+# stdio MCP traffic to GitHub's remote MCP server over Streamable HTTP
+# via `mcp-remote`. Curated toolsets are passed via X-MCP-Toolsets.
 #
 # Invariants:
 #   - The PAT is never stored in a persistent config file.
@@ -15,16 +20,17 @@ set -euo pipefail
 
 OP_ACCOUNT="my.1password.com"
 OP_URI="op://Dev/github-mcp/token"
-REMOTE_URL="https://api.githubcopilot.com/mcp/x/all"
+REMOTE_URL="https://api.githubcopilot.com/mcp/"
 MCP_REMOTE_VERSION="0.1.38"
+TOOLSETS="context,repos,issues,pull_requests,users,actions,code_security,dependabot,discussions,gists,labels,orgs,projects,releases,security_advisories,secret_protection,github_support_docs_search"
 
-if [[ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]] && command -v op >/dev/null 2>&1; then
-  GITHUB_PERSONAL_ACCESS_TOKEN="$(op read --account "$OP_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
-  export GITHUB_PERSONAL_ACCESS_TOKEN
+if [[ -z "${GITHUB_PAT:-}" ]] && command -v op >/dev/null 2>&1; then
+  GITHUB_PAT="$(op read --account "$OP_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
+  export GITHUB_PAT
 fi
 
-if [[ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]]; then
-  echo "mcp-github-server: set GITHUB_PERSONAL_ACCESS_TOKEN or store PAT in $OP_URI" >&2
+if [[ -z "${GITHUB_PAT:-}" ]]; then
+  echo "mcp-github-server: set GITHUB_PAT or store PAT in $OP_URI" >&2
   exit 1
 fi
 
@@ -32,4 +38,5 @@ exec npx -y "mcp-remote@${MCP_REMOTE_VERSION}" \
   "$REMOTE_URL" \
   --transport http-only \
   --silent \
-  --header "Authorization: Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
+  --header "Authorization: Bearer ${GITHUB_PAT}" \
+  --header "X-MCP-Toolsets: ${TOOLSETS}"

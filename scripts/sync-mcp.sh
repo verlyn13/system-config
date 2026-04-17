@@ -21,12 +21,18 @@ COPILOT_CONFIG="$HOME/.copilot/mcp-config.json"
 CODEX_CONFIG="$HOME/.codex/config.toml"
 
 # GitHub MCP is rendered per-host rather than from mcp-servers.json:
-# - Claude/Cursor/Windsurf: stdio wrapper that relays to the remote server
+# - Claude Code: native type:"http" with ${GITHUB_PAT} + X-MCP-Toolsets header
+# - Cursor: stdio wrapper (OAuth has open bugs; env interp quirks)
+# - Windsurf: native serverUrl, OAuth 2.1 + PKCE (shipped 1.12.41, Dec 2025)
+# - Codex: native url + bearer_token_env_var + http_headers (literal toolsets)
 # - Copilot CLI: skipped (built-in github-mcp-server ships with the tool)
-# - Codex CLI: direct remote HTTP with bearer_token_env_var
-GITHUB_REMOTE_URL="https://api.githubcopilot.com/mcp/x/all"
+GITHUB_BASE_URL="https://api.githubcopilot.com/mcp/"
 GITHUB_WRAPPER_PATH="$HOME/.local/bin/mcp-github-server"
-GITHUB_ENV_VAR="GITHUB_PERSONAL_ACCESS_TOKEN"
+GITHUB_ENV_VAR="GITHUB_PAT"
+# Curated toolset list — matches the scopes granted on op://Dev/github-mcp/token.
+# Fine-grained PATs do not get server-side scope filtering; this header gives
+# us the filtered view. Update in lockstep with PAT scope changes.
+GITHUB_TOOLSETS="context,repos,issues,pull_requests,users,actions,code_security,dependabot,discussions,gists,labels,orgs,projects,releases,security_advisories,secret_protection,github_support_docs_search"
 
 DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
@@ -93,6 +99,11 @@ generate_codex_toml() {
         "\n[mcp_servers.\(.key)]" +
         (if .value.url then "\nurl = \"\(.value.url)\"" else "" end) +
         (if .value.bearer_token_env_var then "\nbearer_token_env_var = \"\(.value.bearer_token_env_var)\"" else "" end) +
+        (if .value.http_headers then
+            "\nhttp_headers = { " +
+            (.value.http_headers | to_entries | map("\"\(.key)\" = \"\(.value)\"") | join(", ")) +
+            " }"
+        else "" end) +
         (if .value.command then "\ncommand = \"\(.value.command)\"" else "" end) +
         (if .value.args then "\nargs = \(.value.args | tojson)" else "" end) +
         (if .value.env then
@@ -166,30 +177,51 @@ BASE_SERVERS=$(prepare_servers | jq '.mcpServers')
 # gets cleaned up on sync, even if this script does not write a new one.
 MANAGED_KEYS=$(echo "$BASE_SERVERS" | jq '. + {github: null} | keys')
 
-# Per-host github rendering
-GITHUB_STDIO=$(jq -n --arg cmd "$GITHUB_WRAPPER_PATH" \
-    '{type: "stdio", command: $cmd}')
-GITHUB_CODEX=$(jq -n \
-    --arg url "$GITHUB_REMOTE_URL" \
-    --arg env "$GITHUB_ENV_VAR" \
-    '{url: $url, bearer_token_env_var: $env}')
+# Per-host github rendering. Four distinct shapes.
 
-SERVERS_WITH_STDIO=$(echo "$BASE_SERVERS" \
-    | jq --argjson gh "$GITHUB_STDIO" '. + {github: $gh}')
-SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS" \
-    | jq --argjson gh "$GITHUB_CODEX" '. + {github: $gh}')
+# Claude Code: native type:"http" with env-var bearer + curated toolsets header.
+# Claude Code's ${VAR} interpolation resolves at launch from its process env.
+GITHUB_CLAUDE=$(jq -n \
+    --arg url "$GITHUB_BASE_URL" \
+    --arg env "$GITHUB_ENV_VAR" \
+    --arg toolsets "$GITHUB_TOOLSETS" \
+    '{type: "http", url: $url,
+      headers: {"Authorization": ("Bearer ${" + $env + "}"),
+                "X-MCP-Toolsets": $toolsets}}')
+
+# Cursor: stdio wrapper (the only host still using the relay).
+GITHUB_CURSOR=$(jq -n --arg cmd "$GITHUB_WRAPPER_PATH" \
+    '{type: "stdio", command: $cmd}')
+
+# Windsurf: native serverUrl, OAuth 2.1 + PKCE handled by Windsurf itself.
+# No auth field — Windsurf negotiates via Protected Resource Metadata discovery
+# (RFC 9728) on first connect. Requires Windsurf 1.12.41+.
+GITHUB_WINDSURF=$(jq -n --arg url "$GITHUB_BASE_URL" \
+    '{serverUrl: $url}')
+
+# Codex: native url + bearer_token_env_var + http_headers (literal toolsets).
+GITHUB_CODEX=$(jq -n \
+    --arg url "$GITHUB_BASE_URL" \
+    --arg env "$GITHUB_ENV_VAR" \
+    --arg toolsets "$GITHUB_TOOLSETS" \
+    '{url: $url, bearer_token_env_var: $env,
+      http_headers: {"X-MCP-Toolsets": $toolsets}}')
+
+SERVERS_WITH_CLAUDE=$(echo "$BASE_SERVERS"   | jq --argjson gh "$GITHUB_CLAUDE"   '. + {github: $gh}')
+SERVERS_WITH_CURSOR=$(echo "$BASE_SERVERS"   | jq --argjson gh "$GITHUB_CURSOR"   '. + {github: $gh}')
+SERVERS_WITH_WINDSURF=$(echo "$BASE_SERVERS" | jq --argjson gh "$GITHUB_WINDSURF" '. + {github: $gh}')
+SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS"    | jq --argjson gh "$GITHUB_CODEX"    '. + {github: $gh}')
 
 ensure_memory_dir
 
-# stdio-wrapper hosts
-sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG" "$SERVERS_WITH_STDIO" "$MANAGED_KEYS"
-sync_json_config "Cursor"          "$CURSOR_CONFIG"      "$SERVERS_WITH_STDIO" "$MANAGED_KEYS"
-sync_json_config "Windsurf"        "$WINDSURF_CONFIG"    "$SERVERS_WITH_STDIO" "$MANAGED_KEYS"
+sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG" "$SERVERS_WITH_CLAUDE"   "$MANAGED_KEYS"
+sync_json_config "Cursor"          "$CURSOR_CONFIG"      "$SERVERS_WITH_CURSOR"   "$MANAGED_KEYS"
+sync_json_config "Windsurf"        "$WINDSURF_CONFIG"    "$SERVERS_WITH_WINDSURF" "$MANAGED_KEYS"
 
-# Copilot: skip github (built-in); any existing github key is removed via MANAGED_KEYS
-sync_json_config "Copilot CLI"     "$COPILOT_CONFIG"     "$BASE_SERVERS"       "$MANAGED_KEYS"
+# Copilot: skip github (built-in); any existing github key is removed via MANAGED_KEYS.
+sync_json_config "Copilot CLI"     "$COPILOT_CONFIG"     "$BASE_SERVERS"          "$MANAGED_KEYS"
 
-# Codex: direct remote HTTP for github
+# Codex: native remote HTTP with env-var bearer + literal toolset header.
 sync_codex_toml "$SERVERS_WITH_CODEX"
 
 echo ""
