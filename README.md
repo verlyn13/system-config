@@ -3,8 +3,8 @@ title: system-config
 category: reference
 component: overview
 status: active
-version: 3.1.1
-last_updated: 2026-04-15
+version: 3.2.0
+last_updated: 2026-04-17
 tags: [overview, setup, chezmoi, mise, zsh, mcp]
 priority: critical
 ---
@@ -78,6 +78,8 @@ scripts/sync-mcp.sh
 | Gemini CLI | unmanaged by this repo | tool-native/manual only |
 
 Current tooling docs:
+- [`docs/mcp-config.md`](docs/mcp-config.md) — MCP framework (scope model, launch patterns, sync behavior)
+- [`docs/github-mcp.md`](docs/github-mcp.md) — GitHub MCP integration (single source of truth)
 - [`docs/secrets.md`](docs/secrets.md)
 - [`docs/ssh.md`](docs/ssh.md)
 - [`docs/agentic-tooling.md`](docs/agentic-tooling.md)

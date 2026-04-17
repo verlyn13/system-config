@@ -3,7 +3,7 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 1.1.0
+version: 1.2.0
 last_updated: 2026-04-17
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
@@ -68,11 +68,10 @@ These references are live and verified for `system-config`:
 | `mcp-firecrawl-server` | `FIRECRAWL_API_KEY` | `op://Dev/firecrawl/api-key` |
 
 GitHub MCP is host-aware (different rendering per tool) and is tracked
-separately. Its current secret contract and per-host behavior live in
-[`docs/github-mcp-migration-plan.md`](./github-mcp-migration-plan.md)
-until a consolidated authoritative reference lands. Do not duplicate its
-URI into this table — treat the GitHub MCP doc as the single source of
-truth for that integration.
+separately in [`docs/github-mcp.md`](./github-mcp.md). Do not duplicate
+its URI into this table — that doc is the single source of truth for the
+GitHub MCP integration. The general MCP framework (scopes, launch
+patterns, sync behavior) lives in [`docs/mcp-config.md`](./mcp-config.md).
 
 Do not rename vault, item, or field labels used by these references unless
 every consumer is updated in the same change.
@@ -132,7 +131,7 @@ Do not move project-specific secret loading into global shell config.
 Current repo-owned examples:
 
 - `github-dev-tools` -> field `token` (general-purpose GitHub PAT; `gh` CLI and other dev tooling)
-- `github-mcp` -> field `token` (dedicated fine-grained PAT for the GitHub MCP integration; see `docs/github-mcp-migration-plan.md`)
+- `github-mcp` -> field `token` (dedicated fine-grained PAT for the GitHub MCP integration; see `docs/github-mcp.md`)
 - `brave-search` -> field `api-key`
 - `firecrawl` -> field `api-key`
 
@@ -188,7 +187,7 @@ op read --account my.1password.com "op://Dev/brave-search/api-key" >/dev/null &&
 op read --account my.1password.com "op://Dev/firecrawl/api-key" >/dev/null && echo firecrawl ok
 ```
 
-GitHub MCP verification lives in `docs/github-mcp-migration-plan.md`.
+GitHub MCP verification lives in `docs/github-mcp.md`.
 
 ## Related
 

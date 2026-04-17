@@ -3,7 +3,7 @@ title: Agentic Tooling
 category: reference
 component: agentic_tooling
 status: active
-version: 1.3.0
+version: 1.4.0
 last_updated: 2026-04-17
 tags: [agentic, mcp, zsh, claude, codex, cursor, windsurf, copilot, gemini, workspace]
 priority: high
@@ -149,48 +149,20 @@ If a project uses managed containers later:
 - move system packages and runtime dependencies needed for containerized execution into the image or container contract
 - keep `.envrc` focused on project env and secrets, not substrate bootstrap
 
-## Global MCP Baseline
+## MCP Configuration
 
-`scripts/sync-mcp.sh` manages the user-level MCP surface across these tools:
+The unified MCP framework for this system — scope model, baseline server
+inventory, secret-handling model, launch patterns, and sync behavior —
+lives in [`docs/mcp-config.md`](./mcp-config.md). Treat that file as the
+single source of truth. This doc does not restate its contents.
 
-- `context7`
-- `memory`
-- `sequential-thinking`
-- `brave-search`
-- `firecrawl`
-- `github` (host-aware rendering — see the GitHub MCP section below, this
-  is not a single baseline entry)
+GitHub MCP has its own integration-specific details (PAT scopes, curated
+toolsets, per-host auth model, OAuth vs PAT posture) documented in
+[`docs/github-mcp.md`](./github-mcp.md).
 
-Auth-required servers use runtime wrapper commands under `~/.local/bin/`. Secrets come from env vars or 1Password CLI (`op`) at launch time and must not be written into persistent user config files.
-
-### Wrapper servers (uniform across all hosts)
-
-These servers are invoked identically on every synced host via runtime
-wrappers deployed to `~/.local/bin/` by chezmoi:
-
-| Server | Wrapper | op:// URI | Env var |
-|--------|---------|-----------|---------|
-| `brave-search` | `mcp-brave-search-server` | `op://Dev/brave-search/api-key` | `BRAVE_API_KEY` |
-| `firecrawl` | `mcp-firecrawl-server` | `op://Dev/firecrawl/api-key` | `FIRECRAWL_API_KEY` |
-
-Wrappers check the env var first. If absent, they call `op read --account my.1password.com <op://...>`. If both are absent, the wrapper exits with a diagnostic message and the MCP server fails to start.
-
-Repo-owned wrappers pin `--account my.1password.com` explicitly. `ng-doctor tools` treats `op_ready` as successful access to the `Dev` vault on that account; do not rely on `op whoami` alone as the canonical readiness signal under desktop-app integration.
-
-### GitHub MCP (host-aware)
-
-GitHub MCP does not follow the "one wrapper, same entry everywhere"
-pattern. The rendering differs per host because each tool's MCP config
-surface and auth capability differs.
-
-The implementation details, per-host shapes, secret references, and
-migration state are tracked in a single place:
-
-- [`docs/github-mcp-migration-plan.md`](./github-mcp-migration-plan.md)
-
-**This file deliberately does not restate that config.** Treat the GitHub
-MCP plan as the single source of truth until a consolidated authoritative
-reference replaces it.
+`ng-doctor tools` treats `op_ready` as successful access to the `Dev`
+vault on `my.1password.com`; do not rely on `op whoami` alone as the
+canonical readiness signal under desktop-app integration.
 
 ## Tool Matrix
 
@@ -223,6 +195,8 @@ reference replaces it.
 
 ## Related
 
+- [`docs/mcp-config.md`](./mcp-config.md) — MCP framework (scopes, launch, sync)
+- [`docs/github-mcp.md`](./github-mcp.md) — GitHub MCP integration
 - [`docs/secrets.md`](./secrets.md)
 - [`docs/workspace-management.md`](./workspace-management.md)
 - [`README.md`](../README.md)
