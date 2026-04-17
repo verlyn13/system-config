@@ -27,7 +27,7 @@ landed (commits `a8e0b64` through `fcf59fc`).
 | Claude Code CLI | PAT via stdio wrapper | stdio entry pointing at `~/.local/bin/mcp-github-server` | **yes** |
 | Cursor | PAT via stdio wrapper | same stdio entry | **yes** |
 | Codex CLI | PAT via `bearer_token_env_var = "GITHUB_PAT"` | native remote (TOML) | no |
-| Windsurf | OAuth 2.1 + PKCE (native, shipped 1.12.41) | `serverUrl` only | no (tentative — may need wrapper fallback) |
+| Windsurf | OAuth 2.1 + PKCE (native, shipped 1.12.41) | `serverUrl` only | no (verified working 2026-04-17) |
 | Copilot CLI | Copilot-internal | **no synced entry** (built-in `github-mcp-server`) | n/a |
 
 **Why Claude Code uses the wrapper:** Claude Code's MCP SDK performs OAuth
