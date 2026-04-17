@@ -3,7 +3,7 @@ title: system-config
 category: reference
 component: overview
 status: active
-version: 3.2.0
+version: 4.0.0
 last_updated: 2026-04-17
 tags: [overview, setup, chezmoi, mise, zsh, mcp]
 priority: critical
@@ -14,100 +14,83 @@ priority: critical
 macOS development environment configuration, templates, and tooling.
 Managed with chezmoi, mise, zsh, and a minimal user-level MCP baseline.
 
-See [AGENTS.md](AGENTS.md) for the canonical contract and [`docs/agentic-tooling.md`](docs/agentic-tooling.md) for tool-specific ownership.
-Use [`docs/secrets.md`](docs/secrets.md) as the everyday secret-handling reference.
+Start with [AGENTS.md](AGENTS.md) for the canonical contract.
 
-## Quick Start
+## Quick start
 
 ```bash
 chezmoi apply --dry-run
 chezmoi apply
 
 ng-doctor --summary
-workspace doctor
-
-system-update
+system-update --check
 
 scripts/sync-mcp.sh --dry-run
 scripts/sync-mcp.sh
 ```
 
-## Key Locations
+## Key locations
 
 | What | Where |
 |------|-------|
 | Active chezmoi source | `home/` |
 | Chezmoi data | `~/.config/chezmoi/chezmoi.toml` |
-| Legacy dotfiles repo | `~/.local/share/chezmoi/` |
 | zsh modules | `home/dot_config/zshrc.d/` |
 | Global MCP baseline | `scripts/mcp-servers.json` |
 | MCP sync script | `scripts/sync-mcp.sh` |
-| Workspace config template | `home/dot_config/workspaces/config.toml.tmpl` |
+| MCP secrets manifest (op URIs) | `home/dot_config/mcp/private_common.env` → `~/.config/mcp/common.env` |
+| MCP wrappers | `home/dot_local/bin/executable_mcp-*.tmpl` → `~/.local/bin/mcp-*-server` |
 | Workspace launcher | `home/dot_local/bin/executable_workspace.tmpl` |
-| Workspace doctor | `home/dot_local/bin/executable_workspace-doctor.tmpl` |
-| Example system-update config | `scripts/system-update.config.example` |
-| system-update logs | `~/Library/Logs/system-update/` or `${TMPDIR:-/tmp}/system-update-$USER/` |
+| system-update | `scripts/system-update.sh` + `scripts/system-update.d/*.sh` |
+| system-update logs | `~/Library/Logs/system-update/` |
 
-## Current Model
+## Current model
 
-- zsh is the only managed interactive shell.
-- bash is a script/runtime shell only.
-- fish is no longer a managed shell surface in this repo.
-- Global `mise` defaults provide a stable baseline for common runtimes, including Rust.
-- Global MCP config is intentionally small and user-level only.
-- Project runtime, env, and MCP decisions belong in `.mise.toml`, `.envrc`, and `.mcp.json`.
+- zsh is the only managed interactive shell; bash is runtime-only; fish is not managed here.
+- Global `mise` provides stable baseline runtimes (Node, Python, Rust, etc.).
+- Global MCP config is a minimal user-level baseline synced across five tools.
+- Project-specific runtime, env, and MCP decisions live in the project
+  (`.mise.toml`, `.envrc`, `.mcp.json`).
+- Secrets live in 1Password (`my.1password.com`, `Dev` vault); resolved
+  at launch time via `op run` or runtime wrappers; never in config files.
 
-## Status Snapshot
+## AI tooling
 
-- Repo-owned secret migration to 1Password CLI (`op`) was verified on 2026-04-15.
-- Global Rust tooling is expected through the managed `mise` baseline, not ad hoc `rustup` PATH tweaks.
-- Auth-required wrappers pin `--account my.1password.com` and read from `op://Dev/...`.
-- `ng-doctor tools` verifies `op_installed` plus access to the `Dev` vault.
-- Everyday secret-handling rules live in [`docs/secrets.md`](docs/secrets.md).
-- gopass remains archive-only for project-by-project rollout work outside this repo.
+| Tool | User-level config | Project-level |
+|------|-------------------|---------------|
+| Claude Code CLI | `~/.claude.json` | `.mcp.json`, `.claude/` |
+| Codex CLI | `~/.codex/config.toml` | `.codex/config.toml` (trusted projects) |
+| Cursor | `~/.cursor/mcp.json` | `.cursor/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | — (no project scope) |
+| GitHub Copilot CLI | `~/.copilot/mcp-config.json` | `.copilot/mcp-config.json` |
 
-## AI Tooling
+### Documentation
 
-| Tool | User-level config | Project-level config |
-|------|-------------------|----------------------|
-| Claude Code | `~/.claude.json` | `.mcp.json`, `.claude/` |
-| Codex CLI | `~/.codex/config.toml` | project-local only when explicitly needed |
-| Cursor | `~/.cursor/mcp.json` | workspace/project config if supported |
-| Windsurf | `~/.codeium/windsurf/mcp_config.json` | workspace/project config if supported |
-| GitHub Copilot CLI | `~/.copilot/mcp-config.json` | tool-native/manual only |
-| Gemini CLI | unmanaged by this repo | tool-native/manual only |
-
-Current tooling docs:
-- [`docs/mcp-config.md`](docs/mcp-config.md) — MCP framework (scope model, launch patterns, sync behavior)
-- [`docs/github-mcp.md`](docs/github-mcp.md) — GitHub MCP integration (single source of truth)
-- [`docs/secrets.md`](docs/secrets.md)
-- [`docs/ssh.md`](docs/ssh.md)
-- [`docs/agentic-tooling.md`](docs/agentic-tooling.md)
+- [`docs/mcp-config.md`](docs/mcp-config.md) — MCP framework (scopes, launch, sync)
+- [`docs/github-mcp.md`](docs/github-mcp.md) — GitHub MCP integration
+- [`docs/secrets.md`](docs/secrets.md) — 1Password + `op` policy
+- [`docs/ssh.md`](docs/ssh.md) — SSH client policy
+- [`docs/agentic-tooling.md`](docs/agentic-tooling.md) — shell + tool contract
+- [`docs/workspace-management.md`](docs/workspace-management.md) — workspace POC
 - [`docs/claude-cli-setup.md`](docs/claude-cli-setup.md)
 - [`docs/codex-cli-setup.md`](docs/codex-cli-setup.md)
 - [`docs/copilot-cli-setup.md`](docs/copilot-cli-setup.md)
 - [`docs/claude-desktop-setup.md`](docs/claude-desktop-setup.md)
-- [`docs/workspace-management.md`](docs/workspace-management.md)
 
 ## Workspace POC
 
-- v1 workspace management is local-only and uses one dedicated OrbStack workspace host with Podman inside that host.
-- Project compatibility rules live in [`docs/agentic-tooling.md`](docs/agentic-tooling.md).
-- The current operator surface is `workspace list`, `workspace show <slug>`, `workspace host-shell`, `workspace host-run ...`, and `workspace doctor`.
+v1 workspace management is local-only and uses one dedicated OrbStack
+workspace host with Podman inside. Operator surface: `workspace list`,
+`workspace show <slug>`, `workspace host-shell`, `workspace host-run …`,
+`workspace doctor`. See [`docs/workspace-management.md`](docs/workspace-management.md).
 
-## Common Fixes
+## Common fixes
 
 ```bash
-chezmoi diff
-cat ~/.config/chezmoi/chezmoi.toml
-workspace list
-workspace doctor
-scripts/install-iterm2-profiles.sh
-scripts/sync-mcp.sh --dry-run
-system-update --list
+chezmoi diff                      # see pending chezmoi changes
+cat ~/.config/chezmoi/chezmoi.toml # machine-specific data
+ng-doctor                         # environment health report
+workspace doctor                  # workspace health
+scripts/sync-mcp.sh --dry-run     # preview MCP config updates
+system-update --list              # see system-update plugins
 ```
-
-## Secrets
-
-Secrets are managed with 1Password CLI (`op`) and project `.envrc` files.
-Use [`docs/secrets.md`](docs/secrets.md) for the live everyday secret-handling contract. Use [`docs/1password-migration-plan.md`](docs/1password-migration-plan.md) only for remaining rollout work and final gopass retirement. The repo must not contain plaintext passphrases or API keys.

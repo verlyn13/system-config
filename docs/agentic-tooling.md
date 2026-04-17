@@ -20,8 +20,10 @@ Everything project-specific belongs in the project.
 
 This document is also the project-facing compatibility guide for repos that want to work cleanly with the current `system-config` model.
 
-Treat [`docs/secrets.md`](./secrets.md) as the only everyday system-wide secrets instruction set.
-Use [`docs/1password-migration-plan.md`](./1password-migration-plan.md) only for remaining rollout work and final gopass retirement tracking.
+Treat [`docs/secrets.md`](./secrets.md) as the only everyday system-wide
+secrets instruction set. MCP specifics live in
+[`docs/mcp-config.md`](./mcp-config.md) and
+[`docs/github-mcp.md`](./github-mcp.md).
 
 ## Shell Contract
 

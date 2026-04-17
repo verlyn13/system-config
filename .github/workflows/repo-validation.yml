@@ -30,7 +30,9 @@ jobs:
           ! rg -n 'sync-chezmoi-templates|06-templates/chezmoi|REPO-STRUCTURE\.md|ai-tools/sync-to-tools|ai-tools/mcp-servers' \
             AGENTS.md README.md CLAUDE.md \
             docs/secrets.md \
-            docs/1password-migration-plan.md \
+            docs/ssh.md \
+            docs/mcp-config.md \
+            docs/github-mcp.md \
             docs/agentic-tooling.md \
             docs/sentry-cli-setup.md \
             docs/claude-cli-setup.md \

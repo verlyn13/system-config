@@ -3,7 +3,7 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 1.2.0
+version: 2.0.0
 last_updated: 2026-04-17
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
@@ -11,95 +11,74 @@ priority: critical
 
 # Secrets Handling
 
-This is the single authoritative live guide for how agents and humans should
-handle secrets on this system.
+Single authoritative guide for how agents and humans handle secrets on
+this system. Other docs should point here for secret policy, not restate
+it.
 
-Use this document for current behavior, policy, and operating rules.
-Use [`docs/1password-migration-plan.md`](./1password-migration-plan.md) for
-remaining repo-by-repo rollout work and final gopass retirement tracking.
-If another current doc needs to explain system-wide secret behavior, it should
-point here instead of restating policy.
+## Core rules
 
-## System Intent
-
-The long-term system goal is:
-
-1. Audit the machine and repos for loose or duplicated secrets.
-2. Move active secret consumption repo by repo from gopass to 1Password.
-3. Organize live secrets in 1Password using stable item and field naming.
-4. Remove gopass entirely once no active consumer depends on it.
-
-`system-config` itself has already completed and verified its baseline
-rollout. What remains is downstream repo rollout and final archive
-retirement work.
-
-## Core Rules
-
-- Use 1Password CLI (`op`) for all new repo-owned secret integrations.
-- Do not introduce new gopass usage anywhere in this repo.
-- Do not commit plaintext secrets, tokens, passphrases, or API keys.
-- Do not persist expanded secrets into user-global config files such as
-  `~/.claude.json`, `~/.codex/config.toml`, IDE MCP configs, or similar files.
-- Keep project-specific secret loading in each project’s `.envrc`.
+- Use 1Password CLI (`op`) for every repo-owned secret integration.
+- Never commit secrets, tokens, passphrases, or API keys.
+- Never persist resolved secrets into user-global config files like
+  `~/.claude.json`, `~/.codex/config.toml`, or IDE MCP configs.
+- Keep project-specific secret loading in each project's `.envrc`.
 - Treat `op://` references as stable API contracts once they appear in
-  repo-owned code.
+  repo-owned code — renames require every consumer to be updated in the
+  same change.
 
-## Canonical Live Setup
+## Canonical setup
 
-- 1Password account: `my.1password.com`
-- Primary live vault for repo-owned developer secrets: `Dev`
-- Repo-owned runtime path: env var -> `op read --account my.1password.com` -> fail
-- Canonical readiness check:
+- Account: `my.1password.com`
+- Primary vault: `Dev`
+- Runtime resolution path: env var → `op read --account my.1password.com` → fail
+- Readiness check:
 
-```bash
-op vault get Dev --account my.1password.com >/dev/null
-```
+  ```bash
+  op vault get Dev --account my.1password.com >/dev/null
+  ```
 
-`op whoami` may be useful for limited diagnostics, but it is not the
-canonical readiness signal on this system under desktop-app integration.
+  `op whoami` is not the canonical signal under desktop-app integration;
+  prefer the vault-get check above.
 
-## Repo-Owned Secret References
+## Repo-owned secret references
 
-These references are live and verified for `system-config`:
+These URIs are live, verified, and synced into runtime wrappers or
+chezmoi-managed config:
 
 | Consumer | Env var | op:// URI |
 |----------|---------|-----------|
 | `mcp-brave-search-server` | `BRAVE_API_KEY` | `op://Dev/brave-search/api-key` |
 | `mcp-firecrawl-server` | `FIRECRAWL_API_KEY` | `op://Dev/firecrawl/api-key` |
+| `~/.config/mcp/common.env` (shared manifest) | `GITHUB_PAT`, `BRAVE_API_KEY`, `FIRECRAWL_API_KEY` | (resolves all three above and `op://Dev/github-mcp/token`) |
 
-GitHub MCP is host-aware (different rendering per tool) and is tracked
-separately in [`docs/github-mcp.md`](./github-mcp.md). Do not duplicate
-its URI into this table — that doc is the single source of truth for the
-GitHub MCP integration. The general MCP framework (scopes, launch
+GitHub MCP is host-aware and is tracked in
+[`docs/github-mcp.md`](./github-mcp.md) — the single source of truth for
+that integration. The broader MCP framework (scope model, launch
 patterns, sync behavior) lives in [`docs/mcp-config.md`](./mcp-config.md).
 
-Do not rename vault, item, or field labels used by these references unless
-every consumer is updated in the same change.
-
-## Agent Rules
+## Agent rules
 
 Agents may:
 
-- read secrets via `op read` when the task requires runtime secret resolution
-- use repo-owned wrappers that resolve secrets at runtime
-- use limited diagnostics such as `op whoami` when explicitly needed
+- Read secrets via `op read` when the task requires runtime secret resolution.
+- Use repo-owned wrappers that resolve secrets at launch.
+- Run limited diagnostics such as `op whoami` when explicitly needed.
 
 Agents must not, unless explicitly directed by a human:
 
-- create, edit, or reorganize 1Password items
-- inventory vault contents broadly
-- materialize secrets into persistent config files
-- create new gopass-backed workflows
+- Create, edit, or reorganize 1Password items.
+- Inventory vault contents broadly.
+- Materialize secrets into persistent config files.
 
-Human-owned secret administration includes:
+Human-owned tasks:
 
-- creating or editing 1Password items
-- deciding naming and organization for new shared secrets
-- retiring the final gopass archive
+- Creating or editing 1Password items.
+- Deciding naming and organization for new shared secrets.
+- Scope and expiry changes on fine-grained PATs.
 
-## Project Pattern
+## Project pattern
 
-Small project `.envrc` files should use `use op` plus direct `op read`:
+Small project `.envrc` files use `use op` plus direct `op read`:
 
 ```bash
 use mise
@@ -107,10 +86,9 @@ use op
 export API_KEY=$(op read "op://Dev/service/api-key")
 ```
 
-This is safe to commit because `op://` URIs do not contain the secret value.
+Safe to commit because `op://` URIs carry no secret value.
 
-For larger env surfaces, prefer `op run` with a committed reference file
-instead of copying secret values into plaintext files:
+For larger env surfaces, prefer `op run` with a committed reference file:
 
 ```bash
 use mise
@@ -120,78 +98,46 @@ eval "$(op run --env-file=.env.1p -- env)"
 
 Do not move project-specific secret loading into global shell config.
 
-## Naming Rules
+## Naming rules
 
-- Item names: kebab-case
-- Field names: kebab-case
-- Name items by purpose, not by provider alone when multiple credentials may exist
-- Use one item per logical credential group, with multiple fields where appropriate
-- Use tags for metadata such as `scope:*`, `provider:*`, or `project:*`
+- Item names: kebab-case.
+- Field names: kebab-case.
+- Name items by purpose, not by provider alone when multiple credentials
+  may exist for one provider.
+- One item per logical credential group; use multiple fields when a group
+  needs several values.
+- Use tags for metadata: `scope:*`, `provider:*`, `project:*`.
 
 Current repo-owned examples:
 
-- `github-dev-tools` -> field `token` (general-purpose GitHub PAT; `gh` CLI and other dev tooling)
-- `github-mcp` -> field `token` (dedicated fine-grained PAT for the GitHub MCP integration; see `docs/github-mcp.md`)
-- `brave-search` -> field `api-key`
-- `firecrawl` -> field `api-key`
-
-## gopass Status
-
-gopass is now archive-only on this system.
-
-That means:
-
-- existing project or external consumers may still reference it during ongoing migration
-- no new repo-owned integrations should depend on it
-- final removal happens only after all active consumers have been migrated
-
-What still matters about gopass right now:
-
-- the remaining archive is machine-local, not repo-managed
-- the repo does not store any gopass unlock flow, passphrase, or recovery steps
-- project secrets still being migrated should move into project `.envrc` flows based on `op`, not shell startup files or user-global config
-- if a migration still needs to read an old gopass entry, treat that as an extraction step on the way to a 1Password item, not as a continuing integration
-
-Current machine-local gopass residue to retire later:
-
-- store: `~/.local/share/gopass/stores/root/`
-- config: `~/.config/gopass/config`
-- local operator notes: `~/.config/gopass/README-AGENTS.md`
-
-If an extraction step still needs gopass access, use the approved machine-local
-unlock flow and consult `~/.config/gopass/README-AGENTS.md`, not this repo.
-
-Do not copy machine-local gopass notes, unlock procedures, or passphrase
-material back into this repo.
-
-## Retirement Path
-
-The remaining work is outside `system-config` baseline wiring:
-
-1. migrate active project repos from `gopass show` to `use op` + `op read`
-2. consolidate duplicated secrets into the correct 1Password items
-3. verify no loose plaintext secrets remain in repo or user-global config
-4. remove remaining external gopass guidance and archive files
-5. remove gopass entirely once no active repo or workflow depends on it
-
-Track that work in [`docs/1password-migration-plan.md`](./1password-migration-plan.md).
+- `github-dev-tools` → field `token` — general GitHub PAT (`gh` CLI, misc dev tooling)
+- `github-mcp` → field `token` — fine-grained PAT scoped to the GitHub MCP integration ([`docs/github-mcp.md`](./github-mcp.md))
+- `brave-search` → field `api-key`
+- `firecrawl` → field `api-key`
 
 ## Verification
 
-Useful checks:
-
 ```bash
-op vault get Dev --account my.1password.com >/dev/null
-ng-doctor tools
+op vault get Dev --account my.1password.com >/dev/null && echo "op ok"
 op read --account my.1password.com "op://Dev/brave-search/api-key" >/dev/null && echo brave ok
 op read --account my.1password.com "op://Dev/firecrawl/api-key" >/dev/null && echo firecrawl ok
+
+# The shared MCP manifest resolves everything at once
+op run --account my.1password.com --env-file=$HOME/.config/mcp/common.env -- \
+  bash -c 'for v in GITHUB_PAT BRAVE_API_KEY FIRECRAWL_API_KEY; do
+    [[ -n "${!v:-}" ]] && echo "$v resolved" || echo "$v MISSING"; done'
+
+ng-doctor tools
 ```
 
-GitHub MCP verification lives in `docs/github-mcp.md`.
+GitHub MCP–specific verification lives in
+[`docs/github-mcp.md`](./github-mcp.md).
 
 ## Related
 
 - [`AGENTS.md`](../AGENTS.md)
 - [`README.md`](../README.md)
-- [`docs/agentic-tooling.md`](./agentic-tooling.md)
-- [`docs/1password-migration-plan.md`](./1password-migration-plan.md)
+- [`docs/mcp-config.md`](./mcp-config.md) — MCP framework
+- [`docs/github-mcp.md`](./github-mcp.md) — GitHub MCP integration
+- [`docs/ssh.md`](./ssh.md) — SSH client policy
+- [`docs/agentic-tooling.md`](./agentic-tooling.md) — shell + tool contract
