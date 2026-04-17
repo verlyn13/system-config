@@ -3,7 +3,7 @@ title: GitHub MCP Migration Plan
 category: reference
 component: mcp_github_migration
 status: active
-version: 1.0.0
+version: 1.1.0
 last_updated: 2026-04-17
 tags: [mcp, github, 1password, sync-mcp, migration]
 priority: high
@@ -56,7 +56,7 @@ All locked in during the 2026-04-17 planning session.
 | Copilot CLI rendering | Skipped from sync | built-in `github-mcp-server` ships with Copilot; a second registration would double the tools |
 | Codex CLI rendering | Direct remote HTTP (`url` + `bearer_token_env_var`) | Option A: Codex's native env-based auth |
 | Codex env sourcing | `op run --env-file=...` at launch time | no `codex` shell wrapper; user invokes `op run` when GitHub MCP is wanted |
-| Relay tool for the wrapper | `mcp-remote` via `npx` | keeps remote feature parity (remote-only toolsets usable from stdio hosts) |
+| Relay tool for the wrapper | `mcp-remote@0.1.38` via `npx`, invoked with `--silent --transport http-only` | pinned for reproducibility; `--silent` prevents the bearer header from being logged to stderr; `--transport http-only` forces GitHub's Streamable HTTP and fails fast on misconfig |
 | Source JSON shape | `github` dropped from `scripts/mcp-servers.json`; rendered per-host inline in `sync-mcp.sh` | minimal special-casing, no metadata scheme creep |
 
 ## Per-host end state
@@ -115,8 +115,8 @@ generating a new PAT, updating the item's `token` field, and verifying
 | Phase | Status | Notes |
 |---|---|---|
 | 0. Create 1Password item `github-mcp` | Complete (2026-04-17) | Verified via `op read` |
-| 1. Refactor `sync-mcp.sh` for host-aware github rendering | Complete (2026-04-17) | Dry-run verified; commit pending |
-| 2. Rewrite `mcp-github-server` wrapper to use `mcp-remote` | Not started | Blocked on npm verification of `mcp-remote` flags |
+| 1. Refactor `sync-mcp.sh` for host-aware github rendering | Complete (2026-04-17) | Committed in `13c2c6e` |
+| 2. Rewrite `mcp-github-server` wrapper to use `mcp-remote` | Complete (2026-04-17) | Live-verified: 89 tools returned from `/x/all`, 0 bytes stderr (no token leak). PAT was rotated after the verbose-mode smoke test exposed the token in tool-result stderr. |
 | 3. Run `sync-mcp.sh` against live configs | Not started | Pre-flight: insert BEGIN/END markers into `~/.codex/config.toml` (see below) |
 | 4. Document codex launch-env pattern and `~/.config/codex/env.op` chezmoi source | Not started | No wrapper; `op run --env-file` pattern |
 | 5. Docs pass: `docs/agentic-tooling.md`, `docs/secrets.md`, `docs/codex-cli-setup.md`, `docs/copilot-cli-setup.md` | Not started | |
