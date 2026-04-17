@@ -3,8 +3,8 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 1.0.1
-last_updated: 2026-04-15
+version: 1.1.0
+last_updated: 2026-04-17
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
 ---
@@ -64,9 +64,15 @@ These references are live and verified for `system-config`:
 
 | Consumer | Env var | op:// URI |
 |----------|---------|-----------|
-| `mcp-github-server` | `GITHUB_PERSONAL_ACCESS_TOKEN` | `op://Dev/github-dev-tools/token` |
 | `mcp-brave-search-server` | `BRAVE_API_KEY` | `op://Dev/brave-search/api-key` |
 | `mcp-firecrawl-server` | `FIRECRAWL_API_KEY` | `op://Dev/firecrawl/api-key` |
+
+GitHub MCP is host-aware (different rendering per tool) and is tracked
+separately. Its current secret contract and per-host behavior live in
+[`docs/github-mcp-migration-plan.md`](./github-mcp-migration-plan.md)
+until a consolidated authoritative reference lands. Do not duplicate its
+URI into this table — treat the GitHub MCP doc as the single source of
+truth for that integration.
 
 Do not rename vault, item, or field labels used by these references unless
 every consumer is updated in the same change.
@@ -125,7 +131,8 @@ Do not move project-specific secret loading into global shell config.
 
 Current repo-owned examples:
 
-- `github-dev-tools` -> field `token`
+- `github-dev-tools` -> field `token` (general-purpose GitHub PAT; `gh` CLI and other dev tooling)
+- `github-mcp` -> field `token` (dedicated fine-grained PAT for the GitHub MCP integration; see `docs/github-mcp-migration-plan.md`)
 - `brave-search` -> field `api-key`
 - `firecrawl` -> field `api-key`
 
@@ -177,10 +184,11 @@ Useful checks:
 ```bash
 op vault get Dev --account my.1password.com >/dev/null
 ng-doctor tools
-op read --account my.1password.com "op://Dev/github-dev-tools/token" >/dev/null && echo github ok
 op read --account my.1password.com "op://Dev/brave-search/api-key" >/dev/null && echo brave ok
 op read --account my.1password.com "op://Dev/firecrawl/api-key" >/dev/null && echo firecrawl ok
 ```
+
+GitHub MCP verification lives in `docs/github-mcp-migration-plan.md`.
 
 ## Related
 
