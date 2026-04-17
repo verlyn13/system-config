@@ -22,6 +22,10 @@ SYSTEM_CONFIG_DIR='{{ .chezmoi.workingTree }}'
 HOMEBREW_PREFIX='{{ .homebrew_prefix | default "/opt/homebrew" }}'
 CHEZMOI_SOURCE='{{ .chezmoi.sourceDir }}'
 OP_ACCOUNT="my.1password.com"
+OP_VAULT="Dev"
+OP_SSH_AGENT_SOCKET="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+OP_SSH_AGENT_CONFIG="$HOME/.config/1Password/ssh/agent.toml"
+OP_SSH_SIGN_PROGRAM="/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
 
 # --- Output helpers -----------------------------------------------------------
 
@@ -49,6 +53,29 @@ skip() {
 
 section() {
   printf '\n\033[1m[%s]\033[0m\n' "$1"
+}
+
+expand_tilde() {
+  local path="$1"
+  case "$path" in
+    "~")
+      printf '%s' "$HOME"
+      ;;
+    "~/"*)
+      printf '%s/%s' "$HOME" "${path#"~/"}"
+      ;;
+    *)
+      printf '%s' "$path"
+      ;;
+  esac
+}
+
+ssh_resolved_value() {
+  local host="$1" key="$2"
+  if ! command -v ssh &>/dev/null; then
+    return 0
+  fi
+  ssh -G "$host" 2>/dev/null | awk -v key="$key" '$1 == key { $1=""; sub(/^ /, ""); print; exit }'
 }
 
 # --- Category: shell ----------------------------------------------------------
@@ -220,6 +247,9 @@ check_direnv_installed() { _check_tool "direnv_installed" "direnv"; }
 check_chezmoi_installed() { _check_tool "chezmoi_installed" "chezmoi"; }
 check_starship_installed() { _check_tool "starship_installed" "starship"; }
 check_op_installed() { _check_tool "op_installed" "op"; }
+check_cargo_installed() { _check_tool "cargo_installed" "cargo"; }
+check_rustc_installed() { _check_tool "rustc_installed" "rustc"; }
+check_cargo_clippy_installed() { _check_tool "cargo_clippy_installed" "cargo-clippy"; }
 
 check_op_ready() {
   if ! command -v op &>/dev/null; then
@@ -228,26 +258,29 @@ check_op_ready() {
   fi
 
   local output=""
-  if output="$(op whoami --account "$OP_ACCOUNT" 2>&1)"; then
-    pass "op_ready" "1Password CLI is ready for ${OP_ACCOUNT}"
+  if output="$(op vault get "$OP_VAULT" --account "$OP_ACCOUNT" 2>&1 >/dev/null)"; then
+    pass "op_ready" "1Password CLI can access ${OP_VAULT} vault on ${OP_ACCOUNT}"
     return
   fi
 
   case "$output" in
     *"not currently signed in"*|*"not signed in"*|*"signin"*|*"sign in"*)
-      fail "op_ready" "1Password CLI session" "authenticated as ${OP_ACCOUNT}" "no authenticated account"
+      fail "op_ready" "1Password vault access" "${OP_VAULT} vault accessible on ${OP_ACCOUNT}" "no authenticated account"
       ;;
     *"desktop app"*|*"CLI integration"*|*"app integration"*|*"Connect with 1Password in the browser"*|*"Integrate with 1Password CLI"*)
       fail "op_ready" "1Password CLI integration" "desktop app integration enabled" "integration not enabled"
       ;;
-    *"not found"*|*"unknown account"*|*"no account"*)
+    *"unknown account"*|*"no account"*)
       fail "op_ready" "1Password account selection" "${OP_ACCOUNT} available to op" "wrong account or account not added"
+      ;;
+    *"isn't a vault"*|*"vault"*' "'$OP_VAULT'"'*"not found"*|*"not found in"*"$OP_ACCOUNT"*)
+      fail "op_ready" "1Password vault access" "${OP_VAULT} vault accessible on ${OP_ACCOUNT}" "vault not found or not accessible"
       ;;
     *"connect"*|*"background"*|*"not running"*|*"IPC"*|*"socket"*)
       fail "op_ready" "1Password app connectivity" "desktop app running in background" "desktop app not running"
       ;;
     *)
-      fail "op_ready" "1Password CLI readiness" "desktop app integration with ${OP_ACCOUNT}" "${output:-unknown error}"
+      fail "op_ready" "1Password CLI readiness" "${OP_VAULT} vault accessible on ${OP_ACCOUNT}" "${output:-unknown error}"
       ;;
   esac
 }
@@ -293,8 +326,224 @@ run_tools_checks() {
   check_direnv_hooked
   check_chezmoi_installed
   check_starship_installed
+  check_cargo_installed
+  check_rustc_installed
+  check_cargo_clippy_installed
   check_op_installed
   check_op_ready
+}
+
+# --- Category: ssh ------------------------------------------------------------
+
+check_ssh_config_exists() {
+  local config="$HOME/.ssh/config"
+  if [[ -f "$config" ]]; then
+    pass "ssh_config_exists" "~/.ssh/config exists"
+  else
+    fail "ssh_config_exists" "SSH config" "exists at $config" "not found"
+  fi
+}
+
+check_ssh_config_includes_conf_d() {
+  local config="$HOME/.ssh/config"
+  if [[ ! -f "$config" ]]; then
+    skip "ssh_config_includes_conf_d" "~/.ssh/config not present"
+    return
+  fi
+  if grep -Eq '^[[:space:]]*Include[[:space:]]+~/.ssh/conf\.d/\*\.conf([[:space:]]|$)' "$config"; then
+    pass "ssh_config_includes_conf_d" "~/.ssh/config includes ~/.ssh/conf.d/*.conf"
+  else
+    fail "ssh_config_includes_conf_d" "SSH include" "~/.ssh/conf.d/*.conf" "not configured"
+  fi
+}
+
+check_ssh_identityagent_is_1password() {
+  if ! command -v ssh &>/dev/null; then
+    skip "ssh_identityagent_is_1password" "ssh not installed"
+    return
+  fi
+  local agent
+  agent="$(ssh_resolved_value github.com identityagent)"
+  if [[ -z "$agent" ]] || [[ "$agent" == "none" ]]; then
+    fail "ssh_identityagent_is_1password" "SSH IdentityAgent" "$OP_SSH_AGENT_SOCKET" "not configured; enable the 1Password SSH agent and rerun chezmoi apply"
+  elif [[ "$agent" == *"2BUA8C4S2C.com.1password/t/agent.sock"* ]]; then
+    pass "ssh_identityagent_is_1password" "github.com resolves to 1Password SSH agent"
+  else
+    fail "ssh_identityagent_is_1password" "SSH IdentityAgent" "$OP_SSH_AGENT_SOCKET" "$agent"
+  fi
+}
+
+check_ssh_1password_agent_config_exists() {
+  if [[ -s "$OP_SSH_AGENT_CONFIG" ]]; then
+    pass "ssh_1password_agent_config_exists" "1Password SSH agent config exists at ${OP_SSH_AGENT_CONFIG}"
+  else
+    fail "ssh_1password_agent_config_exists" "1Password SSH agent config" "non-empty file at ${OP_SSH_AGENT_CONFIG}" "missing or empty"
+  fi
+}
+
+check_ssh_1password_agent_config_targets_dev_vault() {
+  if [[ ! -f "$OP_SSH_AGENT_CONFIG" ]]; then
+    skip "ssh_1password_agent_config_targets_dev_vault" "1Password SSH agent config not present"
+    return
+  fi
+  if grep -Eq '^[[:space:]]*vault[[:space:]]*=[[:space:]]*"Dev"[[:space:]]*$' "$OP_SSH_AGENT_CONFIG" \
+    && grep -Eq '^[[:space:]]*account[[:space:]]*=[[:space:]]*"my\.1password\.com"[[:space:]]*$' "$OP_SSH_AGENT_CONFIG"; then
+    pass "ssh_1password_agent_config_targets_dev_vault" "1Password SSH agent config includes ${OP_ACCOUNT}/${OP_VAULT}"
+  else
+    fail "ssh_1password_agent_config_targets_dev_vault" "1Password SSH agent config" "entry for account=${OP_ACCOUNT}, vault=${OP_VAULT}" "missing"
+  fi
+}
+
+check_ssh_agent_socket_exists() {
+  if [[ -S "$OP_SSH_AGENT_SOCKET" ]]; then
+    pass "ssh_agent_socket_exists" "SSH agent socket exists at ${OP_SSH_AGENT_SOCKET}"
+  else
+    fail "ssh_agent_socket_exists" "SSH agent socket" "socket at ${OP_SSH_AGENT_SOCKET}" "not found; enable the 1Password SSH agent in the desktop app"
+  fi
+}
+
+check_ssh_forwardagent_disabled_by_default() {
+  if ! command -v ssh &>/dev/null; then
+    skip "ssh_forwardagent_disabled_by_default" "ssh not installed"
+    return
+  fi
+  local value
+  value="$(ssh_resolved_value ssh-policy-default.invalid forwardagent)"
+  if [[ "$value" == "no" ]]; then
+    pass "ssh_forwardagent_disabled_by_default" "ForwardAgent disabled by default"
+  else
+    fail "ssh_forwardagent_disabled_by_default" "Default ForwardAgent" "no" "${value:-unset}"
+  fi
+}
+
+check_ssh_github_does_not_forward_agent() {
+  if ! command -v ssh &>/dev/null; then
+    skip "ssh_github_does_not_forward_agent" "ssh not installed"
+    return
+  fi
+  local value
+  value="$(ssh_resolved_value github.com forwardagent)"
+  if [[ "$value" == "no" ]]; then
+    pass "ssh_github_does_not_forward_agent" "github.com does not forward the SSH agent"
+  else
+    fail "ssh_github_does_not_forward_agent" "GitHub ForwardAgent" "no" "${value:-unset}"
+  fi
+}
+
+check_git_ssh_signing_configured() {
+  if ! command -v git &>/dev/null; then
+    skip "git_ssh_signing_configured" "git not installed"
+    return
+  fi
+  local format sign_enabled signing_key signing_program expanded_program
+  format="$(git config --global --get gpg.format 2>/dev/null || true)"
+  sign_enabled="$(git config --global --get commit.gpgsign 2>/dev/null || true)"
+  signing_key="$(git config --global --get user.signingkey 2>/dev/null || true)"
+  signing_program="$(git config --global --get gpg.ssh.program 2>/dev/null || true)"
+  if [[ "$format" != "ssh" ]] || [[ "$sign_enabled" != "true" ]] || [[ "$signing_key" != *.pub ]]; then
+    fail "git_ssh_signing_configured" "Git signing config" "gpg.format=ssh, commit.gpgsign=true, user.signingkey=*.pub" "format=${format:-unset}, commit.gpgsign=${sign_enabled:-unset}, user.signingkey=${signing_key:-unset}"
+    return
+  fi
+
+  if [[ "$signing_key" == *.1password.pub ]]; then
+    if [[ -z "$signing_program" ]]; then
+      fail "git_ssh_signing_configured" "Git SSH signing helper" "gpg.ssh.program=${OP_SSH_SIGN_PROGRAM} for 1Password-managed signing keys" "unset"
+      return
+    fi
+    expanded_program="$(expand_tilde "$signing_program")"
+    if [[ "$expanded_program" != "$OP_SSH_SIGN_PROGRAM" ]] || [[ ! -x "$expanded_program" ]]; then
+      fail "git_ssh_signing_configured" "Git SSH signing helper" "executable 1Password helper at ${OP_SSH_SIGN_PROGRAM}" "${signing_program}"
+      return
+    fi
+  fi
+
+  if [[ "$format" == "ssh" ]] && [[ "$sign_enabled" == "true" ]] && [[ "$signing_key" == *.pub ]]; then
+    pass "git_ssh_signing_configured" "Git is configured for SSH commit signing"
+  fi
+}
+
+check_ssh_allowed_signers_present() {
+  if ! command -v git &>/dev/null; then
+    skip "ssh_allowed_signers_present" "git not installed"
+    return
+  fi
+  local format signers_file
+  format="$(git config --global --get gpg.format 2>/dev/null || true)"
+  if [[ "$format" != "ssh" ]]; then
+    skip "ssh_allowed_signers_present" "Git SSH signing not configured"
+    return
+  fi
+  signers_file="$(git config --global --get gpg.ssh.allowedsignersfile 2>/dev/null || true)"
+  if [[ -z "$signers_file" ]]; then
+    fail "ssh_allowed_signers_present" "gpg.ssh.allowedsignersfile" "configured" "unset"
+    return
+  fi
+  local expanded
+  expanded="$(expand_tilde "$signers_file")"
+  if [[ -s "$expanded" ]]; then
+    pass "ssh_allowed_signers_present" "Allowed signers file exists at ${expanded}"
+  else
+    fail "ssh_allowed_signers_present" "Allowed signers file" "non-empty file at ${expanded}" "missing or empty"
+  fi
+}
+
+check_ssh_allowed_signers_match_signing_identity() {
+  if ! command -v git &>/dev/null; then
+    skip "ssh_allowed_signers_match_signing_identity" "git not installed"
+    return
+  fi
+  local format principal signing_key signers_file
+  format="$(git config --global --get gpg.format 2>/dev/null || true)"
+  if [[ "$format" != "ssh" ]]; then
+    skip "ssh_allowed_signers_match_signing_identity" "Git SSH signing not configured"
+    return
+  fi
+  principal="$(git config --global --get user.email 2>/dev/null || true)"
+  signing_key="$(git config --global --get user.signingkey 2>/dev/null || true)"
+  signers_file="$(git config --global --get gpg.ssh.allowedsignersfile 2>/dev/null || true)"
+  if [[ -z "$principal" ]] || [[ -z "$signing_key" ]] || [[ -z "$signers_file" ]]; then
+    fail "ssh_allowed_signers_match_signing_identity" "Git SSH signing identity" "user.email, user.signingkey, and gpg.ssh.allowedsignersfile configured" "incomplete config"
+    return
+  fi
+
+  local expanded_signers expanded_key key_material
+  expanded_signers="$(expand_tilde "$signers_file")"
+  expanded_key="$(expand_tilde "$signing_key")"
+  if [[ ! -s "$expanded_signers" ]]; then
+    skip "ssh_allowed_signers_match_signing_identity" "Allowed signers file missing"
+    return
+  fi
+  if [[ ! -f "$expanded_key" ]]; then
+    fail "ssh_allowed_signers_match_signing_identity" "Signing key file" "file at ${expanded_key}" "missing"
+    return
+  fi
+
+  key_material="$(awk 'NF >= 2 { print $1 " " $2; exit }' "$expanded_key")"
+  if [[ -z "$key_material" ]]; then
+    fail "ssh_allowed_signers_match_signing_identity" "Signing key material" "parseable public key at ${expanded_key}" "unreadable"
+    return
+  fi
+
+  if grep -Fq "${principal} ${key_material}" "$expanded_signers"; then
+    pass "ssh_allowed_signers_match_signing_identity" "Allowed signers file includes the active signing identity"
+  else
+    fail "ssh_allowed_signers_match_signing_identity" "Allowed signers mapping" "${principal} ${key_material}" "not found in ${expanded_signers}"
+  fi
+}
+
+run_ssh_checks() {
+  section "ssh"
+  check_ssh_config_exists
+  check_ssh_config_includes_conf_d
+  check_ssh_1password_agent_config_exists
+  check_ssh_1password_agent_config_targets_dev_vault
+  check_ssh_identityagent_is_1password
+  check_ssh_agent_socket_exists
+  check_ssh_forwardagent_disabled_by_default
+  check_ssh_github_does_not_forward_agent
+  check_git_ssh_signing_configured
+  check_ssh_allowed_signers_present
+  check_ssh_allowed_signers_match_signing_identity
 }
 
 # --- Category: iterm2 --------------------------------------------------------
@@ -590,10 +839,10 @@ run_governance_checks() {
 
 # --- Main ---------------------------------------------------------------------
 
-ALL_CATEGORIES=(shell path tools iterm2 agentic filesystem hygiene governance)
+ALL_CATEGORIES=(shell path tools ssh iterm2 agentic filesystem hygiene governance)
 
 list_checks() {
-  echo "ng-doctor checks (37 checks, 8 categories):"
+  echo "ng-doctor checks (48 checks, 9 categories):"
   echo ""
   printf "%-14s %s\n" "CATEGORY" "CHECK"
   printf "%-14s %s\n" "────────" "─────"
@@ -613,8 +862,22 @@ list_checks() {
   printf "%-14s %s\n" "tools" "direnv_hooked"
   printf "%-14s %s\n" "tools" "chezmoi_installed"
   printf "%-14s %s\n" "tools" "starship_installed"
+  printf "%-14s %s\n" "tools" "cargo_installed"
+  printf "%-14s %s\n" "tools" "rustc_installed"
+  printf "%-14s %s\n" "tools" "cargo_clippy_installed"
   printf "%-14s %s\n" "tools" "op_installed"
   printf "%-14s %s\n" "tools" "op_ready"
+  printf "%-14s %s\n" "ssh" "ssh_config_exists"
+  printf "%-14s %s\n" "ssh" "ssh_config_includes_conf_d"
+  printf "%-14s %s\n" "ssh" "ssh_1password_agent_config_exists"
+  printf "%-14s %s\n" "ssh" "ssh_1password_agent_config_targets_dev_vault"
+  printf "%-14s %s\n" "ssh" "ssh_identityagent_is_1password"
+  printf "%-14s %s\n" "ssh" "ssh_agent_socket_exists"
+  printf "%-14s %s\n" "ssh" "ssh_forwardagent_disabled_by_default"
+  printf "%-14s %s\n" "ssh" "ssh_github_does_not_forward_agent"
+  printf "%-14s %s\n" "ssh" "git_ssh_signing_configured"
+  printf "%-14s %s\n" "ssh" "ssh_allowed_signers_present"
+  printf "%-14s %s\n" "ssh" "ssh_allowed_signers_match_signing_identity"
   printf "%-14s %s\n" "iterm2" "dynamic_profiles_dir_exists"
   printf "%-14s %s\n" "iterm2" "dev_profile_installed"
   printf "%-14s %s\n" "iterm2" "agentic_profile_installed"
@@ -641,6 +904,7 @@ run_category() {
     shell)      run_shell_checks ;;
     path)       run_path_checks ;;
     tools)      run_tools_checks ;;
+    ssh)        run_ssh_checks ;;
     iterm2)     run_iterm2_checks ;;
     agentic)    run_agentic_checks ;;
     filesystem) run_filesystem_checks ;;

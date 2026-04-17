@@ -36,9 +36,50 @@ use_op() {
     log_error "Install: brew install --cask 1password-cli"
     return 1
   fi
-  if ! op whoami --account my.1password.com >/dev/null 2>&1; then
-    log_error "1Password CLI is not authenticated for my.1password.com"
+  # Desktop-app integration: op whoami reports "not signed in" even when
+  # op read works. Use vault access as the canonical readiness check.
+  if ! op vault get Dev --account my.1password.com >/dev/null 2>&1; then
+    log_error "1Password CLI cannot access vault 'Dev' on my.1password.com"
     log_error "Open 1Password app and enable Settings > Developer > Integrate with 1Password CLI"
     return 1
   fi
+}
+
+# Load user-scoped MCP secrets from 1Password Dev vault (GitHub PAT, Brave, Firecrawl).
+# Scope: user identity, not project identity — projects opt in via `use_user_mcp_secrets`.
+# Performance: missing vars are fetched in parallel (~4s one-shot vs ~12s serial).
+# Per-shell caching: once exported, guard clauses skip op reads on subsequent direnv loads.
+use_user_mcp_secrets() {
+  local account="${INFISICAL_OP_ACCOUNT:-my.1password.com}"
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  local pids=()
+
+  if [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
+    ( op read --account "$account" "op://Dev/github-dev-tools/token" 2>/dev/null >"$tmpdir/github" ) &
+    pids+=($!)
+  fi
+  if [ -z "${BRAVE_API_KEY:-}" ]; then
+    ( op read --account "$account" "op://Dev/brave-search/api-key" 2>/dev/null >"$tmpdir/brave" ) &
+    pids+=($!)
+  fi
+  if [ -z "${FIRECRAWL_API_KEY:-}" ]; then
+    ( op read --account "$account" "op://Dev/firecrawl/api-key" 2>/dev/null >"$tmpdir/firecrawl" ) &
+    pids+=($!)
+  fi
+
+  local pid
+  for pid in "${pids[@]}"; do wait "$pid" 2>/dev/null || true; done
+
+  if [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ] && [ -s "$tmpdir/github" ]; then
+    export GITHUB_PERSONAL_ACCESS_TOKEN="$(<"$tmpdir/github")"
+  fi
+  if [ -z "${BRAVE_API_KEY:-}" ] && [ -s "$tmpdir/brave" ]; then
+    export BRAVE_API_KEY="$(<"$tmpdir/brave")"
+  fi
+  if [ -z "${FIRECRAWL_API_KEY:-}" ] && [ -s "$tmpdir/firecrawl" ]; then
+    export FIRECRAWL_API_KEY="$(<"$tmpdir/firecrawl")"
+  fi
+
+  rm -rf "$tmpdir"
 }

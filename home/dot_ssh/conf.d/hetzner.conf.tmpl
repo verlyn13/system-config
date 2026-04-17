@@ -1,0 +1,56 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
+{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
+{{- $hostMigrations := .ssh.host_migrations | default dict -}}
+{{- $hetznerUserMigratedPath := index $hostMigrations "hetzner_user" | default "" -}}
+{{- $hetznerUserMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $hetznerUserMigratedPath)) $hetznerUserMigratedPath (hasPrefix "~/" $hetznerUserMigratedPath) -}}
+{{- $hetznerUserMigrated := and $use1PasswordAgent (ne $hetznerUserMigratedPath "") (not (empty (stat $hetznerUserMigratedResolved))) -}}
+{{- $hetznerUserKey := ternary $hetznerUserMigratedPath "~/.ssh/id_ed25519_hetzner_user" $hetznerUserMigrated -}}
+{{- $hetznerRunnerMigratedPath := index $hostMigrations "hetzner_runner" | default "" -}}
+{{- $hetznerRunnerMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $hetznerRunnerMigratedPath)) $hetznerRunnerMigratedPath (hasPrefix "~/" $hetznerRunnerMigratedPath) -}}
+{{- $hetznerRunnerMigrated := and $use1PasswordAgent (ne $hetznerRunnerMigratedPath "") (not (empty (stat $hetznerRunnerMigratedResolved))) -}}
+{{- $hetznerKey := ternary $hetznerRunnerMigratedPath "~/.ssh/id_ed25519_hetzner" $hetznerRunnerMigrated -}}
+# Hetzner server configuration
+# Managed by chezmoi
+
+Host hetzner-hq hetzner-secure
+  HostName 91.99.101.204
+  User verlyn13
+  Port 2222
+  IdentityFile {{ $hetznerUserKey }}
+  BatchMode yes
+  StrictHostKeyChecking accept-new
+  ConnectTimeout 10
+  ControlMaster auto
+  ControlPath ~/.ssh/control/%r@%h:%p
+  ControlPersist 10m
+  ServerAliveInterval 30
+  ServerAliveCountMax 5
+
+Host tng-runner
+  HostName 91.99.204.64
+  User verlyn13
+  Port 2222
+  IdentityFile {{ $hetznerKey }}
+  BatchMode yes
+  StrictHostKeyChecking accept-new
+  ConnectTimeout 10
+  ControlMaster auto
+  ControlPath ~/.ssh/control/%r@%h:%p
+  ControlPersist 10m
+  ServerAliveInterval 30
+  ServerAliveCountMax 5
+
+Host hetzner-mesh
+  HostName 100.84.151.58
+  User verlyn13
+  Port 2222
+  IdentityFile {{ $hetznerUserKey }}
+  BatchMode yes
+  StrictHostKeyChecking accept-new
+  ConnectTimeout 10
+  ControlMaster auto
+  ControlPath ~/.ssh/control/%r@%h:%p
+  ControlPersist 10m
+  ServerAliveInterval 30
+  ServerAliveCountMax 5

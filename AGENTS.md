@@ -2,12 +2,13 @@
 
 Reproducible macOS development environment. `system-config` is the active chezmoi source for the zsh-first shell surface, global mise defaults, direnv helpers, iTerm2 dynamic profiles, and the user-level MCP baseline.
 
-## Migration Status
+## Secrets Status
 
-- Active secrets migration: gopass -> 1Password CLI (`op`)
-- Source of truth for this migration: `docs/1password-migration-plan.md`
-- New secret integrations in this repo must target `op`, not gopass
-- gopass is being retained only as a cold archive during migration
+- `system-config` baseline secret migration to 1Password CLI (`op`) was completed and verified on 2026-04-15.
+- Repo-owned secret lookups are pinned to `my.1password.com` and the `Dev` vault.
+- Live source of truth for everyday secret handling on this system: `docs/secrets.md`
+- Rollout and gopass retirement tracker: `docs/1password-migration-plan.md`
+- gopass is retained only as a cold archive for external or project secrets that have not yet been migrated.
 
 ## Architecture
 
@@ -27,6 +28,7 @@ system-config/
 │   │   ├── direnv/        # direnvrc.tmpl + direnv.toml.tmpl
 │   │   ├── mise/          # global config.toml.tmpl
 │   │   └── starship.toml.tmpl
+│   ├── dot_ssh/           # Managed nonsecret SSH client policy
 │   └── dot_local/bin/     # ng-doctor, system-update, MCP wrappers
 ├── iterm2/
 │   ├── profiles/          # Dynamic profile JSONs
@@ -49,7 +51,7 @@ system-config/
 - Source: `system-config/home/`
 - Machine data: `~/.config/chezmoi/chezmoi.toml`
 - Shared data: `home/.chezmoidata.yaml`
-- Old dotfiles repo: `~/.local/share/chezmoi/` is legacy archival state for SSH/GPG/git/Brewfiles. It is not the active shell or MCP control plane.
+- Old dotfiles repo: `~/.local/share/chezmoi/` is legacy archival state for remaining unmanaged SSH/GPG/git/Brewfiles data. It is not the active shell, MCP, or SSH policy control plane.
 
 ## Common Commands
 
@@ -111,7 +113,7 @@ Policy:
 - Project-specific MCP servers belong in each project’s `.mcp.json`.
 - `scripts/sync-mcp.sh` manages only the global baseline.
 - User configs must not contain expanded API keys or tokens.
-- Auth-required global servers use runtime wrapper commands in `home/dot_local/bin/` and load secrets from env vars or 1Password CLI (`op read`) at launch time. During migration, do not add new gopass dependencies. See `docs/1password-migration-plan.md` and `docs/agentic-tooling.md` for the current secret-loading contract.
+- Auth-required global servers use runtime wrapper commands in `home/dot_local/bin/` and load secrets from env vars or 1Password CLI (`op read`) at launch time. Do not add new gopass dependencies. Use `docs/secrets.md` for the live secret-loading contract and `docs/agentic-tooling.md` for MCP ownership and wrapper behavior.
 - Claude Desktop is a separate config plane and is not a sync target.
 - Gemini CLI is currently unmanaged for MCP sync; keep it tool-native and project-local where possible.
 
@@ -138,10 +140,10 @@ Logging:
 
 | Surface | Owner | Notes |
 |---------|-------|-------|
-| `system-config/home/` | system-config | Active chezmoi source for shell, direnv, mise global, starship, MCP wrappers |
+| `system-config/home/` | system-config | Active chezmoi source for shell, direnv, mise global, starship, nonsecret SSH client policy, MCP wrappers |
 | `scripts/` | system-config | Operational tooling: system update, MCP sync, iTerm2 profile install |
 | `iterm2/profiles/` | system-config | Dynamic profile definitions only |
-| `~/.local/share/chezmoi/` | legacy dotfiles repo | SSH/GPG/git/Brewfiles, not shell/MCP SSOT |
+| `~/.local/share/chezmoi/` | legacy dotfiles repo | Legacy archive for remaining unmanaged SSH/GPG/git/Brewfiles data, not shell/MCP/SSH SSOT |
 | `.mise.toml`, `.envrc`, `.mcp.json` in a project | project repo | Version pins, env vars, project MCP servers |
 
 Workflow:
@@ -153,9 +155,12 @@ chezmoi apply
 
 ## Secrets
 
-- 1Password migration plan: `docs/1password-migration-plan.md`
+- Live secrets policy: `docs/secrets.md`
+- Live SSH policy: `docs/ssh.md`
+- Rollout and retirement tracker: `docs/1password-migration-plan.md`
 - Preferred retrieval pattern: `op read "op://Dev/<item>/<field>"`
-- Gopass remains archive-only during migration; do not introduce new gopass usage in this repo
+- Canonical readiness check: `op vault get Dev --account my.1password.com >/dev/null`
+- Gopass remains archive-only during remaining project rollout work; do not introduce new gopass usage in this repo
 - Never commit passphrases, tokens, or API keys.
 - Never design sync tooling that materializes secrets into persistent user config files.
 
@@ -171,7 +176,7 @@ chezmoi apply
 
 ### Always
 - Use conventional commits: `type(scope): description`
-- GPG-sign commits
+- Sign commits using the approved Git signing configuration
 - Run `shellcheck` on shell scripts before committing
 
 ### Ask first

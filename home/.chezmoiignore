@@ -2,7 +2,15 @@
 # Files/patterns listed here won't be managed by chezmoi
 
 # Sensitive Configuration Files
-.ssh/**
+.ssh/id_*
+.ssh/*.pem
+.ssh/*.key
+.ssh/*.cert
+.ssh/*.p12
+.ssh/known_hosts
+.ssh/known_hosts.old
+.ssh/authorized_keys
+.ssh/control/**
 .gnupg/**
 .gopass/**
 

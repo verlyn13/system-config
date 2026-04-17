@@ -3,8 +3,8 @@ title: Agentic Tooling
 category: reference
 component: agentic_tooling
 status: active
-version: 1.1.0
-last_updated: 2026-04-08
+version: 1.2.1
+last_updated: 2026-04-15
 tags: [agentic, mcp, zsh, claude, codex, cursor, windsurf, copilot, gemini, workspace]
 priority: high
 ---
@@ -19,6 +19,9 @@ This repo manages two things for agentic tools:
 Everything project-specific belongs in the project.
 
 This document is also the project-facing compatibility guide for repos that want to work cleanly with the current `system-config` model.
+
+Treat [`docs/secrets.md`](./secrets.md) as the only everyday system-wide secrets instruction set.
+Use [`docs/1password-migration-plan.md`](./1password-migration-plan.md) only for remaining rollout work and final gopass retirement tracking.
 
 ## Shell Contract
 
@@ -107,6 +110,20 @@ Do not use it for:
 
 If a project later becomes fully containerized, `.envrc` should become thinner, not disappear into global config.
 
+### Runtime rule
+
+Projects may assume this workstation provides a global `mise` baseline for
+common developer runtimes, including the current stable Rust toolchain with
+`cargo`, `rustc`, and Clippy available through `mise` shims.
+
+That baseline is a convenience layer, not the project contract.
+
+- repos must still pin their own runtime versions in `.mise.toml`
+- Rust repos that care about Clippy drift or exact compiler behavior should pin
+  Rust explicitly and keep CI on the same pinned toolchain
+- `.envrc` should use `use mise`; do not add repo-specific `rustup` bootstrap
+  logic or PATH surgery when `mise` activation is sufficient
+
 ### Workspace-enrolled projects
 
 When a project participates in workspace management, keep these boundaries:
@@ -157,6 +174,8 @@ Three servers require auth and are invoked via runtime wrappers deployed to `~/.
 
 Wrappers check the env var first. If absent, they call `op read --account my.1password.com <op://...>`. If both are absent, the wrapper exits with a diagnostic message and the MCP server fails to start.
 
+Repo-owned wrappers pin `--account my.1password.com` explicitly. `ng-doctor tools` treats `op_ready` as successful access to the `Dev` vault on that account; do not rely on `op whoami` alone as the canonical readiness signal under desktop-app integration.
+
 ## Tool Matrix
 
 | Tool | User-level config | Managed by this repo | Project guidance |
@@ -188,6 +207,7 @@ Wrappers check the env var first. If absent, they call `op read --account my.1pa
 
 ## Related
 
+- [`docs/secrets.md`](./secrets.md)
 - [`docs/workspace-management.md`](./workspace-management.md)
 - [`README.md`](../README.md)
 - [`AGENTS.md`](../AGENTS.md)

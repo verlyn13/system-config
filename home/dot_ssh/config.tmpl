@@ -1,0 +1,39 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
+{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
+# SSH Client Configuration
+# Managed by chezmoi
+# Contract: docs/ssh.md
+#
+# Order matters. Host-specific modules are included before global defaults so
+# those modules can override the workstation baseline only where explicitly
+# needed.
+
+Include {{ .ssh.include_glob | default "~/.ssh/conf.d/*.conf" }}
+
+Host *
+{{- if $use1PasswordAgent }}
+  IdentityAgent "{{ $identityAgent }}"
+{{- else }}
+{{- if (.ssh.use_1password_agent | default false) }}
+  # 1Password SSH agent mode is enabled in shared data, but the agent socket was
+  # not found at render time. Re-enable the desktop agent, then rerun
+  # `chezmoi apply`.
+{{- else }}
+  # 1Password SSH agent mode is staged but not enabled yet in shared data.
+  # Keep private-key IdentityFile paths until the SSH Key items are imported
+  # into 1Password and the staged rollout is explicitly enabled.
+{{- end }}
+{{- end }}
+  ServerAliveInterval {{ .ssh.defaults.server_alive_interval | default 30 }}
+  ServerAliveCountMax {{ .ssh.defaults.server_alive_count_max | default 60 }}
+  TCPKeepAlive {{ if (.ssh.defaults.tcp_keep_alive | default true) }}yes{{ else }}no{{ end }}
+  Compression {{ if (.ssh.defaults.compression | default true) }}yes{{ else }}no{{ end }}
+  ForwardAgent {{ if (.ssh.defaults.forward_agent | default false) }}yes{{ else }}no{{ end }}
+  AddKeysToAgent {{ if (.ssh.defaults.add_keys_to_agent | default false) }}yes{{ else }}no{{ end }}
+  IdentitiesOnly {{ if (.ssh.defaults.identities_only | default true) }}yes{{ else }}no{{ end }}
+  PreferredAuthentications {{ .ssh.defaults.preferred_authentications | default "publickey" }}
+
+# Host-specific modules migrate to `.pub` IdentityFile paths only when an
+# explicit `ssh.host_migrations.*` entry exists and the referenced file is
+# present at apply time.

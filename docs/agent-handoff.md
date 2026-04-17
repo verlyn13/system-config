@@ -15,5 +15,6 @@ This file is a historical session log from the fish-to-zsh transition period. It
 
 Use these instead:
 - `AGENTS.md` for the live project contract
+- `docs/secrets.md` for live system-wide secret handling
 - `docs/agentic-tooling.md` for current tool and MCP ownership
 - `README.md` for the current operator overview

@@ -1,0 +1,15 @@
+# 1Password SSH agent configuration
+# Managed by chezmoi
+# Contract: docs/ssh.md
+#
+# The 1Password SSH agent only auto-loads keys from default Personal/Private/
+# Employee vaults. This workstation pins repo-owned secrets to the Dev vault, so
+# the SSH agent must be told to make keys from that vault available.
+
+{{- $account := .ssh.onepassword.account | default "my.1password.com" }}
+{{- range $vault := .ssh.onepassword.vaults }}
+[[ssh-keys]]
+vault = "{{ $vault }}"
+account = "{{ $account }}"
+
+{{- end }}

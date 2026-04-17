@@ -1,0 +1,63 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
+{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
+{{- $githubPersonalMigratedPath := .ssh.host_migrations.github_personal | default "" -}}
+{{- $githubPersonalMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $githubPersonalMigratedPath)) $githubPersonalMigratedPath (hasPrefix "~/" $githubPersonalMigratedPath) -}}
+{{- $githubPersonalMigrated := and $use1PasswordAgent (ne $githubPersonalMigratedPath "") (not (empty (stat $githubPersonalMigratedResolved))) -}}
+{{- $personalKey := ternary $githubPersonalMigratedPath "~/.ssh/id_ed25519_personal" $githubPersonalMigrated -}}
+{{- $workKey := "~/.ssh/id_ed25519_work" -}}
+{{- $businessKey := "~/.ssh/id_ed25519_business" -}}
+{{- $hubofaxelKey := "~/.ssh/id_ed25519_hubofaxel" -}}
+{{- $hubofwynKey := "~/.ssh/id_ed25519_hubofwyn" -}}
+{{- $nashGroupKey := "~/.ssh/id_ed25519_nash-group" -}}
+# GitHub multi-account configuration
+# Managed by chezmoi
+# Contract: docs/ssh.md
+
+Host github.com-personal
+  HostName github.com
+  User git
+  IdentityFile {{ $personalKey }}
+  IdentitiesOnly yes
+
+Host github.com-work
+  HostName github.com
+  User git
+  IdentityFile {{ $workKey }}
+  IdentitiesOnly yes
+
+Host github.com-business
+  HostName github.com
+  User git
+  IdentityFile {{ $businessKey }}
+  IdentitiesOnly yes
+
+Host github.com-hubofaxel
+  HostName github.com
+  User git
+  IdentityFile {{ $hubofaxelKey }}
+  IdentitiesOnly yes
+
+Host github.com-hubofwyn
+  HostName github.com
+  User git
+  IdentityFile {{ $hubofwynKey }}
+  IdentitiesOnly yes
+
+Host github.com-nash-group
+  HostName github.com
+  User git
+  IdentityFile {{ $nashGroupKey }}
+  IdentitiesOnly yes
+
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile {{ $personalKey }}
+  IdentitiesOnly yes
+
+Host gitlab.com
+  HostName gitlab.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519_personal
+  IdentitiesOnly yes

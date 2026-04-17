@@ -1,0 +1,40 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
+{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
+{{- $hostMigrations := .ssh.host_migrations | default dict -}}
+{{- $dadAdminMigratedPath := index $hostMigrations "windows_dad_admin" | default "" -}}
+{{- $dadAdminMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $dadAdminMigratedPath)) $dadAdminMigratedPath (hasPrefix "~/" $dadAdminMigratedPath) -}}
+{{- $dadAdminMigrated := and $use1PasswordAgent (ne $dadAdminMigratedPath "") (not (empty (stat $dadAdminMigratedResolved))) -}}
+{{- $dadAdminKey := ternary $dadAdminMigratedPath "~/.ssh/dad_admin" $dadAdminMigrated -}}
+# Windows PC remote administration
+# Managed by chezmoi
+
+Host wyn-pc
+  HostName 0.0.0.0
+  User DadAdmin
+  IdentityFile {{ $dadAdminKey }}
+
+Host ila-pc
+  HostName 0.0.0.0
+  User DadAdmin
+  IdentityFile {{ $dadAdminKey }}
+
+Host axel-pc
+  HostName 0.0.0.0
+  User DadAdmin
+  IdentityFile {{ $dadAdminKey }}
+
+Host bedroom-tv
+  HostName 0.0.0.0
+  User DadAdmin
+  IdentityFile {{ $dadAdminKey }}
+
+Host ahnie-laptop
+  HostName 0.0.0.0
+  User DadAdmin
+  IdentityFile {{ $dadAdminKey }}
+
+Host mama-work
+  HostName 192.168.0.101
+  User DadAdmin
+  IdentityFile {{ $dadAdminKey }}

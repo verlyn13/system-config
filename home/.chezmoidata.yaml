@@ -56,3 +56,33 @@ workspaces:
       path: "/Users/verlyn13/ai/flux"
       enabled: false
       notes: "Planned first real workspace-managed infra project"
+
+ssh:
+  include_glob: "~/.ssh/conf.d/*.conf"
+  use_1password_agent: true
+  identity_agent: "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+  host_migrations:
+    github_personal: "~/.ssh/id_ed25519_personal.1password.pub"
+  defaults:
+    server_alive_interval: 30
+    server_alive_count_max: 60
+    tcp_keep_alive: true
+    compression: true
+    forward_agent: false
+    identities_only: true
+    preferred_authentications: "publickey"
+    add_keys_to_agent: false
+  onepassword:
+    account: "my.1password.com"
+    vaults:
+      - "Dev"
+  allowed_signers:
+    - principal: "jeffreyverlynjohnson@gmail.com"
+      public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPM+etuE90s9wsxgZoNi9kkhExabduN/bBFkkihyJbxs"
+      comment: "macbook-20250606-verlyn13"
+    - principal: "jeffreyverlynjohnson@gmail.com"
+      public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBczPPwNqvFRMogYz0QX3S/e0bXVCIFi81lmaunkDQwX"
+      comment: "ssh-github-personal-20260415"
+    - principal: "hubofwyn@example.com"
+      public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIOFJMHdsspKWh3wHMdiHZyboQ0rSBRVT+u07RfM2+52"
+      comment: "hubofwyn@github.com"

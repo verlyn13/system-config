@@ -19,4 +19,5 @@ priority: medium
 - Global agents and commands are available at `~/.claude/` and `~/.codex/` where tool-native config expects them
 - Chezmoi templates use Go syntax, not Jinja2
 - Project runtime and secret decisions belong in `.mise.toml` and `.envrc`
+- Live secret-handling policy for this system is in `docs/secrets.md`
 - Project MCP servers belong in `.mcp.json`; `scripts/sync-mcp.sh` manages only the user-level global baseline

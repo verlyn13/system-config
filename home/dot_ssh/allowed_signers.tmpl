@@ -1,0 +1,7 @@
+# SSH allowed signers
+# Managed by chezmoi
+# Contract: docs/ssh.md
+
+{{- range .ssh.allowed_signers }}
+{{ .principal }} {{ .public_key }}{{ if .comment }} {{ .comment }}{{ end }}
+{{- end }}

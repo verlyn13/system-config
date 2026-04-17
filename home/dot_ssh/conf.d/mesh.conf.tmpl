@@ -1,0 +1,32 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
+{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
+{{- $hostMigrations := .ssh.host_migrations | default dict -}}
+{{- $meshMigratedPath := index $hostMigrations "mesh_workstation" | default "" -}}
+{{- $meshMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $meshMigratedPath)) $meshMigratedPath (hasPrefix "~/" $meshMigratedPath) -}}
+{{- $meshMigrated := and $use1PasswordAgent (ne $meshMigratedPath "") (not (empty (stat $meshMigratedResolved))) -}}
+{{- $meshKey := ternary $meshMigratedPath "~/.ssh/id_ed25519" $meshMigrated -}}
+# Mesh network SSH configuration
+# Managed by chezmoi
+#
+# Agent forwarding remains enabled only for the trusted developer workstations
+# below because these hosts are used as interactive shells, not general-purpose
+# production targets.
+
+Host laptop-hq laptop
+  HostName 100.84.2.8
+  User verlyn13
+  IdentityFile {{ $meshKey }}
+  IdentitiesOnly yes
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+  ForwardAgent yes
+
+Host wsl-hq wsl
+  HostName 100.88.131.44
+  User verlyn13
+  IdentityFile {{ $meshKey }}
+  IdentitiesOnly yes
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+  ForwardAgent yes

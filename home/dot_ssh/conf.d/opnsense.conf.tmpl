@@ -1,0 +1,34 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
+{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
+{{- $hostMigrations := .ssh.host_migrations | default dict -}}
+{{- $opnsenseUserMgmtMigratedPath := index $hostMigrations "opnsense_usermgmt" | default "" -}}
+{{- $opnsenseUserMgmtMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $opnsenseUserMgmtMigratedPath)) $opnsenseUserMgmtMigratedPath (hasPrefix "~/" $opnsenseUserMgmtMigratedPath) -}}
+{{- $opnsenseUserMgmtMigrated := and $use1PasswordAgent (ne $opnsenseUserMgmtMigratedPath "") (not (empty (stat $opnsenseUserMgmtMigratedResolved))) -}}
+{{- $opnsenseUserMgmtKey := ternary $opnsenseUserMgmtMigratedPath "~/.ssh/opnsense_usermgmt" $opnsenseUserMgmtMigrated -}}
+{{- $opnsenseRootMigratedPath := index $hostMigrations "opnsense_root" | default "" -}}
+{{- $opnsenseRootMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $opnsenseRootMigratedPath)) $opnsenseRootMigratedPath (hasPrefix "~/" $opnsenseRootMigratedPath) -}}
+{{- $opnsenseRootMigrated := and $use1PasswordAgent (ne $opnsenseRootMigratedPath "") (not (empty (stat $opnsenseRootMigratedResolved))) -}}
+{{- $personalKey := ternary $opnsenseRootMigratedPath "~/.ssh/id_ed25519_personal" $opnsenseRootMigrated -}}
+# OPNsense router SSH configuration
+# Managed by chezmoi
+
+Host opnsense ops
+  HostName 192.168.0.1
+  User usermgmt_svc
+  IdentityFile {{ $opnsenseUserMgmtKey }}
+  Port 22
+
+Host opnsense-root root-ops
+  HostName 192.168.0.1
+  User root
+  IdentityFile {{ $personalKey }}
+  Port 22
+
+Host opnsense-root-pw
+  HostName 192.168.0.1
+  User root
+  Port 22
+  IdentitiesOnly no
+  PreferredAuthentications keyboard-interactive,password
+  PubkeyAuthentication no

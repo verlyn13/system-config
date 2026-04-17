@@ -3,8 +3,8 @@ title: system-config
 category: reference
 component: overview
 status: active
-version: 3.0.0
-last_updated: 2026-04-08
+version: 3.1.1
+last_updated: 2026-04-15
 tags: [overview, setup, chezmoi, mise, zsh, mcp]
 priority: critical
 ---
@@ -15,6 +15,7 @@ macOS development environment configuration, templates, and tooling.
 Managed with chezmoi, mise, zsh, and a minimal user-level MCP baseline.
 
 See [AGENTS.md](AGENTS.md) for the canonical contract and [`docs/agentic-tooling.md`](docs/agentic-tooling.md) for tool-specific ownership.
+Use [`docs/secrets.md`](docs/secrets.md) as the everyday secret-handling reference.
 
 ## Quick Start
 
@@ -52,8 +53,18 @@ scripts/sync-mcp.sh
 - zsh is the only managed interactive shell.
 - bash is a script/runtime shell only.
 - fish is no longer a managed shell surface in this repo.
+- Global `mise` defaults provide a stable baseline for common runtimes, including Rust.
 - Global MCP config is intentionally small and user-level only.
 - Project runtime, env, and MCP decisions belong in `.mise.toml`, `.envrc`, and `.mcp.json`.
+
+## Status Snapshot
+
+- Repo-owned secret migration to 1Password CLI (`op`) was verified on 2026-04-15.
+- Global Rust tooling is expected through the managed `mise` baseline, not ad hoc `rustup` PATH tweaks.
+- Auth-required wrappers pin `--account my.1password.com` and read from `op://Dev/...`.
+- `ng-doctor tools` verifies `op_installed` plus access to the `Dev` vault.
+- Everyday secret-handling rules live in [`docs/secrets.md`](docs/secrets.md).
+- gopass remains archive-only for project-by-project rollout work outside this repo.
 
 ## AI Tooling
 
@@ -67,6 +78,8 @@ scripts/sync-mcp.sh
 | Gemini CLI | unmanaged by this repo | tool-native/manual only |
 
 Current tooling docs:
+- [`docs/secrets.md`](docs/secrets.md)
+- [`docs/ssh.md`](docs/ssh.md)
 - [`docs/agentic-tooling.md`](docs/agentic-tooling.md)
 - [`docs/claude-cli-setup.md`](docs/claude-cli-setup.md)
 - [`docs/codex-cli-setup.md`](docs/codex-cli-setup.md)
@@ -95,4 +108,4 @@ system-update --list
 ## Secrets
 
 Secrets are managed with 1Password CLI (`op`) and project `.envrc` files.
-See [`docs/1password-migration-plan.md`](docs/1password-migration-plan.md). The repo must not contain plaintext passphrases or API keys.
+Use [`docs/secrets.md`](docs/secrets.md) for the live everyday secret-handling contract. Use [`docs/1password-migration-plan.md`](docs/1password-migration-plan.md) only for remaining rollout work and final gopass retirement. The repo must not contain plaintext passphrases or API keys.

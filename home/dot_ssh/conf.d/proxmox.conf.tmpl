@@ -1,0 +1,34 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
+{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
+{{- $hostMigrations := .ssh.host_migrations | default dict -}}
+{{- $proxmoxMigratedPath := index $hostMigrations "proxmox_user" | default "" -}}
+{{- $proxmoxMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $proxmoxMigratedPath)) $proxmoxMigratedPath (hasPrefix "~/" $proxmoxMigratedPath) -}}
+{{- $proxmoxMigrated := and $use1PasswordAgent (ne $proxmoxMigratedPath "") (not (empty (stat $proxmoxMigratedResolved))) -}}
+{{- $proxmoxKey := ternary $proxmoxMigratedPath "~/.ssh/id_ed25519_proxmox" $proxmoxMigrated -}}
+# Proxmox VE server configuration
+# Managed by chezmoi
+
+Host proxmox pve beelink
+  HostName 192.168.0.10
+  User verlyn13
+  IdentityFile {{ $proxmoxKey }}
+  Port 22
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+
+Host proxmox-root pve-root
+  HostName 192.168.0.10
+  User root
+  IdentityFile {{ $proxmoxKey }}
+  Port 22
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+
+Host proxmox-direct pve-direct
+  HostName 192.168.0.10
+  User verlyn13
+  IdentityFile {{ $proxmoxKey }}
+  Port 22
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
