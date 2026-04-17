@@ -1,16 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/mcp-servers.json",
-  "_comment": "Global MCP baseline synced by scripts/sync-mcp.sh. Project-specific servers belong in each project's .mcp.json.",
+  "_comment": "Global MCP baseline synced by scripts/sync-mcp.sh. Project-specific servers belong in each project's .mcp.json. GitHub MCP is rendered per-host by sync-mcp.sh (stdio wrapper for Claude/Cursor/Windsurf, direct remote for Codex, built-in for Copilot) and is intentionally absent from this baseline.",
   "mcpServers": {
     "context7": {
       "type": "http",
       "url": "https://mcp.context7.com/mcp",
       "_description": "Developer documentation lookup"
-    },
-    "github": {
-      "type": "stdio",
-      "command": "${HOME}/.local/bin/mcp-github-server",
-      "_description": "GitHub operations (PRs, issues, repos)"
     },
     "memory": {
       "type": "stdio",

@@ -20,6 +20,14 @@ WINDSURF_CONFIG="$HOME/.codeium/windsurf/mcp_config.json"
 COPILOT_CONFIG="$HOME/.copilot/mcp-config.json"
 CODEX_CONFIG="$HOME/.codex/config.toml"
 
+# GitHub MCP is rendered per-host rather than from mcp-servers.json:
+# - Claude/Cursor/Windsurf: stdio wrapper that relays to the remote server
+# - Copilot CLI: skipped (built-in github-mcp-server ships with the tool)
+# - Codex CLI: direct remote HTTP with bearer_token_env_var
+GITHUB_REMOTE_URL="https://api.githubcopilot.com/mcp/x/all"
+GITHUB_WRAPPER_PATH="$HOME/.local/bin/mcp-github-server"
+GITHUB_ENV_VAR="GITHUB_PERSONAL_ACCESS_TOKEN"
+
 DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
 
@@ -84,6 +92,7 @@ generate_codex_toml() {
         to_entries[] |
         "\n[mcp_servers.\(.key)]" +
         (if .value.url then "\nurl = \"\(.value.url)\"" else "" end) +
+        (if .value.bearer_token_env_var then "\nbearer_token_env_var = \"\(.value.bearer_token_env_var)\"" else "" end) +
         (if .value.command then "\ncommand = \"\(.value.command)\"" else "" end) +
         (if .value.args then "\nargs = \(.value.args | tojson)" else "" end) +
         (if .value.env then
@@ -150,16 +159,38 @@ echo "Source: $SOURCE_FILE"
 echo ""
 $DRY_RUN && echo "[DRY RUN]" && echo ""
 
-# Prepare servers with secrets injected
-SERVERS=$(prepare_servers | jq '.mcpServers')
-MANAGED_KEYS=$(echo "$SERVERS" | jq 'keys')
+# Baseline servers (github intentionally absent — rendered per host below)
+BASE_SERVERS=$(prepare_servers | jq '.mcpServers')
+
+# Managed keys include "github" so any pre-existing github entry on a target
+# gets cleaned up on sync, even if this script does not write a new one.
+MANAGED_KEYS=$(echo "$BASE_SERVERS" | jq '. + {github: null} | keys')
+
+# Per-host github rendering
+GITHUB_STDIO=$(jq -n --arg cmd "$GITHUB_WRAPPER_PATH" \
+    '{type: "stdio", command: $cmd}')
+GITHUB_CODEX=$(jq -n \
+    --arg url "$GITHUB_REMOTE_URL" \
+    --arg env "$GITHUB_ENV_VAR" \
+    '{url: $url, bearer_token_env_var: $env}')
+
+SERVERS_WITH_STDIO=$(echo "$BASE_SERVERS" \
+    | jq --argjson gh "$GITHUB_STDIO" '. + {github: $gh}')
+SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS" \
+    | jq --argjson gh "$GITHUB_CODEX" '. + {github: $gh}')
 
 ensure_memory_dir
-sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG" "$SERVERS" "$MANAGED_KEYS"
-sync_json_config "Cursor" "$CURSOR_CONFIG" "$SERVERS" "$MANAGED_KEYS"
-sync_json_config "Windsurf" "$WINDSURF_CONFIG" "$SERVERS" "$MANAGED_KEYS"
-sync_json_config "Copilot CLI" "$COPILOT_CONFIG" "$SERVERS" "$MANAGED_KEYS"
-sync_codex_toml "$SERVERS"
+
+# stdio-wrapper hosts
+sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG" "$SERVERS_WITH_STDIO" "$MANAGED_KEYS"
+sync_json_config "Cursor"          "$CURSOR_CONFIG"      "$SERVERS_WITH_STDIO" "$MANAGED_KEYS"
+sync_json_config "Windsurf"        "$WINDSURF_CONFIG"    "$SERVERS_WITH_STDIO" "$MANAGED_KEYS"
+
+# Copilot: skip github (built-in); any existing github key is removed via MANAGED_KEYS
+sync_json_config "Copilot CLI"     "$COPILOT_CONFIG"     "$BASE_SERVERS"       "$MANAGED_KEYS"
+
+# Codex: direct remote HTTP for github
+sync_codex_toml "$SERVERS_WITH_CODEX"
 
 echo ""
 echo "Done. Project-specific MCP servers remain project-scoped."
