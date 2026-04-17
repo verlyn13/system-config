@@ -3,7 +3,7 @@ title: GitHub MCP Integration
 category: reference
 component: mcp_github
 status: active
-version: 2.0.0
+version: 2.1.0
 last_updated: 2026-04-17
 tags: [mcp, github, 1password, sync-mcp, oauth, pat]
 priority: high
@@ -24,24 +24,28 @@ landed (commits `a8e0b64` through `fcf59fc`).
 
 | Host | Auth | Config shape | Wrapper? |
 |---|---|---|---|
-| Claude Code CLI | PAT via env (`${GITHUB_PAT}`) | native `type: "http"` | no |
+| Claude Code CLI | PAT via stdio wrapper | stdio entry pointing at `~/.local/bin/mcp-github-server` | **yes** |
+| Cursor | PAT via stdio wrapper | same stdio entry | **yes** |
 | Codex CLI | PAT via `bearer_token_env_var = "GITHUB_PAT"` | native remote (TOML) | no |
-| Cursor | PAT via stdio wrapper | stdio entry pointing at `~/.local/bin/mcp-github-server` | **yes (only host)** |
-| Windsurf | OAuth 2.1 + PKCE (native, shipped 1.12.41) | `serverUrl` only | no |
+| Windsurf | OAuth 2.1 + PKCE (native, shipped 1.12.41) | `serverUrl` only | no (tentative — may need wrapper fallback) |
 | Copilot CLI | Copilot-internal | **no synced entry** (built-in `github-mcp-server`) | n/a |
+
+**Why Claude Code uses the wrapper:** Claude Code's MCP SDK performs OAuth
+discovery (RFC 9728 Protected Resource Metadata) before honoring static
+Authorization headers. GitHub's remote MCP advertises OAuth pointing at
+`github.com/login/oauth`, which does not support Dynamic Client
+Registration. Claude Code's SDK errors out with "SDK auth failed:
+Incompatible auth server: does not support dynamic client registration"
+before falling back to our static bearer. The stdio wrapper sidesteps
+this — Claude Code sees a plain stdio server, no OAuth discovery layer
+to follow, and `mcp-remote` handles the HTTPS call with a pre-
+authenticated bearer. Cursor has the same SDK behavior; same fix.
 
 Rendered shapes (live, verified):
 
 ```json
 // ~/.claude.json  (Claude Code)
-"github": {
-  "type": "http",
-  "url": "https://api.githubcopilot.com/mcp/",
-  "headers": {
-    "Authorization": "Bearer ${GITHUB_PAT}",
-    "X-MCP-Toolsets": "context,repos,issues,pull_requests,users,actions,code_security,dependabot,discussions,gists,labels,orgs,projects,releases,security_advisories,secret_protection,github_support_docs_search"
-  }
-}
+"github": { "type": "stdio", "command": "/Users/verlyn13/.local/bin/mcp-github-server" }
 
 // ~/.cursor/mcp.json  (Cursor)
 "github": { "type": "stdio", "command": "/Users/verlyn13/.local/bin/mcp-github-server" }
@@ -154,26 +158,26 @@ Any edit to either must also update the other and rerun `chezmoi apply`
 
 ## Launch patterns
 
-### Claude Code CLI + Codex CLI (need `${GITHUB_PAT}` in process env)
+### Codex CLI (needs `${GITHUB_PAT}` in process env)
 
 ```bash
-op run --account my.1password.com \
-       --env-file=$HOME/.config/mcp/common.env -- claude
 op run --account my.1password.com \
        --env-file=$HOME/.config/mcp/common.env -- codex
 ```
 
-Bare `claude` / `codex` launches still start the tool, but GitHub MCP
-will return 401 on every call until relaunched under `op run`.
+Bare `codex` still starts, but GitHub MCP returns 401 on every call
+until relaunched under `op run`. `common.env` is the shared manifest
+for all `op://`-backed MCP secrets; see
+[`docs/mcp-config.md`](./mcp-config.md#secret-handling).
 
-`common.env` is the shared manifest for all `op://`-backed MCP secrets;
-see [`docs/mcp-config.md`](./mcp-config.md#secret-handling).
+### Claude Code CLI and Cursor (stdio wrapper)
 
-### Cursor (GUI)
-
-Launch normally. The stdio wrapper `~/.local/bin/mcp-github-server`
+Launch normally. The stdio wrapper at `~/.local/bin/mcp-github-server`
 reads `op://Dev/github-mcp/token` at subprocess start — works regardless
-of how Cursor itself was launched.
+of how the host was launched. Launching via `op run --env-file=…` is
+still fine and makes the wrapper fast-path (skips its own `op read`
+when `GITHUB_PAT` is already in the inherited env), but it is not
+required.
 
 ### Windsurf (GUI)
 
@@ -231,9 +235,9 @@ rm /tmp/w.err /tmp/w.out
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Claude Code github MCP: every call returns 401 | Launched without `op run`; `${GITHUB_PAT}` header unresolved | Relaunch via `op run --env-file=~/.config/mcp/common.env -- claude` |
-| Codex github MCP: 401 | Same — Codex process missing `GITHUB_PAT` | Same launch pattern for `codex` |
-| Cursor wrapper: "set GITHUB_PAT or store PAT in op://Dev/github-mcp/token" | `op` can't reach the item; 1Password desktop integration off | Enable 1P Settings → Developer → Integrate with 1Password CLI; confirm `op vault get Dev --account my.1password.com` |
+| Claude Code / Cursor github status: failed, `SDK auth failed: Incompatible auth server: does not support dynamic client registration` | Config still uses native `type: "http"`; SDK is attempting OAuth DCR against GitHub | Rerun `scripts/sync-mcp.sh` — Claude Code and Cursor must use the stdio wrapper entry, not native HTTP. |
+| Codex github MCP: 401 | Codex launched without `op run`; `GITHUB_PAT` missing from process env | Relaunch `codex` via `op run --env-file=~/.config/mcp/common.env -- codex` |
+| Wrapper (Claude/Cursor): "set GITHUB_PAT or store PAT in op://Dev/github-mcp/token" | `op` can't reach the item; 1Password desktop integration off | Enable 1P Settings → Developer → Integrate with 1Password CLI; confirm `op vault get Dev --account my.1password.com` |
 | Windsurf: stuck on connecting / no OAuth prompt | Windsurf version below 1.12.41 or OAuth discovery blocked | Upgrade Windsurf; if persistent, revert to stdio wrapper (see Fallback above) |
 | Tool 403s at call time (e.g. `actions_run_trigger`) | PAT scope missing for that toolset | Add the missing Repository/Organization permission to the PAT; rotate via procedure above |
 | Duplicate `[mcp_servers.*]` in Codex TOML | Sync ran against a Codex config without BEGIN/END markers | Wrap the existing `[mcp_servers.*]` block with `# BEGIN system-config managed MCP servers` / `# END …`, then rerun sync |

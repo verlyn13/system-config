@@ -179,23 +179,25 @@ MANAGED_KEYS=$(echo "$BASE_SERVERS" | jq '. + {github: null} | keys')
 
 # Per-host github rendering. Four distinct shapes.
 
-# Claude Code: native type:"http" with env-var bearer + curated toolsets header.
-# Claude Code's ${VAR} interpolation resolves at launch from its process env.
-GITHUB_CLAUDE=$(jq -n \
-    --arg url "$GITHUB_BASE_URL" \
-    --arg env "$GITHUB_ENV_VAR" \
-    --arg toolsets "$GITHUB_TOOLSETS" \
-    '{type: "http", url: $url,
-      headers: {"Authorization": ("Bearer ${" + $env + "}"),
-                "X-MCP-Toolsets": $toolsets}}')
-
-# Cursor: stdio wrapper (the only host still using the relay).
-GITHUB_CURSOR=$(jq -n --arg cmd "$GITHUB_WRAPPER_PATH" \
+# Claude Code and Cursor both use the stdio wrapper (mcp-remote via ~/.local/bin).
+#
+# Rationale: Claude Code's and Cursor's MCP SDKs both attempt OAuth discovery
+# when the server advertises Protected Resource Metadata (RFC 9728). GitHub's
+# remote MCP server does advertise it, but points at github.com/login/oauth,
+# which does NOT support Dynamic Client Registration. Both SDKs then error
+# out with "SDK auth failed: Incompatible auth server" before falling back
+# to the static Authorization bearer header we provided. The stdio wrapper
+# sidesteps this entirely: the client sees a plain stdio MCP server, and
+# mcp-remote handles the HTTPS call to GitHub with a pre-authenticated
+# bearer that bypasses OAuth discovery.
+GITHUB_STDIO_WRAPPER=$(jq -n --arg cmd "$GITHUB_WRAPPER_PATH" \
     '{type: "stdio", command: $cmd}')
 
-# Windsurf: native serverUrl, OAuth 2.1 + PKCE handled by Windsurf itself.
-# No auth field — Windsurf negotiates via Protected Resource Metadata discovery
-# (RFC 9728) on first connect. Requires Windsurf 1.12.41+.
+# Windsurf: native serverUrl, OAuth 2.1 + PKCE handled by Windsurf itself
+# (shipped 1.12.41, Dec 2025). No auth field — Windsurf is expected to
+# negotiate OAuth via Protected Resource Metadata discovery (RFC 9728) on
+# first connect. Fallback: if Windsurf's SDK also fails on DCR like Claude
+# Code / Cursor do, reuse GITHUB_STDIO_WRAPPER.
 GITHUB_WINDSURF=$(jq -n --arg url "$GITHUB_BASE_URL" \
     '{serverUrl: $url}')
 
@@ -207,15 +209,14 @@ GITHUB_CODEX=$(jq -n \
     '{url: $url, bearer_token_env_var: $env,
       http_headers: {"X-MCP-Toolsets": $toolsets}}')
 
-SERVERS_WITH_CLAUDE=$(echo "$BASE_SERVERS"   | jq --argjson gh "$GITHUB_CLAUDE"   '. + {github: $gh}')
-SERVERS_WITH_CURSOR=$(echo "$BASE_SERVERS"   | jq --argjson gh "$GITHUB_CURSOR"   '. + {github: $gh}')
-SERVERS_WITH_WINDSURF=$(echo "$BASE_SERVERS" | jq --argjson gh "$GITHUB_WINDSURF" '. + {github: $gh}')
-SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS"    | jq --argjson gh "$GITHUB_CODEX"    '. + {github: $gh}')
+SERVERS_WITH_WRAPPER=$(echo "$BASE_SERVERS"  | jq --argjson gh "$GITHUB_STDIO_WRAPPER" '. + {github: $gh}')
+SERVERS_WITH_WINDSURF=$(echo "$BASE_SERVERS" | jq --argjson gh "$GITHUB_WINDSURF"       '. + {github: $gh}')
+SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS"    | jq --argjson gh "$GITHUB_CODEX"          '. + {github: $gh}')
 
 ensure_memory_dir
 
-sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG" "$SERVERS_WITH_CLAUDE"   "$MANAGED_KEYS"
-sync_json_config "Cursor"          "$CURSOR_CONFIG"      "$SERVERS_WITH_CURSOR"   "$MANAGED_KEYS"
+sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG" "$SERVERS_WITH_WRAPPER"  "$MANAGED_KEYS"
+sync_json_config "Cursor"          "$CURSOR_CONFIG"      "$SERVERS_WITH_WRAPPER"  "$MANAGED_KEYS"
 sync_json_config "Windsurf"        "$WINDSURF_CONFIG"    "$SERVERS_WITH_WINDSURF" "$MANAGED_KEYS"
 
 # Copilot: skip github (built-in); any existing github key is removed via MANAGED_KEYS.
