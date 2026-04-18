@@ -63,6 +63,7 @@ ssh:
   identity_agent: "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
   host_migrations:
     github_personal: "~/.ssh/id_ed25519_personal.1password.pub"
+    runpod_inference: "~/.ssh/runpod-inference.1password.pub"
   defaults:
     server_alive_interval: 30
     server_alive_count_max: 60

@@ -1,0 +1,21 @@
+{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
+{{- $hostMigrations := .ssh.host_migrations | default dict -}}
+{{- $runpodKey := index $hostMigrations "runpod_inference" | default "~/.ssh/runpod-inference.1password.pub" -}}
+# Runpod pods (project: runpod-inference)
+# Managed by chezmoi
+#
+# This file holds wildcard defaults for `runpod-*` aliases ONLY.
+# Per-pod blocks (HostName/Port for `runpod-<alias>`) are operator-added
+# and live in ~/.ssh/conf.d/runpod-pods.local.conf — that path is not
+# chezmoi-managed and survives `chezmoi apply`. The conf.d glob loads
+# both files; OpenSSH merges per-host settings (first match per setting).
+
+Host runpod-*
+  User root
+  IdentityFile {{ $runpodKey }}
+  IdentityAgent "{{ $identityAgent }}"
+  BatchMode yes
+  StrictHostKeyChecking accept-new
+  ServerAliveInterval 30
+  ServerAliveCountMax 5
+  ForwardAgent no
