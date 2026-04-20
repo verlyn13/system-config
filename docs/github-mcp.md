@@ -84,6 +84,19 @@ The 1P item is dedicated to the MCP integration. Do not reuse
 `op://Dev/github-dev-tools/token` (that entry serves `gh` CLI and other
 general dev tooling).
 
+### Identity override: happy-patterns tree
+
+When any MCP host is launched from within `~/Organizations/happy-patterns/`,
+the repo's `.envrc` exports `GITHUB_PAT` from
+`op://Dev/github-happy-patterns/token` (fine-grained PAT, resource owner
+`happy-patterns-org`) before the host starts. The stdio wrapper at
+`~/.local/bin/mcp-github-server` honors an inherited `GITHUB_PAT` and
+skips its own `op read`, so the GitHub MCP server acts as the
+`happy-patterns` identity for that session. Codex uses
+`bearer_token_env_var = "GITHUB_PAT"` and picks up the same override.
+Launching from any other directory preserves the default `verlyn13`
+identity via `op://Dev/github-mcp/token`.
+
 Rotation procedure:
 1. GitHub → Settings → Developer settings → Personal access tokens →
    Fine-grained tokens → `github-mcp` → Regenerate.

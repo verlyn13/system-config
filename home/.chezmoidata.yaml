@@ -63,6 +63,7 @@ ssh:
   identity_agent: "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
   host_migrations:
     github_personal: "~/.ssh/id_ed25519_personal.1password.pub"
+    github_happy_patterns: "~/.ssh/id_ed25519_happy_patterns.1password.pub"
     runpod_inference: "~/.ssh/runpod-inference.1password.pub"
   defaults:
     server_alive_interval: 30
@@ -87,3 +88,6 @@ ssh:
     - principal: "hubofwyn@example.com"
       public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIOFJMHdsspKWh3wHMdiHZyboQ0rSBRVT+u07RfM2+52"
       comment: "hubofwyn@github.com"
+    - principal: "jeffrey@happy-patterns.com"
+      public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINPxlqbLI+0jVzYwIjhXB/YXw+KcCrVSIKhuSIrDRylO"
+      comment: "ssh-github-happy-patterns-20260420"

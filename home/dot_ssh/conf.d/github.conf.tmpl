@@ -5,6 +5,10 @@
 {{- $githubPersonalMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $githubPersonalMigratedPath)) $githubPersonalMigratedPath (hasPrefix "~/" $githubPersonalMigratedPath) -}}
 {{- $githubPersonalMigrated := and $use1PasswordAgent (ne $githubPersonalMigratedPath "") (not (empty (stat $githubPersonalMigratedResolved))) -}}
 {{- $personalKey := ternary $githubPersonalMigratedPath "~/.ssh/id_ed25519_personal" $githubPersonalMigrated -}}
+{{- $githubHappyPatternsMigratedPath := .ssh.host_migrations.github_happy_patterns | default "" -}}
+{{- $githubHappyPatternsMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $githubHappyPatternsMigratedPath)) $githubHappyPatternsMigratedPath (hasPrefix "~/" $githubHappyPatternsMigratedPath) -}}
+{{- $githubHappyPatternsMigrated := and $use1PasswordAgent (ne $githubHappyPatternsMigratedPath "") (not (empty (stat $githubHappyPatternsMigratedResolved))) -}}
+{{- $happyPatternsKey := ternary $githubHappyPatternsMigratedPath "~/.ssh/github_happy_patterns" $githubHappyPatternsMigrated -}}
 {{- $workKey := "~/.ssh/id_ed25519_work" -}}
 {{- $businessKey := "~/.ssh/id_ed25519_business" -}}
 {{- $hubofaxelKey := "~/.ssh/id_ed25519_hubofaxel" -}}
@@ -30,6 +34,12 @@ Host github.com-business
   HostName github.com
   User git
   IdentityFile {{ $businessKey }}
+  IdentitiesOnly yes
+
+Host github.com-happy-patterns
+  HostName github.com
+  User git
+  IdentityFile {{ $happyPatternsKey }}
   IdentitiesOnly yes
 
 Host github.com-hubofaxel

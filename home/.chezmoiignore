@@ -2,7 +2,10 @@
 # Files/patterns listed here won't be managed by chezmoi
 
 # Sensitive Configuration Files
+# Ignore private key files, but allow chezmoi to manage .pub files
+# (public keys are not secrets; this enables 1Password-backed pub templates).
 .ssh/id_*
+!.ssh/id_*.pub
 .ssh/*.pem
 .ssh/*.key
 .ssh/*.cert
