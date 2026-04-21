@@ -66,6 +66,7 @@ scripts/sync-mcp.sh
 
 ### Documentation
 
+- [`docs/project-conventions.md`](docs/project-conventions.md) — compatibility guide for downstream projects (link this from a project's `AGENTS.md`)
 - [`docs/mcp-config.md`](docs/mcp-config.md) — MCP framework (scopes, launch, sync)
 - [`docs/github-mcp.md`](docs/github-mcp.md) — GitHub MCP integration
 - [`docs/secrets.md`](docs/secrets.md) — 1Password + `op` policy
