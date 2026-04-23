@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# mcp-cloudflare-server — stdio wrapper that relays to Cloudflare's remote MCP server.
+#
+# Cloudflare's canonical MCP surface is https://mcp.cloudflare.com/mcp (Codemode:
+# two tools, `search` and `execute`, covering 2,500+ API endpoints via a Dynamic
+# Worker sandbox). Cloudflare supports bearer-token auth for automation but the
+# server also advertises OAuth discovery, which some client SDKs choke on when a
+# pre-authenticated bearer is already available. Routing all hosts through
+# `mcp-remote` sidesteps that — the client sees a plain stdio server and
+# mcp-remote handles the HTTPS call with the static Authorization header.
+#
+# Reads a Cloudflare API token from env or 1Password at launch. The token is
+# never written into any persistent host config file.
+#
+# Invariants:
+#   - The token is never stored in a persistent config file.
+#   - mcp-remote runs with --silent so the Authorization header is never
+#     written to stderr (and therefore not into host log files).
+#   - The version of mcp-remote is pinned for reproducibility.
+
+set -euo pipefail
+
+OP_ACCOUNT="my.1password.com"
+OP_URI="op://Dev/citadel-cloudflare-jefahnierocks-rw/token"
+REMOTE_URL="https://mcp.cloudflare.com/mcp"
+MCP_REMOTE_VERSION="0.1.38"
+
+if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && command -v op >/dev/null 2>&1; then
+  CLOUDFLARE_API_TOKEN="$(op read --account "$OP_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
+  export CLOUDFLARE_API_TOKEN
+fi
+
+if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+  echo "mcp-cloudflare-server: set CLOUDFLARE_API_TOKEN or store token in $OP_URI" >&2
+  exit 1
+fi
+
+exec npx -y "mcp-remote@${MCP_REMOTE_VERSION}" \
+  "$REMOTE_URL" \
+  --transport http-only \
+  --silent \
+  --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"

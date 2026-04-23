@@ -41,6 +41,16 @@
       "type": "http",
       "url": "https://docs.runpod.io/mcp",
       "_description": "Runpod documentation search (no auth)"
+    },
+    "cloudflare": {
+      "type": "stdio",
+      "command": "${HOME}/.local/bin/mcp-cloudflare-server",
+      "_description": "Cloudflare API (Codemode: search + execute over 2,500+ endpoints — DNS, Workers, R2, Zero Trust, etc.)"
+    },
+    "cloudflare-docs": {
+      "type": "http",
+      "url": "https://docs.mcp.cloudflare.com/mcp",
+      "_description": "Cloudflare documentation search (no auth)"
     }
   }
 }
