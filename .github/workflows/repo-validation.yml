@@ -33,6 +33,7 @@ jobs:
             docs/ssh.md \
             docs/mcp-config.md \
             docs/github-mcp.md \
+            docs/cloudflare-mcp.md \
             docs/agentic-tooling.md \
             docs/sentry-cli-setup.md \
             docs/claude-cli-setup.md \

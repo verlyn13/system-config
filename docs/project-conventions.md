@@ -378,6 +378,7 @@ shellcheck scripts/*.sh
 | 1Password policy | [`docs/secrets.md`](./secrets.md) |
 | MCP framework | [`docs/mcp-config.md`](./mcp-config.md) |
 | GitHub MCP specifics | [`docs/github-mcp.md`](./github-mcp.md) |
+| Cloudflare MCP specifics | [`docs/cloudflare-mcp.md`](./cloudflare-mcp.md) |
 | SSH and Git signing | [`docs/ssh.md`](./ssh.md) |
 | Shell and tool contract | [`docs/agentic-tooling.md`](./agentic-tooling.md) |
 | Workspace management | [`docs/workspace-management.md`](./workspace-management.md) |

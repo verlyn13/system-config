@@ -56,8 +56,11 @@ chezmoi-managed config:
 
 GitHub MCP is host-aware and is tracked in
 [`docs/github-mcp.md`](./github-mcp.md) — the single source of truth for
-that integration. The broader MCP framework (scope model, launch
-patterns, sync behavior) lives in [`docs/mcp-config.md`](./mcp-config.md).
+that integration. Cloudflare MCP is tracked in
+[`docs/cloudflare-mcp.md`](./cloudflare-mcp.md) — Codemode usage, token
+scope, and operating conventions. The broader MCP framework (scope
+model, launch patterns, sync behavior) lives in
+[`docs/mcp-config.md`](./mcp-config.md).
 
 ## Agent rules
 
@@ -185,6 +188,7 @@ session, regardless of which repo you're in):**
 - [`README.md`](../README.md)
 - [`docs/mcp-config.md`](./mcp-config.md) — MCP framework
 - [`docs/github-mcp.md`](./github-mcp.md) — GitHub MCP integration
+- [`docs/cloudflare-mcp.md`](./cloudflare-mcp.md) — Cloudflare MCP integration
 - [`docs/ssh.md`](./ssh.md) — SSH client policy
 - [`docs/agentic-tooling.md`](./agentic-tooling.md) — shell + tool contract
 - `~/Repos/verlyn13/infisical` — self-hosted Infisical management repo (HPUSS-SEC, server-side)

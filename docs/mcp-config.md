@@ -18,6 +18,7 @@ in their own focused docs and link back here.
 Related live docs:
 
 - [`docs/github-mcp.md`](./github-mcp.md) — GitHub MCP integration (single source of truth)
+- [`docs/cloudflare-mcp.md`](./cloudflare-mcp.md) — Cloudflare MCP integration (Codemode, token scope, usage conventions)
 - [`docs/secrets.md`](./secrets.md) — 1Password + op policy
 - [`docs/agentic-tooling.md`](./agentic-tooling.md) — shell and tool contract
 
@@ -69,7 +70,7 @@ Synced by `scripts/sync-mcp.sh` to all six hosts (with per-host variations where
 | `github` | remote HTTP (GitHub-hosted) | per-host — see `docs/github-mcp.md` | Cursor only |
 | `runpod` | npm stdio (`@runpod/mcp-server`) | `RUNPOD_API_KEY` via `op://Dev/runpod-api/api-key` | yes (`~/.local/bin/mcp-runpod-server`) |
 | `runpod-docs` | remote HTTP | none (public) | no |
-| `cloudflare` | remote HTTP (Codemode) via `mcp-remote` stdio relay | `CLOUDFLARE_API_TOKEN` via `op://Dev/cloudflare-mcp-jefahnierocks/token` | yes (`~/.local/bin/mcp-cloudflare-server`) |
+| `cloudflare` | remote HTTP (Codemode) via `mcp-remote` stdio relay | account-scoped token — see `docs/cloudflare-mcp.md` | yes (`~/.local/bin/mcp-cloudflare-server`) |
 | `cloudflare-docs` | remote HTTP | none (public) | no |
 
 ## Secret handling

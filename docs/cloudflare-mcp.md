@@ -1,0 +1,401 @@
+---
+title: Cloudflare MCP Integration
+category: reference
+component: cloudflare_mcp
+status: active
+version: 1.0.0
+last_updated: 2026-04-23
+tags: [cloudflare, mcp, codemode, api-token, bearer, mcp-remote, 1password, workers, dns, zero-trust]
+priority: high
+---
+
+# Cloudflare MCP Integration
+
+Single source of truth for the Cloudflare MCP integration on this system. Read this before calling `cloudflare.search` / `cloudflare.execute`, and before modifying the wrapper or its 1Password item.
+
+For the general MCP framework (sync, scope model, launch patterns) see
+[`docs/mcp-config.md`](./mcp-config.md). For the GitHub MCP (parallel
+structure, different per-host rendering), see
+[`docs/github-mcp.md`](./github-mcp.md). For the Claude-Desktop-specific
+auth cycle that informs how this wrapper is designed, see the field
+report at
+[`docs/host-capability-substrate/2026-04-23-claude-desktop-op-consent-cycle.md`](./host-capability-substrate/2026-04-23-claude-desktop-op-consent-cycle.md).
+
+## At-a-glance
+
+| Item | Value |
+|---|---|
+| User-level MCP entries | `cloudflare` (auth'd) and `cloudflare-docs` (no auth) |
+| Remote endpoint (auth'd) | `https://mcp.cloudflare.com/mcp` (Codemode) |
+| Remote endpoint (docs) | `https://docs.mcp.cloudflare.com/mcp` (no auth) |
+| Local wrapper | `~/.local/bin/mcp-cloudflare-server` (stdio via `mcp-remote`) |
+| Chezmoi source | `home/dot_local/bin/executable_mcp-cloudflare-server.tmpl` |
+| Token op URI | `op://Dev/cloudflare-mcp-jefahnierocks/token` |
+| Token account | jefahnierocks (`13eb584192d9cefb730fde0cfd271328`) |
+| Token TTL (current build-out) | 2026-04-23 → 2026-05-23 (30 days) |
+| Transport to Cloudflare | Streamable HTTP via `mcp-remote@0.1.38` stdio relay |
+| Tools exposed by the auth'd server | `search` (2 tool), `execute` (1 tool) — see §Codemode |
+| Rate-limit surface | Cloudflare API rate limits apply to the underlying token |
+
+## Per-host wiring
+
+Unlike GitHub MCP (which is rendered in four distinct shapes per host), Cloudflare MCP is written **uniformly** as the stdio wrapper across all six sync targets. `scripts/sync-mcp.sh` writes the same `command: "${HOME}/.local/bin/mcp-cloudflare-server"` entry to each host, with per-host format adjustments (e.g. Claude Desktop strips `type`, Codex TOML becomes `[mcp_servers.cloudflare]`).
+
+| Host | Config file | Entry shape |
+|---|---|---|
+| Claude Code CLI | `~/.claude.json` | `{"type": "stdio", "command": "~/.local/bin/mcp-cloudflare-server"}` |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | `{"command": "~/.local/bin/mcp-cloudflare-server"}` (no `type`) |
+| Cursor | `~/.cursor/mcp.json` | same as Claude Code CLI |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | same as Claude Code CLI |
+| Copilot CLI | `~/.copilot/mcp-config.json` | same as Claude Code CLI |
+| Codex CLI | `~/.codex/config.toml` | `[mcp_servers.cloudflare]\ncommand = "~/.local/bin/mcp-cloudflare-server"` |
+
+Uniform stdio-via-wrapper is the right shape for this server because Cloudflare's remote MCP gateway advertises OAuth discovery; some MCP SDKs attempt Dynamic Client Registration even when a static bearer is present and fail with `InvalidTokenError: Failed to verify token: no user or account information` before honoring the Authorization header. The wrapper routes through `mcp-remote` which bypasses that discovery path.
+
+## Token identity and scope
+
+The token at `op://Dev/cloudflare-mcp-jefahnierocks/token` is deliberately **account-scoped**, not zone-scoped. This is required by Cloudflare's MCP gateway: the gateway rejects zone-only tokens with "no user or account information" because Codemode needs a resolvable identity to route calls against.
+
+**Resolvable identity checks:**
+
+```bash
+TOKEN="$(op read --account my.1password.com 'op://Dev/cloudflare-mcp-jefahnierocks/token')"
+curl -s -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/user | jq .result.email
+# → "jeffreyverlynjohnson@gmail.com"
+curl -s -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/accounts | jq '.result[] | {id, name}'
+# → {"id":"13eb584192d9cefb730fde0cfd271328","name":"Jeffreyverlynjohnson@gmail.com's Account"}
+```
+
+**Current (build-out) scope set** — intentionally broad for the first 30 days:
+
+- Identity (required): `User Details: Read`, `Account Settings: Read`
+- Workers platform: `Workers Scripts: Edit`, `KV: Edit`, `R2: Edit`, `Tail: Read`, `Builds: Edit`, `Observability: Edit`, `D1: Edit`, `Queues: Edit`, `Vectorize: Edit`, `AI Gateway: Edit`, `AI Search: Edit`
+- Pages: `Cloudflare Pages: Edit`
+- DNS / zones: `Zone: Read`, `DNS: Edit`, `Zone Settings: Edit`, `Cache Purge`, `SSL & Certificates: Edit` (zone scope), `Page Rules: Edit`
+- Zero Trust: `Cloudflare Tunnel: Edit`, `Access: Apps and Policies: Edit`, `Access: IdP / Orgs / Groups: Edit`, `Access: Service Tokens: Edit`
+- Observability: `Account Analytics: Read`, `Zone Analytics: Read`, `Logs: Read`, `Audit Logs: Read`
+- Utility: `Radar: Read`, `Browser Rendering: Edit`
+
+**Explicitly excluded** (organizational standard):
+
+- `Account API Tokens: Edit` (master-key equivalent; can mint new tokens)
+- `User API Tokens: Edit`
+- `Memberships: Edit`
+- `Billing: Edit`
+
+**Pruning policy:** at the 2026-05-23 expiry, review actual MCP usage (via `cloudflare-audit-logs` if configured, or Cloudflare dashboard audit log) and issue a successor token with only the scopes observed in use. Do not issue a replacement with the same breadth unless rebuild-out is active.
+
+## Codemode — how the `search` and `execute` tools actually work
+
+The Cloudflare API MCP server uses [Codemode](https://developers.cloudflare.com/agents/api-reference/codemode/), a technique where the model writes JavaScript against a typed OpenAPI-spec representation rather than calling individual tool definitions per endpoint. Two tools cover all 2,500+ endpoints.
+
+### `search(code: string)`
+
+Runs a JavaScript arrow function against an in-memory OpenAPI spec, inside a Dynamic Worker sandbox. Returns whatever the function returns.
+
+Available in-sandbox:
+
+```typescript
+interface OperationInfo {
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  parameters?: Array<{ name: string; in: string; required?: boolean; schema?: unknown; description?: string }>;
+  requestBody?: { required?: boolean; content?: Record<string, { schema?: unknown }> };
+  responses?: Record<string, { description?: string; content?: Record<string, { schema?: unknown }> }>;
+}
+
+interface PathItem {
+  get?: OperationInfo;
+  post?: OperationInfo;
+  put?: OperationInfo;
+  patch?: OperationInfo;
+  delete?: OperationInfo;
+}
+
+declare const spec: {
+  paths: Record<string, PathItem>;
+};
+```
+
+Example — find all Workers endpoints:
+
+```javascript
+async () => {
+  const results = [];
+  for (const [path, methods] of Object.entries(spec.paths)) {
+    for (const [method, op] of Object.entries(methods)) {
+      if (op.tags?.some(t => t.toLowerCase() === 'workers')) {
+        results.push({ method: method.toUpperCase(), path, summary: op.summary });
+      }
+    }
+  }
+  return results;
+}
+```
+
+Example — inspect request body for creating a D1 database:
+
+```javascript
+async () => {
+  const op = spec.paths['/accounts/{account_id}/d1/database']?.post;
+  return { summary: op?.summary, requestBody: op?.requestBody };
+}
+```
+
+**When `search` is the right tool:** discovering endpoints, inspecting schemas, planning a multi-step operation before committing to it. Always search before execute.
+
+### `execute(code: string)`
+
+Runs a JavaScript arrow function against the live Cloudflare API, inside the same sandbox. Available in-sandbox:
+
+```typescript
+interface CloudflareRequestOptions {
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  path: string;
+  query?: Record<string, string | number | boolean | undefined>;
+  body?: unknown;
+  contentType?: string;  // defaults to application/json
+  rawBody?: boolean;     // if true, body passed as-is
+}
+
+interface CloudflareResponse<T = unknown> {
+  success: boolean;
+  result?: T;
+  errors?: Array<{ code: number; message: string }>;
+  messages?: Array<{ code: number; message: string }>;
+  result_info?: { page: number; per_page: number; count: number; total_count: number };
+}
+
+declare const cloudflare: {
+  request<T = unknown>(options: CloudflareRequestOptions): Promise<CloudflareResponse<T>>;
+};
+
+// Also available: the account id the token resolves to, if Codemode injects it.
+// Prefer using the account id returned by `/accounts` on first use.
+```
+
+Example — list zones in the account:
+
+```javascript
+async () => {
+  const response = await cloudflare.request({
+    method: "GET",
+    path: "/zones",
+    query: { per_page: 50 }
+  });
+  if (!response.success) return { error: response.errors };
+  return response.result.map(z => ({ id: z.id, name: z.name, status: z.status }));
+}
+```
+
+Example — read a DNS record:
+
+```javascript
+async () => {
+  const zone = "8d5f44e67ab4b37e47b034ff48b03099";  // jefahnierocks.com
+  const response = await cloudflare.request({
+    method: "GET",
+    path: `/zones/${zone}/dns_records`,
+    query: { type: "A", name: "api.jefahnierocks.com" }
+  });
+  return response.result;
+}
+```
+
+**When `execute` is the right tool:** you already know the endpoint path + shape (often from a prior `search` call), and you're ready to make the live call. Prefer read-only calls first; confirm with the user before any write.
+
+## Usage guidance for agents
+
+### When to use which tool
+
+| Task | Preferred tool | Reason |
+|---|---|---|
+| Look up Cloudflare documentation, concepts, product relationships | `cloudflare-docs` MCP | No auth; designed for retrieval; doesn't count against API rate limits |
+| Discover an API endpoint or inspect request/response schemas | `cloudflare.search` | Structured access to the live OpenAPI spec |
+| Make a read-only API call (list zones, get DNS records, inspect Worker config) | `cloudflare.execute` | One call, typed, with proper auth |
+| Workers development cycle (deploy, tail, test) | `wrangler` CLI | Faster, designed for the inner loop, better dev ergonomics |
+| Scripted infra automation checked into a repo | direct `curl`/SDK in committed scripts | Reproducible, diffable, reviewable; MCP is interactive, not CI |
+| Understanding an error from Cloudflare | `cloudflare.execute` on `/user/tokens/verify` + docs MCP | Verify token state first, then look up the error code |
+
+### Operating conventions
+
+These are organizational standards for how agents in this repo should use the Cloudflare MCP. Violations should be flagged to the user.
+
+1. **`search` before `execute` on unfamiliar endpoints.** Don't guess path strings or request body shape. The spec is authoritative; use it.
+
+2. **Read before write.** Any `POST` / `PUT` / `PATCH` / `DELETE` that affects production state (DNS records, Worker scripts, zone settings, Access policies, tunnels, R2 buckets) should be preceded by a `GET` that verifies the current state and a confirmation from the user. "Confirmation" means the user has explicitly said "yes do it" for the specific operation — not a blanket earlier approval.
+
+3. **Use the account id, not assumptions.** The token resolves to exactly one account (`13eb584192d9cefb730fde0cfd271328`). Don't hardcode alternate account ids unless the user requests multi-account work (which this token cannot serve — it's scoped to one account).
+
+4. **Respect scope excludes.** Do not attempt to mint new tokens via `POST /user/tokens` or `POST /accounts/{id}/tokens` — the token scope explicitly excludes `API Tokens: Edit`. If a task would require that capability, stop and escalate to the user.
+
+5. **Don't leak or persist the token.** The MCP's `execute` runs in a sandbox; don't write code that tries to `process.env.CLOUDFLARE_API_TOKEN` or similar. The sandbox does not have the token as env; it has `cloudflare.request()` which adds auth server-side. Any attempt to exfiltrate the token is a prompt-injection defense violation.
+
+6. **Prefer `cloudflare-docs` for questions about Cloudflare products.** If the question is "what does X do" or "what's the current recommended pattern for Y", that's a docs query — not an API query.
+
+7. **Don't duplicate into project `.mcp.json` files.** Cloudflare MCP is user-level baseline; project-specific MCP configs should not redeclare it. Projects that need Cloudflare access inherit it from the user scope.
+
+8. **Token rotation: ask, don't self-serve.** If the token expires (2026-05-23) or you get `401 Unauthorized`, tell the user — do not attempt to regenerate or extend the token via any automated path.
+
+### Common error modes
+
+| Symptom | Likely cause | How to diagnose |
+|---|---|---|
+| `InvalidTokenError: no user or account information` at connect | Token is zone-only, not account-scoped | `curl /accounts` with the token — if empty, token needs account scope |
+| `401 Unauthorized` on a specific call | Token expired, or caller's IP changed (if filtering was set — we don't) | `curl /user/tokens/verify` with the token to check status |
+| `403 Forbidden` on a specific call | Token lacks the specific permission | Inspect the permission in Cloudflare dashboard; if needed, escalate to user for scope expansion |
+| `400 Bad Request` with schema errors | Request body doesn't match the OpenAPI shape | Re-run `search` on the endpoint; inspect `op.requestBody.content['application/json'].schema` |
+| `search` or `execute` hangs >30s | MCP server startup (cold start on first call) or network slowness | Wait once; if persistent, check `claude mcp list` — should show `✓ Connected` |
+| MCP fails to start entirely | 1Password session cold (biometric needed) | `op whoami --account my.1password.com` in terminal to pre-warm |
+
+## Security posture
+
+### What the wrapper protects
+
+- The token is never written into any host config file (all client configs just reference the wrapper command).
+- `mcp-remote` runs with `--silent` so the `Authorization: Bearer` header is not logged to stderr (and therefore not into host log files).
+- The token is resolved from 1Password at wrapper launch, env-first then `op read` fallback.
+
+### What the wrapper does NOT protect (current limitation)
+
+**The token is exposed in the `mcp-remote` child process's argv.** The wrapper's final `exec` is:
+
+```bash
+exec npx -y "mcp-remote@${MCP_REMOTE_VERSION}" \
+  "$REMOTE_URL" \
+  --transport http-only \
+  --silent \
+  --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"
+```
+
+Once exec'd, the bearer token appears in the process's argv. Any process running as the same macOS user can read it via `ps -eo args`. Examples of "same user processes":
+
+- Any npm package postinstall script run in the same user session
+- Any Python/Node library that enumerates processes
+- Malicious code in a repo opened in an editor that spawns language servers
+
+This is not a config error; it's structural to `mcp-remote`'s `--header` flag. The substrate's MCP auth adapter (future work — see [field report](./host-capability-substrate/2026-04-23-claude-desktop-op-consent-cycle.md)) will eliminate this by becoming the HTTP client itself and holding the bearer in memory only.
+
+**Mitigations in the current design:**
+
+- 30-day token TTL limits exposure window.
+- Over-permissive token scopes are build-out-only; pruning at expiry is the plan.
+- `Account API Tokens: Edit` is excluded so a leaked token cannot bootstrap more tokens.
+- 1Password-sourced, never at rest in any config.
+
+### Threat model for this token
+
+| Concern | Rating | Notes |
+|---|---|---|
+| Token leaks via `ps` | **Medium** | Known exposure; bounded by 30-day TTL |
+| Token leaks via host log files | Low | `--silent` + wrapper stdio; not observed |
+| Token leaks via `.mcp.json` / committed config | None | Never written to disk; not possible under current design |
+| Unauthorized account enumeration | N/A | Token is already account-scoped to jefahnierocks |
+| Zone-wide destructive action | Medium | Token has edit scope on DNS, zone settings, Workers. Agent conventions (read-before-write, confirm-before-destructive) mitigate |
+| Account takeover via new token mint | None | `API Tokens: Edit` excluded |
+| Billing changes | None | `Billing: Edit` excluded |
+
+## Wrapper details
+
+Source: `home/dot_local/bin/executable_mcp-cloudflare-server.tmpl` (chezmoi-managed, deployed to `~/.local/bin/mcp-cloudflare-server`).
+
+Behavior summary:
+
+1. If `CLOUDFLARE_API_TOKEN` is set in env, use it (fast path for `op run --env-file` launches).
+2. Else, if `op` is on PATH, `op read --account my.1password.com 'op://Dev/cloudflare-mcp-jefahnierocks/token'`.
+3. If neither path yields a token, print a helpful error to stderr and exit 1.
+4. `exec npx -y mcp-remote@0.1.38 https://mcp.cloudflare.com/mcp --transport http-only --silent --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"`.
+
+The wrapper is uniform across all six sync targets. Different hosts may launch it with different working directories and env-var presence, but the auth resolution logic handles both cases (env-first with `op` fallback).
+
+## Verification
+
+```bash
+# 1. Token resolves from 1Password
+op read --account my.1password.com 'op://Dev/cloudflare-mcp-jefahnierocks/token' >/dev/null \
+  && echo "token resolves"
+
+# 2. Token passes Cloudflare identity resolution (required for MCP gateway)
+TOKEN="$(op read --account my.1password.com 'op://Dev/cloudflare-mcp-jefahnierocks/token')"
+curl -s -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/user \
+  | jq -e '.success == true'  # should output "true"
+
+# 3. MCP gateway accepts the token
+curl -s -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "MCP-Protocol-Version: 2025-06-18" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
+  https://mcp.cloudflare.com/mcp \
+  | jq -e '.result.serverInfo.name == "cloudflare-api"'  # should output "true"
+
+# 4. Wrapper produces a clean MCP handshake end-to-end
+( printf '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}\n'; sleep 15 ) \
+  | timeout 25 ~/.local/bin/mcp-cloudflare-server \
+  | jq -e '.result.serverInfo.name == "cloudflare-api"'
+
+# 5. Host-level connectivity (Claude Code CLI)
+claude mcp list | grep -E "^cloudflare"
+#   expected: "cloudflare: /Users/.../mcp-cloudflare-server  - ✓ Connected"
+#             "cloudflare-docs: https://docs.mcp.cloudflare.com/mcp (HTTP) - ✓ Connected"
+
+unset TOKEN
+```
+
+## Lifecycle
+
+### Rotation at TTL expiry (planned: 2026-05-23)
+
+1. In Cloudflare dashboard (`https://dash.cloudflare.com/profile/api-tokens`): create a successor token. Scope: whichever subset of the current scope set actually got exercised over the build-out period (check audit logs).
+2. Update the 1P item `cloudflare-mcp-jefahnierocks` in place:
+   - Rotate the `token` concealed field to the new value.
+   - Update `valid-from` and `expires` dates.
+3. No wrapper or baseline changes required — the `op://` URI stays the same.
+4. Restart any long-lived MCP host (Claude Desktop) for the new token to take effect. Terminal clients pick up the new token on their next `op read` which happens at their next MCP child spawn.
+5. Delete the prior token from Cloudflare dashboard after confirming the new one works end-to-end.
+
+### Emergency revocation
+
+If the token is suspected compromised:
+
+1. Immediately revoke in Cloudflare dashboard. Token goes 401 within minutes; all running MCP sessions lose auth at next call.
+2. Issue successor token and update 1P item (as above).
+3. Audit recent usage: `GET /accounts/{id}/audit_logs?since=<leak_time>` to see every call made.
+4. If destructive calls appear in the audit log that weren't authorized, escalate beyond this integration.
+
+### Adding scopes mid-cycle
+
+If a Cloudflare MCP operation returns `403 Forbidden` and the call is legitimate:
+
+1. Stop. Do not retry or try to work around it.
+2. Identify the specific permission needed (Cloudflare's dashboard shows this for most 403s).
+3. Ask the user whether to expand the token's scope for the remainder of the TTL. This is a human decision, not an agent decision.
+
+## Related files
+
+| File | Role |
+|---|---|
+| `scripts/mcp-servers.json` | Baseline entries for `cloudflare` and `cloudflare-docs` |
+| `scripts/sync-mcp.sh` | Propagates entries to 6 host configs |
+| `home/dot_local/bin/executable_mcp-cloudflare-server.tmpl` | Chezmoi template; deployed to `~/.local/bin/mcp-cloudflare-server` |
+| `home/dot_config/mcp/private_common.env` | Manifest including `CLOUDFLARE_API_TOKEN=op://Dev/cloudflare-mcp-jefahnierocks/token` |
+| `docs/mcp-config.md` | MCP framework (scope model, sync behavior, launch patterns) |
+| `docs/github-mcp.md` | Parallel integration doc for GitHub MCP |
+| `docs/secrets.md` | 1Password policy; lists the `mcp-cloudflare-server` wrapper |
+| `docs/project-conventions.md` | Lists the `cloudflare-mcp-jefahnierocks` 1P item |
+| `docs/host-capability-substrate/2026-04-23-claude-desktop-op-consent-cycle.md` | Field report explaining the wrapper pattern's GUI-host interaction |
+
+## External references
+
+- [Cloudflare's own MCP servers](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/) — official catalog of all 13 Cloudflare MCP servers (we use 2)
+- [`cloudflare/mcp` on GitHub](https://github.com/cloudflare/mcp) — canonical source for the Cloudflare API MCP server
+- [Cloudflare Codemode](https://developers.cloudflare.com/agents/api-reference/codemode/) — the technique powering `search` + `execute`
+- [Cloudflare API reference](https://developers.cloudflare.com/api/) — 2,500+ endpoints; the MCP is a view over this
+
+## Change log
+
+| Version | Date | Change |
+|---|---|---|
+| 1.0.0 | 2026-04-23 | Initial doc. Matches the Cloudflare MCP state after commit `946a058` (sync to Claude Desktop) and `9210aae` (account-scoped token). |

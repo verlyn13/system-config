@@ -14,6 +14,7 @@ Read these for current state:
 - [`docs/ssh.md`](./docs/ssh.md) — SSH client policy
 - [`docs/mcp-config.md`](./docs/mcp-config.md) — MCP framework (scope model, launch patterns, sync behavior)
 - [`docs/github-mcp.md`](./docs/github-mcp.md) — GitHub MCP integration
+- [`docs/cloudflare-mcp.md`](./docs/cloudflare-mcp.md) — Cloudflare MCP integration (Codemode usage, token scope, conventions)
 - [`docs/agentic-tooling.md`](./docs/agentic-tooling.md) — shell + tool contract
 - [`docs/workspace-management.md`](./docs/workspace-management.md) — workspace POC
 - [`docs/claude-cli-setup.md`](./docs/claude-cli-setup.md), [`docs/codex-cli-setup.md`](./docs/codex-cli-setup.md), [`docs/copilot-cli-setup.md`](./docs/copilot-cli-setup.md), [`docs/claude-desktop-setup.md`](./docs/claude-desktop-setup.md) — per-tool setup
