@@ -15,7 +15,9 @@ Keep the repo-managed surface small and let Claude Code own the rest.
 
 ## Config Planes
 
-Claude Code CLI and Claude Desktop are separate products with separate config planes.
+Claude Code CLI and Claude Desktop are separate products with their own
+config files. Both are sync targets for the user-level MCP baseline;
+other surfaces remain per-product.
 
 - Claude Code CLI user MCP config: `~/.claude.json`
 - Claude Code project MCP config: `.mcp.json`
@@ -39,7 +41,8 @@ This repo assumes Claude Code runs under zsh. Do not add fish helpers or fish st
 - Global baseline: synced by `scripts/sync-mcp.sh`
 - Project-specific servers: `.mcp.json`
 - Secrets: env vars or 1Password CLI wrappers only
-- Desktop is not a sync target
+- Claude Desktop is also a sync target; see
+  [`docs/claude-desktop-setup.md`](./claude-desktop-setup.md)
 
 ## Updates
 

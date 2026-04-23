@@ -3,7 +3,7 @@ title: MCP Configuration Framework
 category: reference
 component: mcp_config
 status: active
-version: 1.1.0
+version: 1.2.0
 last_updated: 2026-04-23
 tags: [mcp, chezmoi, sync-mcp, 1password, scopes]
 priority: high
@@ -23,11 +23,11 @@ Related live docs:
 
 ## Architecture in one paragraph
 
-`system-config` owns the user-level MCP baseline across five tools (Claude
-Code CLI, Codex CLI, Cursor, Windsurf, Copilot CLI). A single canonical
-source file (`scripts/mcp-servers.json`) lists the shared servers; a sync
-script (`scripts/sync-mcp.sh`) renders each host's config file in its
-native shape. Secrets live in 1Password; `~/.config/mcp/common.env` is a
+`system-config` owns the user-level MCP baseline across six hosts
+(Claude Code CLI, Claude Desktop, Codex CLI, Cursor, Windsurf, Copilot
+CLI). A single canonical source file (`scripts/mcp-servers.json`) lists
+the shared servers; a sync script (`scripts/sync-mcp.sh`) renders each
+host's config file in its native shape. Secrets live in 1Password; `~/.config/mcp/common.env` is a
 committable manifest of `op://` URIs resolved at launch via
 `op run --env-file=`. Project-specific MCP servers stay inside their
 project as committed `.mcp.json` files with `${VAR}` placeholders, never
@@ -49,6 +49,7 @@ What goes where.
 | Tool | User | Project | Local | Notes |
 |---|---|---|---|---|
 | Claude Code CLI | `~/.claude.json` (user scope) | `.mcp.json` at repo root | `~/.claude.json` (local scope) | Only host with a true three-scope model. Local > Project > User precedence. |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | — | — | **No project scope.** File format is stdio-only; HTTP remotes wrapped via `mcp-remote`. |
 | Codex CLI | `~/.codex/config.toml` | `.codex/config.toml` | — | Project config loaded **only for trusted projects** (opt-in via `projects."/path".trust_level = "trusted"` in user config). |
 | Cursor | `~/.cursor/mcp.json` | `.cursor/mcp.json` | — | Project wins on name collision. |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` | — | — | **No project scope.** Repo-shared MCP servers don't reach Windsurf users via a repo file. Documented asymmetry. |
@@ -56,7 +57,7 @@ What goes where.
 
 ## Baseline server inventory
 
-Synced by `scripts/sync-mcp.sh` to all five hosts (with per-host variations where the host's config format or auth model demands):
+Synced by `scripts/sync-mcp.sh` to all six hosts (with per-host variations where the host's config format or auth model demands):
 
 | Server | Source | Auth | Wrapper required? |
 |---|---|---|---|
@@ -129,9 +130,12 @@ contains `op://` URIs, not values.
 
 ## Sync responsibilities
 
-`scripts/sync-mcp.sh` manages only these surfaces:
+`scripts/sync-mcp.sh` manages these surfaces:
 
 - Claude Code CLI: `~/.claude.json` (user scope)
+- Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json`
+  (only the `mcpServers` block; `globalShortcut`, `preferences`, and any
+  user-added servers outside the managed set are preserved)
 - Cursor: `~/.cursor/mcp.json`
 - Windsurf: `~/.codeium/windsurf/mcp_config.json`
 - Copilot CLI: `~/.copilot/mcp-config.json`
@@ -142,8 +146,23 @@ It does **not**:
 
 - write any secret value into any file
 - touch project-level MCP configs
-- manage Claude Desktop (separate product and config plane)
 - manage Gemini CLI (currently unmanaged)
+
+### Claude Desktop shape note
+
+Claude Desktop's `claude_desktop_config.json` historically accepts only
+stdio entries (`command` + `args` + `env`; no `type` field). Remote MCP
+servers are configured in the app via Settings → Connectors, stored
+separately. To keep one programmatically managed surface, `sync-mcp.sh`
+writes every baseline server in Claude Desktop as stdio:
+
+- Our `type: "stdio"` wrappers pass through (the `type` field is stripped)
+- Our `type: "http"` remotes are wrapped via `npx -y mcp-remote@<ver> <url>`
+
+The `mcp-remote` version is pinned in `sync-mcp.sh` as `MCP_REMOTE_VERSION`
+and matches the version used by the auth-required wrappers. Claude
+Desktop's Electron enriches PATH before spawning MCP children so
+`~/.local/bin` wrappers and `op` resolve correctly.
 
 ## Project-level MCP servers
 

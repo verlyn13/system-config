@@ -15,13 +15,20 @@ SOURCE_FILE="$SCRIPT_DIR/mcp-servers.json"
 
 # Tool config locations (user-level)
 CLAUDE_CODE_CONFIG="$HOME/.claude.json"
+CLAUDE_DESKTOP_CONFIG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 CURSOR_CONFIG="$HOME/.cursor/mcp.json"
 WINDSURF_CONFIG="$HOME/.codeium/windsurf/mcp_config.json"
 COPILOT_CONFIG="$HOME/.copilot/mcp-config.json"
 CODEX_CONFIG="$HOME/.codex/config.toml"
 
+# mcp-remote version used for HTTP→stdio relay when the target host's config
+# file does not natively accept remote-HTTP MCP entries (Claude Desktop).
+# Keep in lockstep with the wrappers in home/dot_local/bin/.
+MCP_REMOTE_VERSION="0.1.38"
+
 # GitHub MCP is rendered per-host rather than from mcp-servers.json:
-# - Claude Code: native type:"http" with ${GITHUB_PAT} + X-MCP-Toolsets header
+# - Claude Code: stdio wrapper (SDK OAuth/DCR discovery breaks on static bearer)
+# - Claude Desktop: stdio wrapper (same reason; app's config file is stdio-only)
 # - Cursor: stdio wrapper (OAuth has open bugs; env interp quirks)
 # - Windsurf: native serverUrl, OAuth 2.1 + PKCE (shipped 1.12.41, Dec 2025)
 # - Codex: native url + bearer_token_env_var + http_headers (literal toolsets)
@@ -164,6 +171,30 @@ sync_codex_toml() {
     echo "  Synced $count server sections"
 }
 
+# Transform the cross-tool server set into Claude Desktop's native shape:
+# - Remove type field (Claude Desktop's config file is stdio-only: command+args+env)
+# - Wrap type:"http" entries via `npx -y mcp-remote@VERSION <url>` as stdio
+# - stdio entries pass through (strip type)
+#
+# Why all stdio: Claude Desktop's claude_desktop_config.json file format
+# historically only accepts command-based entries. Remote MCP servers are
+# configured via the app's Settings → Connectors UI (separate store). To keep
+# one consistent surface for programmatic management, we relay HTTP remotes
+# through mcp-remote the same way the github/cloudflare wrappers do.
+transform_for_claude_desktop() {
+    local servers_json="$1"
+    echo "$servers_json" | jq --arg mcp_remote "mcp-remote@${MCP_REMOTE_VERSION}" '
+        with_entries(
+            .value as $v |
+            if ($v.type // "stdio") == "http" then
+                .value = { command: "npx", args: ["-y", $mcp_remote, $v.url] }
+            else
+                .value = ($v | del(.type))
+            end
+        )
+    '
+}
+
 # Main
 echo "Syncing global MCP servers"
 echo "Source: $SOURCE_FILE"
@@ -213,14 +244,20 @@ SERVERS_WITH_WRAPPER=$(echo "$BASE_SERVERS"  | jq --argjson gh "$GITHUB_STDIO_WR
 SERVERS_WITH_WINDSURF=$(echo "$BASE_SERVERS" | jq --argjson gh "$GITHUB_WINDSURF"       '. + {github: $gh}')
 SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS"    | jq --argjson gh "$GITHUB_CODEX"          '. + {github: $gh}')
 
+# Claude Desktop: stdio-only config format. Reuse the Claude-Code/Cursor
+# github stdio wrapper, then transform the whole set to Claude Desktop's
+# native shape (strip type, wrap HTTP via mcp-remote).
+SERVERS_CLAUDE_DESKTOP=$(transform_for_claude_desktop "$SERVERS_WITH_WRAPPER")
+
 ensure_memory_dir
 
-sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG" "$SERVERS_WITH_WRAPPER"  "$MANAGED_KEYS"
-sync_json_config "Cursor"          "$CURSOR_CONFIG"      "$SERVERS_WITH_WRAPPER"  "$MANAGED_KEYS"
-sync_json_config "Windsurf"        "$WINDSURF_CONFIG"    "$SERVERS_WITH_WINDSURF" "$MANAGED_KEYS"
+sync_json_config "Claude Code CLI" "$CLAUDE_CODE_CONFIG"    "$SERVERS_WITH_WRAPPER"  "$MANAGED_KEYS"
+sync_json_config "Claude Desktop"  "$CLAUDE_DESKTOP_CONFIG" "$SERVERS_CLAUDE_DESKTOP" "$MANAGED_KEYS"
+sync_json_config "Cursor"          "$CURSOR_CONFIG"         "$SERVERS_WITH_WRAPPER"  "$MANAGED_KEYS"
+sync_json_config "Windsurf"        "$WINDSURF_CONFIG"       "$SERVERS_WITH_WINDSURF" "$MANAGED_KEYS"
 
 # Copilot: skip github (built-in); any existing github key is removed via MANAGED_KEYS.
-sync_json_config "Copilot CLI"     "$COPILOT_CONFIG"     "$BASE_SERVERS"          "$MANAGED_KEYS"
+sync_json_config "Copilot CLI"     "$COPILOT_CONFIG"        "$BASE_SERVERS"          "$MANAGED_KEYS"
 
 # Codex: native remote HTTP with env-var bearer + literal toolset header.
 sync_codex_toml "$SERVERS_WITH_CODEX"

@@ -108,10 +108,11 @@ Global MCP servers synced by `scripts/sync-mcp.sh` (see
 - `runpod`, `runpod-docs`, `cloudflare`, `cloudflare-docs`
 - `github` (host-aware rendering; see [`docs/github-mcp.md`](./docs/github-mcp.md))
 
-Sync targets: Claude Code CLI (`~/.claude.json`), Cursor
-(`~/.cursor/mcp.json`), Windsurf (`~/.codeium/windsurf/mcp_config.json`),
-Copilot CLI (`~/.copilot/mcp-config.json`), Codex CLI
-(`~/.codex/config.toml`).
+Sync targets: Claude Code CLI (`~/.claude.json`), Claude Desktop
+(`~/Library/Application Support/Claude/claude_desktop_config.json`),
+Cursor (`~/.cursor/mcp.json`), Windsurf
+(`~/.codeium/windsurf/mcp_config.json`), Copilot CLI
+(`~/.copilot/mcp-config.json`), Codex CLI (`~/.codex/config.toml`).
 
 Policy:
 
@@ -119,7 +120,10 @@ Policy:
 - User configs must not contain expanded API keys or tokens.
 - Auth-required servers use runtime wrappers in `home/dot_local/bin/`
   that read from 1Password at launch.
-- Claude Desktop is a separate config plane; not a sync target.
+- Claude Desktop's `claude_desktop_config.json` is synced too, but only
+  the `mcpServers` block — `globalShortcut`, `preferences`, and any
+  user-added servers outside the managed set are preserved. Its file
+  format is stdio-only, so HTTP remotes are wrapped via `mcp-remote`.
 - Gemini CLI is currently unmanaged for MCP sync.
 
 Full framework: [`docs/mcp-config.md`](./docs/mcp-config.md).
