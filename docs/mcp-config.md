@@ -3,8 +3,8 @@ title: MCP Configuration Framework
 category: reference
 component: mcp_config
 status: active
-version: 1.0.0
-last_updated: 2026-04-17
+version: 1.1.0
+last_updated: 2026-04-23
 tags: [mcp, chezmoi, sync-mcp, 1password, scopes]
 priority: high
 ---
@@ -66,6 +66,10 @@ Synced by `scripts/sync-mcp.sh` to all five hosts (with per-host variations wher
 | `brave-search` | npm stdio | `BRAVE_API_KEY` via `op://Dev/brave-search/api-key` | yes (`~/.local/bin/mcp-brave-search-server`) |
 | `firecrawl` | stdio | `FIRECRAWL_API_KEY` via `op://Dev/firecrawl/api-key` | yes (`~/.local/bin/mcp-firecrawl-server`) |
 | `github` | remote HTTP (GitHub-hosted) | per-host — see `docs/github-mcp.md` | Cursor only |
+| `runpod` | npm stdio (`@runpod/mcp-server`) | `RUNPOD_API_KEY` via `op://Dev/runpod-api/api-key` | yes (`~/.local/bin/mcp-runpod-server`) |
+| `runpod-docs` | remote HTTP | none (public) | no |
+| `cloudflare` | remote HTTP (Codemode) via `mcp-remote` stdio relay | `CLOUDFLARE_API_TOKEN` via `op://Dev/cloudflare-mcp-jefahnierocks/token` | yes (`~/.local/bin/mcp-cloudflare-server`) |
+| `cloudflare-docs` | remote HTTP | none (public) | no |
 
 ## Secret handling
 
@@ -79,6 +83,8 @@ Contents are `op://` URIs only, never values. Safe to commit.
 GITHUB_PAT=op://Dev/github-mcp/token
 BRAVE_API_KEY=op://Dev/brave-search/api-key
 FIRECRAWL_API_KEY=op://Dev/firecrawl/api-key
+RUNPOD_API_KEY=op://Dev/runpod-api/api-key
+CLOUDFLARE_API_TOKEN=op://Dev/cloudflare-mcp-jefahnierocks/token
 ```
 
 ### Launch pattern for CLI hosts
@@ -174,7 +180,7 @@ Project `.gitignore` should include:
 ```bash
 # Resolved env from the common manifest (no values printed)
 op run --account my.1password.com --env-file=$HOME/.config/mcp/common.env -- \
-  bash -c 'for v in GITHUB_PAT BRAVE_API_KEY FIRECRAWL_API_KEY; do
+  bash -c 'for v in GITHUB_PAT BRAVE_API_KEY FIRECRAWL_API_KEY RUNPOD_API_KEY CLOUDFLARE_API_TOKEN; do
     if [[ -n "${!v:-}" ]]; then echo "$v resolved"; else echo "$v MISSING"; fi; done'
 
 # Dry-run sync
