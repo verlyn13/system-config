@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# mcp-runpod-server — runtime secret wrapper for the global Runpod API MCP server
+
+set -euo pipefail
+
+OP_ACCOUNT="my.1password.com"
+
+load_secret() {
+  if [[ -n "${RUNPOD_API_KEY:-}" ]]; then
+    return 0
+  fi
+
+  if command -v op >/dev/null 2>&1; then
+    RUNPOD_API_KEY="$(op read --account "$OP_ACCOUNT" 'op://Dev/runpod-api/api-key' 2>/dev/null || true)"
+    export RUNPOD_API_KEY
+  fi
+
+  if [[ -z "${RUNPOD_API_KEY:-}" ]]; then
+    echo "mcp-runpod-server: set RUNPOD_API_KEY or store in op://Dev/runpod-api/api-key" >&2
+    exit 1
+  fi
+}
+
+load_secret
+exec npx -y @runpod/mcp-server@latest "$@"

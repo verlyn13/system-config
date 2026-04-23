@@ -31,6 +31,16 @@
       "type": "stdio",
       "command": "${HOME}/.local/bin/mcp-firecrawl-server",
       "_description": "Web scraping/crawling"
+    },
+    "runpod": {
+      "type": "stdio",
+      "command": "${HOME}/.local/bin/mcp-runpod-server",
+      "_description": "Runpod infrastructure management (Pods, endpoints, templates, volumes, registries)"
+    },
+    "runpod-docs": {
+      "type": "http",
+      "url": "https://docs.runpod.io/mcp",
+      "_description": "Runpod documentation search (no auth)"
     }
   }
 }
