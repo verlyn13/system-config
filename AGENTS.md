@@ -101,9 +101,11 @@ scripts/sync-mcp.sh --dry-run
 
 ## MCP
 
-Global MCP servers synced by `scripts/sync-mcp.sh`:
+Global MCP servers synced by `scripts/sync-mcp.sh` (see
+[`docs/mcp-config.md`](./docs/mcp-config.md) for the full inventory):
 
 - `context7`, `memory`, `sequential-thinking`, `brave-search`, `firecrawl`
+- `runpod`, `runpod-docs`, `cloudflare`, `cloudflare-docs`
 - `github` (host-aware rendering; see [`docs/github-mcp.md`](./docs/github-mcp.md))
 
 Sync targets: Claude Code CLI (`~/.claude.json`), Cursor

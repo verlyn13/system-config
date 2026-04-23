@@ -3,8 +3,8 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 2.1.0
-last_updated: 2026-04-20
+version: 2.2.0
+last_updated: 2026-04-23
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
 ---
@@ -49,7 +49,9 @@ chezmoi-managed config:
 |----------|---------|-----------|
 | `mcp-brave-search-server` | `BRAVE_API_KEY` | `op://Dev/brave-search/api-key` |
 | `mcp-firecrawl-server` | `FIRECRAWL_API_KEY` | `op://Dev/firecrawl/api-key` |
-| `~/.config/mcp/common.env` (shared manifest) | `GITHUB_PAT`, `BRAVE_API_KEY`, `FIRECRAWL_API_KEY` | (resolves all three above and `op://Dev/github-mcp/token`) |
+| `mcp-runpod-server` | `RUNPOD_API_KEY` | `op://Dev/runpod-api/api-key` |
+| `mcp-cloudflare-server` | `CLOUDFLARE_API_TOKEN` | `op://Dev/cloudflare-mcp-jefahnierocks/token` |
+| `~/.config/mcp/common.env` (shared manifest) | `GITHUB_PAT`, `BRAVE_API_KEY`, `FIRECRAWL_API_KEY`, `RUNPOD_API_KEY`, `CLOUDFLARE_API_TOKEN` | resolves all wrappers above and `op://Dev/github-mcp/token` |
 | `~/Organizations/happy-patterns/.envrc` (tree-local override) | `GITHUB_PAT`, `GH_TOKEN`, `GITHUB_TOKEN`, `GITHUB_PERSONAL_ACCESS_TOKEN` | `op://Dev/github-happy-patterns/token` |
 
 GitHub MCP is host-aware and is tracked in

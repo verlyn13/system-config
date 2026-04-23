@@ -3,8 +3,8 @@ title: Project Conventions
 category: reference
 component: project_conventions
 status: active
-version: 1.0.0
-last_updated: 2026-04-20
+version: 1.1.0
+last_updated: 2026-04-23
 tags: [project, conventions, 1password, mcp, mise, ssh, compatibility]
 priority: high
 ---
@@ -100,6 +100,8 @@ updating every consumer in the same change:
 | `ssh-github-happy-patterns` | (SSH key item) | 1P-managed ed25519 for `happy-patterns` identity (auth + signing) |
 | `brave-search` | `api-key` | Brave Search MCP |
 | `firecrawl` | `api-key` | Firecrawl MCP |
+| `runpod-api` | `api-key` | Runpod MCP (`@runpod/mcp-server`) |
+| `cloudflare-mcp-jefahnierocks` | `token` | Cloudflare API MCP (account-scoped, 30-day TTL during build-out) |
 
 ### CLI commands that work
 
