@@ -20,18 +20,21 @@
 
 set -euo pipefail
 
-OP_ACCOUNT="my.1password.com"
+# Host-capability-substrate secret plane — same contract as direnvrc host_secret_read.
+: "${HCS_SECRET_ACCOUNT:=my.1password.com}"
+: "${HCS_SECRET_TIMEOUT:=10}"
+
 OP_URI="op://Dev/cloudflare-mcp-jefahnierocks/token"
 REMOTE_URL="https://mcp.cloudflare.com/mcp"
 MCP_REMOTE_VERSION="0.1.38"
 
-if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && command -v op >/dev/null 2>&1; then
-  CLOUDFLARE_API_TOKEN="$(op read --account "$OP_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
+if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && command -v op >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
+  CLOUDFLARE_API_TOKEN="$(timeout "$HCS_SECRET_TIMEOUT" op read --account "$HCS_SECRET_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
   export CLOUDFLARE_API_TOKEN
 fi
 
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
-  echo "mcp-cloudflare-server: set CLOUDFLARE_API_TOKEN or store token in $OP_URI" >&2
+  echo "mcp-cloudflare-server: unable to resolve CLOUDFLARE_API_TOKEN within ${HCS_SECRET_TIMEOUT}s; set env var or check 1Password ($OP_URI)" >&2
   exit 1
 fi
 

@@ -18,19 +18,22 @@
 
 set -euo pipefail
 
-OP_ACCOUNT="my.1password.com"
+# Host-capability-substrate secret plane — same contract as direnvrc host_secret_read.
+: "${HCS_SECRET_ACCOUNT:=my.1password.com}"
+: "${HCS_SECRET_TIMEOUT:=10}"
+
 OP_URI="op://Dev/github-mcp/token"
 REMOTE_URL="https://api.githubcopilot.com/mcp/"
 MCP_REMOTE_VERSION="0.1.38"
 TOOLSETS="context,repos,issues,pull_requests,users,actions,code_security,dependabot,discussions,gists,labels,orgs,projects,releases,security_advisories,secret_protection,github_support_docs_search"
 
-if [[ -z "${GITHUB_PAT:-}" ]] && command -v op >/dev/null 2>&1; then
-  GITHUB_PAT="$(op read --account "$OP_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
+if [[ -z "${GITHUB_PAT:-}" ]] && command -v op >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
+  GITHUB_PAT="$(timeout "$HCS_SECRET_TIMEOUT" op read --account "$HCS_SECRET_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
   export GITHUB_PAT
 fi
 
 if [[ -z "${GITHUB_PAT:-}" ]]; then
-  echo "mcp-github-server: set GITHUB_PAT or store PAT in $OP_URI" >&2
+  echo "mcp-github-server: unable to resolve GITHUB_PAT within ${HCS_SECRET_TIMEOUT}s; set env var or check 1Password ($OP_URI)" >&2
   exit 1
 fi
 

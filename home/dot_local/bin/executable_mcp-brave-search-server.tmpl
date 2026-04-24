@@ -3,20 +3,22 @@
 
 set -euo pipefail
 
-OP_ACCOUNT="my.1password.com"
+# Host-capability-substrate secret plane — same contract as direnvrc host_secret_read.
+: "${HCS_SECRET_ACCOUNT:=my.1password.com}"
+: "${HCS_SECRET_TIMEOUT:=10}"
 
 load_secret() {
   if [[ -n "${BRAVE_API_KEY:-}" ]]; then
     return 0
   fi
 
-  if command -v op >/dev/null 2>&1; then
-    BRAVE_API_KEY="$(op read --account "$OP_ACCOUNT" 'op://Dev/brave-search/api-key' 2>/dev/null || true)"
+  if command -v op >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
+    BRAVE_API_KEY="$(timeout "$HCS_SECRET_TIMEOUT" op read --account "$HCS_SECRET_ACCOUNT" 'op://Dev/brave-search/api-key' 2>/dev/null || true)"
     export BRAVE_API_KEY
   fi
 
   if [[ -z "${BRAVE_API_KEY:-}" ]]; then
-    echo "mcp-brave-search-server: set BRAVE_API_KEY or store in op://Dev/brave-search/api-key" >&2
+    echo "mcp-brave-search-server: unable to resolve BRAVE_API_KEY within ${HCS_SECRET_TIMEOUT}s; set env var or check 1Password" >&2
     exit 1
   fi
 }

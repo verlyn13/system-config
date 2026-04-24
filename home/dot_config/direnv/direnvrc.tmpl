@@ -5,12 +5,128 @@
 # Quieter logs by default; override with DIRENV_LOG_FORMAT in env if needed.
 export DIRENV_LOG_FORMAT="${DIRENV_LOG_FORMAT-direnv: %s}"
 
-# Helper: load mise within .envrc via `use mise`
-use_mise() {
-  direnv_load mise direnv exec
+# ---------------------------------------------------------------------------
+# Host-capability-substrate secret plane (proximate implementation)
+# ---------------------------------------------------------------------------
+# Contract (stable across the substrate transition):
+#   host_secret_read <op-ref>            stdout=value; non-zero on fail
+#   host_secret_export <ENV_VAR> <ref>   idempotent; never blocks .envrc
+#   use_host_secrets                     availability probe; no IPC test
+#   host_secret_diag                     queue-depth + daemon-count snapshot
+#
+# Env var namespace (honored by both direnvrc and ~/.local/bin/mcp-*-server):
+#   HCS_SECRET_ACCOUNT   default my.1password.com
+#   HCS_SECRET_TIMEOUT   default 10 (accommodates ~9s cold-cache op read;
+#                        subsequent warm reads on the session are <100ms)
+#   HCS_BROKER_SOCKET    reserved; empty today, set when broker ships
+#
+# Backend today: direct `op read` wrapped with `timeout`. On timeout, callers
+# get a clean failure — no blocking, no cascade. Backend post-broker: same
+# interface, talks to $HCS_BROKER_SOCKET.
+#
+# See docs/host-capability-substrate/2026-04-23-op-ipc-queue-deadlock.md for
+# the mechanism this replaces. ADR-0006 (policy source) will formalize the
+# contract once the broker lands.
+
+: "${HCS_SECRET_ACCOUNT:=my.1password.com}"
+: "${HCS_SECRET_TIMEOUT:=10}"
+: "${HCS_BROKER_SOCKET:=}"
+
+host_secret_read() {
+  local ref="$1"
+  if [[ -z "$ref" ]]; then
+    log_error "host_secret_read: missing op-ref argument"
+    return 64
+  fi
+
+  # Substrate broker path (inactive until broker ships).
+  if [[ -n "$HCS_BROKER_SOCKET" && -S "$HCS_BROKER_SOCKET" ]]; then
+    log_error "host_secret_read: broker path not yet implemented"
+    return 69
+  fi
+
+  if ! command -v op >/dev/null 2>&1; then
+    log_error "host_secret_read: op CLI not installed"
+    return 127
+  fi
+
+  local value
+  if command -v timeout >/dev/null 2>&1; then
+    if ! value=$(timeout "$HCS_SECRET_TIMEOUT" op read \
+        --account "$HCS_SECRET_ACCOUNT" "$ref" 2>/dev/null); then
+      log_error "host_secret_read: timeout (${HCS_SECRET_TIMEOUT}s) or read failed for $ref"
+      return 124
+    fi
+  else
+    log_error "host_secret_read: coreutils 'timeout' missing; calling op without budget"
+    if ! value=$(op read --account "$HCS_SECRET_ACCOUNT" "$ref" 2>/dev/null); then
+      log_error "host_secret_read: op read failed for $ref"
+      return 1
+    fi
+  fi
+
+  if [[ -z "$value" ]]; then
+    log_error "host_secret_read: empty value for $ref"
+    return 1
+  fi
+
+  printf '%s' "$value"
 }
 
-# Safe dotenv helpers
+host_secret_export() {
+  local env_var="$1"
+  local ref="$2"
+  if [[ -z "$env_var" || -z "$ref" ]]; then
+    log_error "host_secret_export: usage: host_secret_export ENV_VAR op://...ref"
+    return 64
+  fi
+
+  if [[ -n "${!env_var:-}" ]]; then
+    return 0
+  fi
+
+  local value
+  if ! value=$(host_secret_read "$ref"); then
+    log_error "host_secret_export: $env_var unresolved; continuing without it"
+    return 0
+  fi
+  export "$env_var=$value"
+}
+
+use_host_secrets() {
+  if ! command -v op >/dev/null 2>&1; then
+    log_error "use_host_secrets: op CLI not installed (brew install --cask 1password-cli)"
+    return 0
+  fi
+  if ! command -v timeout >/dev/null 2>&1; then
+    log_error "use_host_secrets: coreutils 'timeout' missing (brew install coreutils)"
+    return 0
+  fi
+}
+
+host_secret_diag() {
+  local op_count
+  local op_daemon_count
+  op_count=$(pgrep -x op 2>/dev/null | wc -l | tr -d ' ')
+  op_daemon_count=$(pgrep -f 'op daemon' 2>/dev/null | wc -l | tr -d ' ')
+  printf 'host_secret_diag: op_read_count=%s op_daemon_count=%s budget=%ss broker=%s\n' \
+      "$op_count" "$op_daemon_count" "$HCS_SECRET_TIMEOUT" \
+      "${HCS_BROKER_SOCKET:-unset}"
+}
+
+# Compatibility shim — existing .envrc files still call `use op`.
+# Old body did `op vault get Dev` as a readiness probe; that is the call
+# that deadlocked on 2026-04-23. IPC health is a broker concern, not a
+# per-shell-entry concern. Delegate to use_host_secrets and defer
+# readiness to per-call timeout in host_secret_read.
+use_op() {
+  use_host_secrets
+}
+
+# ---------------------------------------------------------------------------
+# dotenv helpers (unchanged)
+# ---------------------------------------------------------------------------
+
 dotenv() {
   local file="${1:-.env}"
   if [[ -f "$file" ]]; then
@@ -29,57 +145,23 @@ dotenv_if_exists() {
   fi
 }
 
-# Validate 1Password CLI is available and authenticated for op:// secret references
-use_op() {
-  if ! command -v op >/dev/null 2>&1; then
-    log_error "1Password CLI (op) is required but not installed"
-    log_error "Install: brew install --cask 1password-cli"
-    return 1
-  fi
-  # Desktop-app integration: op whoami reports "not signed in" even when
-  # op read works. Use vault access as the canonical readiness check.
-  if ! op vault get Dev --account my.1password.com >/dev/null 2>&1; then
-    log_error "1Password CLI cannot access vault 'Dev' on my.1password.com"
-    log_error "Open 1Password app and enable Settings > Developer > Integrate with 1Password CLI"
-    return 1
-  fi
+# ---------------------------------------------------------------------------
+# mise integration (unchanged)
+# ---------------------------------------------------------------------------
+
+use_mise() {
+  direnv_load mise direnv exec
 }
 
-# Load user-scoped MCP secrets from 1Password Dev vault (GitHub PAT, Brave, Firecrawl).
-# Scope: user identity, not project identity — projects opt in via `use_user_mcp_secrets`.
-# Performance: missing vars are fetched in parallel (~4s one-shot vs ~12s serial).
-# Per-shell caching: once exported, guard clauses skip op reads on subsequent direnv loads.
+# ---------------------------------------------------------------------------
+# User-scoped MCP secret loader (rewritten to use host_secret_export)
+# ---------------------------------------------------------------------------
+# Scope: user identity, not project identity — projects opt in via
+# `use_user_mcp_secrets`. Each host_secret_export call enforces its own
+# HCS_SECRET_TIMEOUT budget; total wall-clock is bounded by N * budget
+# worst-case, typical case is <100ms per call on a warm op session.
 use_user_mcp_secrets() {
-  local account="${INFISICAL_OP_ACCOUNT:-my.1password.com}"
-  local tmpdir
-  tmpdir="$(mktemp -d)"
-  local pids=()
-
-  if [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
-    ( op read --account "$account" "op://Dev/github-dev-tools/token" 2>/dev/null >"$tmpdir/github" ) &
-    pids+=($!)
-  fi
-  if [ -z "${BRAVE_API_KEY:-}" ]; then
-    ( op read --account "$account" "op://Dev/brave-search/api-key" 2>/dev/null >"$tmpdir/brave" ) &
-    pids+=($!)
-  fi
-  if [ -z "${FIRECRAWL_API_KEY:-}" ]; then
-    ( op read --account "$account" "op://Dev/firecrawl/api-key" 2>/dev/null >"$tmpdir/firecrawl" ) &
-    pids+=($!)
-  fi
-
-  local pid
-  for pid in "${pids[@]}"; do wait "$pid" 2>/dev/null || true; done
-
-  if [ -z "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ] && [ -s "$tmpdir/github" ]; then
-    export GITHUB_PERSONAL_ACCESS_TOKEN="$(<"$tmpdir/github")"
-  fi
-  if [ -z "${BRAVE_API_KEY:-}" ] && [ -s "$tmpdir/brave" ]; then
-    export BRAVE_API_KEY="$(<"$tmpdir/brave")"
-  fi
-  if [ -z "${FIRECRAWL_API_KEY:-}" ] && [ -s "$tmpdir/firecrawl" ]; then
-    export FIRECRAWL_API_KEY="$(<"$tmpdir/firecrawl")"
-  fi
-
-  rm -rf "$tmpdir"
+  host_secret_export GITHUB_PERSONAL_ACCESS_TOKEN op://Dev/github-dev-tools/token
+  host_secret_export BRAVE_API_KEY                op://Dev/brave-search/api-key
+  host_secret_export FIRECRAWL_API_KEY            op://Dev/firecrawl/api-key
 }
