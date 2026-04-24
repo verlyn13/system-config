@@ -3,8 +3,8 @@ title: 1Password CLI IPC Queue Deadlock — Field Report
 category: report
 component: host_capability_substrate
 status: informational
-version: 1.0.0
-last_updated: 2026-04-23
+version: 1.1.0
+last_updated: 2026-04-24
 tags: [op, 1password, ipc, direnv, envrc, deadlock, queue, substrate, broker, field-report]
 priority: high
 ---
@@ -459,8 +459,148 @@ Listed by information value:
 - `$HOME/.config/op/op-daemon.sock` — `op`'s own local daemon socket (separate from 1P IPC)
 - `/Applications/1Password.app/Contents/Info.plist` — 1Password app version info
 
+## Addendum — Recurrence and proximate hardening (2026-04-24)
+
+Deadlock class reproduced within ~24 hours of v1.0.0. This addendum records
+the recurrence, the system-config hardening shipped in response, and the
+substrate-alignment decision (D-028) formalizing the proximate interface.
+
+### What reproduced
+
+On 2026-04-24, during a session opening Claude Code CLI, the user observed
+both the bash TCC consent prompt (companion report) and the direnv hang
+(this report) simultaneously. Queue depth at inspection:
+
+- 18 `op` processes total (from `ps -eo comm | grep -c '^op$'`)
+- 13 stuck `op read` spanning 16:22 to 22:56 elapsed
+- 1 stuck `op vault get Dev --account my.1password.com` (from an earlier
+  `cd` into `~/Repos/verlyn13/runpod-inference`, elapsed 19:25)
+- 6 `op daemon` processes including one at 01:50:46 elapsed
+
+Root cause was identical to v1.0.0: `op` 2.32.1 has no client-side timeout
+(`op --help` / `op read --help` confirm no `--timeout` flag and no
+`OP_TIMEOUT` env var), and the `use_op` helper issued `op vault get Dev`
+synchronously on every shell-entry. A stuck head-of-queue call blocked
+every downstream consumer.
+
+### Recovery taken
+
+```
+pkill -9 -f '^op read'
+pkill -9 -f 'op vault get'
+```
+
+Queue drained within one second. Remnant `op daemon` processes were left
+untouched; they did not block new reads. MCP wrappers re-spawned by the
+clients completed cleanly.
+
+### Proximate hardening shipped
+
+System-config commits a single-interface secret plane that both direnv
+helpers and the five user-level MCP wrappers honor. The interface is
+designed to survive the substrate transition — when the HCS broker ships,
+the backend switches from direct `op read` to broker IPC and callers do
+not change.
+
+**Contract** (in `~/.config/direnv/direnvrc`):
+
+```
+host_secret_read  <op-ref>            stdout=value; non-zero on fail
+host_secret_export <ENV_VAR> <op-ref> idempotent; never blocks .envrc
+use_host_secrets                      availability probe; no IPC test
+host_secret_diag                      queue-depth snapshot
+```
+
+**Env var namespace** (reverse-DNS, HCS-aligned):
+
+```
+HCS_SECRET_ACCOUNT   default my.1password.com
+HCS_SECRET_TIMEOUT   default 10 (accommodates ~9s cold-cache op read;
+                     warm reads are <100ms)
+HCS_BROKER_SOCKET    reserved; empty today, set when broker ships
+```
+
+**Backend today**: `timeout "$HCS_SECRET_TIMEOUT" op read`. On exit 124
+(timeout) or non-zero: the target env var stays unset, a diagnostic is
+logged to stderr, and the `.envrc` continues. Shell entry never blocks.
+
+**Backend post-broker**: the interface stays; callers detect
+`$HCS_BROKER_SOCKET` and speak a broker protocol instead. Per the field
+report's §Substrate implications, this fan-in collapses MCP wrappers,
+direnv use_op, and ad-hoc scripts onto a single warm-cached `op` session
+held by the broker, eliminating the single-queue contention at the
+source.
+
+**Compat**: `use_op` is retained as a shim that delegates to
+`use_host_secrets`. The old body — `op vault get Dev --account ...` as
+a readiness probe — is removed, since that call is exactly what deadlocked
+on 2026-04-23. IPC health is now a broker concern, not a per-shell-entry
+concern.
+
+**MCP wrappers**: all five of `mcp-brave-search-server`, `mcp-cloudflare-server`,
+`mcp-firecrawl-server`, `mcp-github-server`, and `mcp-runpod-server` now
+wrap their startup `op read` with `timeout "${HCS_SECRET_TIMEOUT:-10}"`,
+exit cleanly on timeout, and emit a clear diagnostic. The argv leak surface
+(`mcp-remote --header "Authorization: Bearer $TOKEN"`) is unchanged and
+remains substrate territory.
+
+### Project .envrc blast radius closed
+
+Six user repos that called `op read` or `use op` at shell-entry were
+migrated to the new contract:
+
+| Repo | Migration |
+|---|---|
+| `~/Repos/verlyn13/runpod-inference` | `host_secret_export RUNPOD_API_KEY` |
+| `~/Repos/verlyn13/runpod-inference/.claude/worktrees/…` | same as parent |
+| `~/Repos/verlyn13/budget-triage-11-5-2025` | `timeout`-wrapped inline `op read` |
+| `~/Repos/verlyn13/hetzner` | `host_secret_export HCLOUD_TOKEN + AWS_*` |
+| `~/ai/flux` | gated `op read` → `host_secret_export HF_TOKEN` |
+| `~/Repos/local/email-corpus` | new `.envrc`: `host_secret_export ANTHROPIC_API_KEY` |
+| `~/Organizations/happy-patterns/.envrc` | `host_secret_export GITHUB_PAT` |
+| `~/Organizations/happy-patterns/apps/scopecam/.envrc` | `timeout`-wrapped 4× op read; `op vault get` probe removed |
+
+Verified cold-start direnv load times, all under budget:
+
+```
+runpod-inference   4.2s   RUNPOD_API_KEY (50 chars)
+happy-patterns     1.5s   GITHUB_PAT
+budget-triage      4.9s   INFISICAL_CLIENT_ID/SECRET
+scopecam           6.8s   4 Android signing fields
+hetzner            6.7s   HCLOUD_TOKEN (64 chars) + AWS S3 (20+40)
+flux               0.2s   (no op path on default boot)
+email-corpus       1.3s   ANTHROPIC_API_KEY (108 chars)
+```
+
+### What this changes about the open questions in v1.0.0
+
+- **Open question #2** (client-side timeout knob): resolved negatively.
+  `op` 2.32.1 exposes no timeout flag and no `OP_TIMEOUT` variable.
+  `--debug` / `OP_DEBUG` are the only knobs. Wrapper-side `timeout` is
+  the only option for consumers that need bounded wall-clock — until
+  the broker owns this.
+- **Open question #5** (blast radius): enumerated at 8 `.envrc` files
+  across 6 repos + 5 MCP wrappers. All now hardened or migrated.
+- **Open question #7** (coexistence with direct `op` callers):
+  unchanged — single-queue contention remains. The proximate layer just
+  ensures no single caller holds the queue indefinitely; the broker is
+  still needed to eliminate the contention class.
+
+### Governance
+
+Logged as D-028 in HCS `DECISIONS.md`: "Phase 0b proximate credential
+plane defines the `host_secret_*` contract and `HCS_SECRET_*` env-var
+namespace that the broker will implement. System-config hardening; no
+HCS code change." See that entry for the formal decision record.
+
+The recurrence inside 24h materially strengthens the case for prioritizing
+the broker in Phase 1. The interface shipped here is the migration path
+— when the broker lands, the switch is a backend change with no caller
+disruption.
+
 ## Change log
 
 | Version | Date | Change |
 |---|---|---|
 | 1.0.0 | 2026-04-23 | Initial report, drafted the same day as the user's direnv hang, with queue state still captured live. |
+| 1.1.0 | 2026-04-24 | Addendum: recurrence within 24h, queue-drain recovery, proximate `host_secret_*` contract + HCS_SECRET_* env-var namespace shipped in system-config, 8 `.envrc` files across 6 repos migrated, resolution of v1.0.0 open questions #2 #5 #7. Linked to HCS D-028. |
