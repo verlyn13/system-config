@@ -1,5 +1,21 @@
 # Claude Code settings
 
+> Repo note (2026-04-25): this file is a local reference snapshot, not
+> the live authority. Claude Code `2.1.119` changed `/config` settings
+> such as `theme`, `editor mode`, and `verbose` to persist to
+> `~/.claude/settings.json` and participate in project/local/policy
+> precedence. This machine is currently on Claude Code `2.1.120` and
+> has `theme` and `verbose` in `~/.claude/settings.json`.
+>
+> If this snapshot, SchemaStore, and installed behavior disagree, verify
+> against `claude --version`, the current settings page, and the matching
+> changelog before moving keys between `~/.claude.json` and
+> `~/.claude/settings.json`.
+>
+> Changelog: <https://code.claude.com/docs/en/changelog>
+> Settings page: <https://code.claude.com/docs/en/settings>
+> Schema: <https://json.schemastore.org/claude-code-settings.json>
+
 > Configure Claude Code with global and project-level settings, and environment variables.
 
 Claude Code offers a variety of settings to configure its behavior to meet your needs. You can configure Claude Code by running the `/config` command when using the interactive REPL, which opens a tabbed Settings interface where you can view status information and modify configuration options.

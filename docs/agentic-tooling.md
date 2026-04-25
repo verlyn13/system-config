@@ -3,8 +3,8 @@ title: Agentic Tooling
 category: reference
 component: agentic_tooling
 status: active
-version: 1.4.0
-last_updated: 2026-04-17
+version: 1.5.0
+last_updated: 2026-04-25
 tags: [agentic, mcp, zsh, claude, codex, cursor, windsurf, copilot, gemini, workspace]
 priority: high
 ---
@@ -170,7 +170,7 @@ canonical readiness signal under desktop-app integration.
 
 | Tool | User-level config | Managed by this repo | Project guidance |
 |------|-------------------|----------------------|------------------|
-| Claude Code CLI | `~/.claude.json` | Yes, global MCP baseline only | Use `.mcp.json` and `.claude/` in the project |
+| Claude Code CLI | `~/.claude.json`, `~/.claude/settings.json` | Partial: `~/.claude.json` MCP baseline only; settings are manual | Use `.mcp.json` and `.claude/` in the project |
 | Codex CLI | `~/.codex/config.toml` | Yes, managed MCP block only | Project MCP servers belong in `.mcp.json`, not in the user-level Codex config |
 | Cursor IDE | `~/.cursor/mcp.json` | Yes, global MCP baseline only | Keep project or workspace servers outside the user-global file |
 | Windsurf IDE | `~/.codeium/windsurf/mcp_config.json` | Yes, global MCP baseline only | Same rule as Cursor |
@@ -180,12 +180,18 @@ canonical readiness signal under desktop-app integration.
 
 ## Claude Code Permissions
 
-`~/.claude/settings.json` is managed manually (not by chezmoi or sync-mcp.sh). Key decisions:
+`~/.claude/settings.json` is managed manually (not by chezmoi or sync-mcp.sh).
+It holds user settings, permission policy, and, since Claude Code `2.1.119`,
+some `/config`-persisted preferences such as `theme` and `verbose`. Key
+decisions:
 
 - `defaultMode: "acceptEdits"` — Claude applies file edits without per-edit confirmation.
 - The allow list covers: standard dev tools, package managers (`npm`, `npx`, `bun`, `bunx`), shell utilities, and linting tools (`shellcheck`, `shfmt`).
 - The deny list covers: `.env` files, secret material by extension (`.pem`, `.key`, `.p12`), AWS credentials, GPG directory, and destructive `rm -rf` patterns. It does not block SSH public keys or gh auth config — agents need those for git signing and GitHub operations.
 - Do not add project-specific allow/deny rules or MCP tool permissions to this file. Keep them in the project's `.claude/settings.json`.
+- If Anthropic docs, SchemaStore, and installed behavior disagree, verify
+  against `claude --version` plus the matching release notes before moving keys
+  between `~/.claude.json` and `~/.claude/settings.json`.
 
 ## Operational Rules
 

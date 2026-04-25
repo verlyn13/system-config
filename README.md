@@ -3,8 +3,8 @@ title: system-config
 category: reference
 component: overview
 status: active
-version: 4.0.0
-last_updated: 2026-04-17
+version: 4.1.0
+last_updated: 2026-04-25
 tags: [overview, setup, chezmoi, mise, zsh, mcp]
 priority: critical
 ---
@@ -58,7 +58,7 @@ scripts/sync-mcp.sh
 
 | Tool | User-level config | Project-level |
 |------|-------------------|---------------|
-| Claude Code CLI | `~/.claude.json` | `.mcp.json`, `.claude/` |
+| Claude Code CLI | `~/.claude.json` (MCP), `~/.claude/settings.json` (manual settings) | `.mcp.json`, `.claude/` |
 | Codex CLI | `~/.codex/config.toml` | `.codex/config.toml` (trusted projects) |
 | Cursor | `~/.cursor/mcp.json` | `.cursor/mcp.json` |
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` | — (no project scope) |

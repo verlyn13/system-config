@@ -3,8 +3,8 @@ title: Claude CLI Setup
 category: reference
 component: claude_cli_setup
 status: active
-version: 3.1.0
-last_updated: 2026-04-15
+version: 3.2.0
+last_updated: 2026-04-25
 tags: [cli, claude, ai, native, mcp, zsh]
 priority: high
 ---
@@ -25,6 +25,12 @@ other surfaces remain per-product.
 - Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 Only `~/.claude.json` is touched by `scripts/sync-mcp.sh`, and only for the approved global MCP baseline.
+
+As of Claude Code `2.1.119` (April 23, 2026), `/config` settings such as
+`theme`, `editor mode`, and `verbose` persist to `~/.claude/settings.json` and
+participate in project/local/policy precedence. This machine currently runs
+Claude Code `2.1.120`; verify future location changes against `claude --version`
+and the matching release notes before moving keys between config files.
 
 ## Installation
 
@@ -58,8 +64,8 @@ claude update
 |------|---------|
 | `~/.local/bin/claude` | Binary |
 | `~/.local/share/claude/` | Versions and data |
-| `~/.claude/settings.json` | User settings |
-| `~/.claude.json` | User MCP baseline |
+| `~/.claude/settings.json` | User settings, permissions, and current `/config`-persisted preferences |
+| `~/.claude.json` | User MCP baseline and tool-native local state |
 | `.mcp.json` | Project MCP servers |
 
 ## Troubleshooting
@@ -67,6 +73,7 @@ claude update
 - `which claude` should resolve to `~/.local/bin/claude` or the native install path.
 - If a project server is missing, check the project’s `.mcp.json` before touching `~/.claude.json`.
 - If a global auth-required server fails, fix the env var or 1Password item rather than editing `~/.claude.json`.
+- If Claude reports `Expected boolean, but received string` for `~/.claude/settings.json`, fix the value to a real JSON boolean. `verbose` is a known offender on upgraded installs.
 
 ## Related
 
