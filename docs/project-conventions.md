@@ -3,9 +3,9 @@ title: Project Conventions
 category: reference
 component: project_conventions
 status: active
-version: 1.1.0
-last_updated: 2026-04-23
-tags: [project, conventions, 1password, mcp, mise, ssh, compatibility]
+version: 1.2.0
+last_updated: 2026-04-24
+tags: [project, conventions, 1password, mcp, mise, ssh, compatibility, rate-limit]
 priority: high
 ---
 
@@ -27,6 +27,7 @@ A project is "system-config compatible" when it:
 - Uses `.envrc` for project-scoped env and secret loading only
 - Never commits secret values; references 1Password via `op://` URIs
 - Commits `.mcp.json` (and peers) for team-shared MCP servers, if any
+- Nominates one broker for shared control-plane MCP mutations during releases
 - Uses Conventional Commits, signed via SSH signing
 - Assumes OpenSSH-compatible remotes; no hard dependency on private key filenames
 - Uses zsh/POSIX semantics in hook scripts and subshells
@@ -239,7 +240,16 @@ Full framework: [`docs/mcp-config.md`](./mcp-config.md). Consumer-facing summary
 
 The workstation syncs a baseline across Claude Code, Codex, Cursor,
 Windsurf, and Copilot: `github`, `brave-search`, `firecrawl`, `context7`,
-`memory`, `sequential-thinking`. Projects do not need to re-declare these.
+`memory`, `sequential-thinking`, `runpod`, `runpod-docs`, `cloudflare`,
+and `cloudflare-docs`. Projects do not need to re-declare these.
+
+Shared control-plane servers such as `cloudflare` and `runpod` are not
+serialized by the user-level baseline. During coordinated release or incident
+work, one owner repo/agent should perform mutations while sibling agents stay
+read-only. On HTTP 429, record `last_<plane>_mcp_429: <iso8601>` in the owner
+repo's current-state doc and defer traffic for at least 5 minutes or the
+longer `Retry-After` window. Cloudflare-specific details live in
+[`docs/cloudflare-mcp.md`](./cloudflare-mcp.md).
 
 ### What goes in the project
 

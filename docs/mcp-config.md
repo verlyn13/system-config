@@ -3,9 +3,9 @@ title: MCP Configuration Framework
 category: reference
 component: mcp_config
 status: active
-version: 1.2.0
-last_updated: 2026-04-23
-tags: [mcp, chezmoi, sync-mcp, 1password, scopes]
+version: 1.3.0
+last_updated: 2026-04-24
+tags: [mcp, chezmoi, sync-mcp, 1password, scopes, rate-limit]
 priority: high
 ---
 
@@ -19,6 +19,9 @@ Related live docs:
 
 - [`docs/github-mcp.md`](./github-mcp.md) — GitHub MCP integration (single source of truth)
 - [`docs/cloudflare-mcp.md`](./cloudflare-mcp.md) — Cloudflare MCP integration (Codemode, token scope, usage conventions)
+- [`docs/host-capability-substrate/2026-04-24-cloudflare-mcp-429-fanout.md`](./host-capability-substrate/2026-04-24-cloudflare-mcp-429-fanout.md) — Cloudflare 429 fan-out field report
+- [`docs/host-capability-substrate/2026-04-24-mcp-usage-collector.md`](./host-capability-substrate/2026-04-24-mcp-usage-collector.md) — temporary local MCP usage collector for substrate planning
+- [`docs/host-capability-substrate/2026-04-24-control-plane-broker-design.md`](./host-capability-substrate/2026-04-24-control-plane-broker-design.md) — target broker design for shared control-plane MCP/API traffic
 - [`docs/secrets.md`](./secrets.md) — 1Password + op policy
 - [`docs/agentic-tooling.md`](./agentic-tooling.md) — shell and tool contract
 
@@ -148,6 +151,34 @@ It does **not**:
 - write any secret value into any file
 - touch project-level MCP configs
 - manage Gemini CLI (currently unmanaged)
+- serialize or rate-limit shared external control-plane APIs across hosts
+
+## Shared control-plane rate limits
+
+The user-level MCP baseline is an availability layer, not a broker. It makes
+shared servers visible in every supported host, but it does not coordinate
+traffic across those hosts. Any MCP server backed by a real external
+control-plane API must still be treated as a shared mutable resource.
+
+Current standards:
+
+1. During coordinated release or incident work, nominate one broker repo/agent
+   for mutations to each shared control plane.
+2. Other agents may perform sparse read-only diagnostics, but should coalesce
+   reads and avoid polling.
+3. On HTTP 429 from a shared control plane, the owner repo records
+   `last_<plane>_mcp_429: <iso8601>` in its current-state doc and all agents
+   defer traffic to that plane for at least 5 minutes or the longer
+   `Retry-After` window.
+4. Cloudflare has additional Codemode-specific discipline in
+   [`docs/cloudflare-mcp.md`](./cloudflare-mcp.md): no hidden parallel
+   `cloudflare.request()` fan-out and one reversible mutation per explicit
+   authorization.
+
+For the short 2026-04-24 substrate planning window, a temporary local collector
+can be managed with `scripts/mcp-usage-collector.sh`. It samples process,
+resource, log, and `last_<plane>_mcp_429` marker shape without external API
+calls or environment capture.
 
 ### Claude Desktop shape note
 

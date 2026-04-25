@@ -3,9 +3,9 @@ title: Cloudflare MCP Integration
 category: reference
 component: cloudflare_mcp
 status: active
-version: 1.0.0
-last_updated: 2026-04-23
-tags: [cloudflare, mcp, codemode, api-token, bearer, mcp-remote, 1password, workers, dns, zero-trust]
+version: 1.2.0
+last_updated: 2026-04-25
+tags: [cloudflare, mcp, codemode, api-token, bearer, mcp-remote, 1password, workers, dns, zero-trust, tunnel, rate-limit]
 priority: high
 ---
 
@@ -20,6 +20,12 @@ structure, different per-host rendering), see
 auth cycle that informs how this wrapper is designed, see the field
 report at
 [`docs/host-capability-substrate/2026-04-23-claude-desktop-op-consent-cycle.md`](./host-capability-substrate/2026-04-23-claude-desktop-op-consent-cycle.md).
+For the 2026-04-24 Cloudflare 429 fan-out investigation, see
+[`docs/host-capability-substrate/2026-04-24-cloudflare-mcp-429-fanout.md`](./host-capability-substrate/2026-04-24-cloudflare-mcp-429-fanout.md).
+For the substrate-era broker target, see
+[`docs/host-capability-substrate/2026-04-24-control-plane-broker-design.md`](./host-capability-substrate/2026-04-24-control-plane-broker-design.md).
+For the Access + Tunnel AUD coupling lesson from the runpod 403, see
+[`docs/host-capability-substrate/2026-04-25-cloudflare-access-tunnel-audtag.md`](./host-capability-substrate/2026-04-25-cloudflare-access-tunnel-audtag.md).
 
 ## At-a-glance
 
@@ -34,8 +40,10 @@ report at
 | Token account | jefahnierocks (`13eb584192d9cefb730fde0cfd271328`) |
 | Token TTL (current build-out) | 2026-04-23 → 2026-05-23 (30 days) |
 | Transport to Cloudflare | Streamable HTTP via `mcp-remote@0.1.38` stdio relay |
-| Tools exposed by the auth'd server | `search` (2 tool), `execute` (1 tool) — see §Codemode |
-| Rate-limit surface | Cloudflare API rate limits apply to the underlying token |
+| Tools exposed by the auth'd server | `search`, `execute` — see §Codemode |
+| Rate-limit surface | Cloudflare API rate limits apply cumulatively to the underlying token |
+| Local no-API diagnostic | `scripts/mcp-cloudflare-diagnostics.sh` |
+| Local quarantine toggle | `scripts/mcp-cloudflare-quarantine.sh` |
 
 ## Per-host wiring
 
@@ -51,6 +59,11 @@ Unlike GitHub MCP (which is rendered in four distinct shapes per host), Cloudfla
 | Codex CLI | `~/.codex/config.toml` | `[mcp_servers.cloudflare]\ncommand = "~/.local/bin/mcp-cloudflare-server"` |
 
 Uniform stdio-via-wrapper is the right shape for this server because Cloudflare's remote MCP gateway advertises OAuth discovery; some MCP SDKs attempt Dynamic Client Registration even when a static bearer is present and fail with `InvalidTokenError: Failed to verify token: no user or account information` before honoring the Authorization header. The wrapper routes through `mcp-remote` which bypasses that discovery path.
+
+Uniform user-level wiring is not a concurrency guarantee. Each open host can
+spawn its own long-lived authenticated `mcp-remote` process against the same
+Cloudflare token. During control-plane work, choose one broker agent for
+mutations and keep the other hosts read-only or closed.
 
 ## Token identity and scope
 
@@ -205,6 +218,12 @@ async () => {
 
 **When `execute` is the right tool:** you already know the endpoint path + shape (often from a prior `search` call), and you're ready to make the live call. Prefer read-only calls first; confirm with the user before any write.
 
+Important implementation detail: `execute` runs caller-supplied JavaScript,
+so one tool call can issue many `cloudflare.request()` calls. The upstream
+server retries HTTP 429 responses internally a few times, but that retry loop
+is per request, capped, and does not serialize multiple requests created by
+your code. Treat each `cloudflare.request()` as a real Cloudflare API call.
+
 ## Usage guidance for agents
 
 ### When to use which tool
@@ -217,6 +236,95 @@ async () => {
 | Workers development cycle (deploy, tail, test) | `wrangler` CLI | Faster, designed for the inner loop, better dev ergonomics |
 | Scripted infra automation checked into a repo | direct `curl`/SDK in committed scripts | Reproducible, diffable, reviewable; MCP is interactive, not CI |
 | Understanding an error from Cloudflare | `cloudflare.execute` on `/user/tokens/verify` + docs MCP | Verify token state first, then look up the error code |
+
+### Rate-limit and concurrency discipline
+
+Cloudflare's documented global API limit applies cumulatively per user/account
+token across dashboard, API key, and API-token traffic. When exceeded, API
+calls are blocked with HTTP 429 for the next window. The shared
+`cloudflare-mcp-jefahnierocks` token therefore needs cross-agent discipline,
+not just per-agent backoff.
+
+Before any `cloudflare.execute` that may mutate state:
+
+1. Run `scripts/mcp-cloudflare-diagnostics.sh`. It only inspects local
+   processes, logs, and state markers; it does not call Cloudflare.
+2. If more than one authenticated Cloudflare MCP session is live, pick one
+   broker agent/repo for the mutation. Other agents should observe, write
+   follow-up markers, or wait.
+3. Check any `last_cf_mcp_429` marker in the owning project's current-state
+   doc. If the timestamp is less than 5 minutes old, or `Retry-After` was
+   longer, do not probe for recovery yet.
+
+Inside `execute` code:
+
+1. Do not use `Promise.all` or other parallel fan-out around
+   `cloudflare.request()`.
+2. Bound pagination and use conservative `per_page` values; do not poll.
+3. Prefer one reversible mutation per `execute` call after explicit human
+   authorization for that specific mutation.
+4. Coalesce read-only diagnostics into one serial function when possible.
+
+On HTTP 429:
+
+1. Stop all Cloudflare MCP reads and writes immediately.
+2. Record `last_cf_mcp_429: <iso8601>` in the owner repo's current-state doc.
+3. Defer Cloudflare API traffic for at least 5 minutes, or the longer
+   `Retry-After` if present.
+4. The first call after the backoff should be a purposeful read needed to
+   continue the work, not a loop that tests whether the limit has cleared.
+
+If dashboard, Wrangler, curl, or MCP calls keep tripping 429, quarantine the
+authenticated Cloudflare MCP wrapper so agent development can continue without
+Cloudflare API traffic:
+
+```bash
+scripts/mcp-cloudflare-quarantine.sh on
+scripts/mcp-cloudflare-quarantine.sh reap
+scripts/mcp-cloudflare-diagnostics.sh
+```
+
+This creates
+`~/.local/state/system-config/mcp-cloudflare.disabled`. The live wrapper and
+chezmoi template check this marker before resolving the token or launching
+`mcp-remote`. `cloudflare-docs` remains available because it is unauthenticated
+and does not use the Cloudflare account API token. Re-enable only after the
+quiet window and planned single-client retry:
+
+```bash
+scripts/mcp-cloudflare-quarantine.sh off
+```
+
+For Access service-token 403s, do not expect the Zero Trust dashboard Access
+authentication log or REST `access_requests` endpoint to show the decisive row.
+Cloudflare classifies service-token attempts as non-identity authentication;
+those events are retrieved through GraphQL Analytics. Use the one-shot helper
+while authenticated Cloudflare MCP remains quarantined:
+
+```bash
+scripts/cloudflare-access-login-graphql.sh plan \
+  --ray-id <ray-id-with-or-without-colo> \
+  --since <iso8601> \
+  --until <iso8601>
+```
+
+Only after explicit approval, change `plan` to `run`. The helper refuses to run
+if authenticated Cloudflare MCP sessions are live.
+
+Interpret the GraphQL result before proposing Access policy mutations. If the
+row has `isSuccessfulLogin: 1` and the expected `serviceTokenId`, Access
+authentication succeeded for that Ray ID; a client-facing 403 then belongs to a
+later layer. For Access-protected Cloudflare Tunnel origins, check
+`cloudflared` `originRequest.access.audTag` and origin logs before trying
+reusable-vs-inline policy isolation. `approvingPolicyId: ""` is not, by itself,
+proof that a service-token policy failed. In the 2026-04-25 runpod incident,
+`cloudflared` rejected the child app JWT because the tunnel `audTag` list had
+only the parent app AUD; the Access policy was not the root cause.
+
+Design rule: when a hostname is served by Cloudflare Tunnel with
+`originRequest.access.required: true`, an Access app or policy change is not
+complete until the tunnel `audTag` list is verified for every parent and
+path-scoped child Access app that can protect that hostname.
 
 ### Operating conventions
 
@@ -238,6 +346,13 @@ These are organizational standards for how agents in this repo should use the Cl
 
 8. **Token rotation: ask, don't self-serve.** If the token expires (2026-05-23) or you get `401 Unauthorized`, tell the user — do not attempt to regenerate or extend the token via any automated path.
 
+9. **Single-broker for shared control planes.** During coordinated release
+   work, the owner repo's agent is the only writer to Cloudflare. Others can
+   inspect state sparingly and must honor `last_cf_mcp_429` markers.
+
+10. **No hidden parallelism.** An MCP tool call is not the same as one API
+   request. Review `execute` code for fan-out before sending it.
+
 ### Common error modes
 
 | Symptom | Likely cause | How to diagnose |
@@ -245,6 +360,8 @@ These are organizational standards for how agents in this repo should use the Cl
 | `InvalidTokenError: no user or account information` at connect | Token is zone-only, not account-scoped | `curl /accounts` with the token — if empty, token needs account scope |
 | `401 Unauthorized` on a specific call | Token expired, or caller's IP changed (if filtering was set — we don't) | `curl /user/tokens/verify` with the token to check status |
 | `403 Forbidden` on a specific call | Token lacks the specific permission | Inspect the permission in Cloudflare dashboard; if needed, escalate to user for scope expansion |
+| Client-facing 403 after GraphQL Access login success | Later validator rejected the request, commonly `cloudflared` `originRequest.access.audTag` missing a path-scoped app AUD | Check `cloudflared` logs for `AccessJWTValidator`, inspect tunnel `audTag`, then origin logs before Access policy mutations |
+| `429 Too Many Requests` | Token/account shared rate limit exhausted, often from multi-agent fan-out or repeated retries | Stop; run `scripts/mcp-cloudflare-diagnostics.sh`; record `last_cf_mcp_429`; wait 5 minutes or `Retry-After` |
 | `400 Bad Request` with schema errors | Request body doesn't match the OpenAPI shape | Re-run `search` on the endpoint; inspect `op.requestBody.content['application/json'].schema` |
 | `search` or `execute` hangs >30s | MCP server startup (cold start on first call) or network slowness | Wait once; if persistent, check `claude mcp list` — should show `✓ Connected` |
 | MCP fails to start entirely | 1Password session cold (biometric needed) | `op whoami --account my.1password.com` in terminal to pre-warm |
@@ -379,6 +496,9 @@ If a Cloudflare MCP operation returns `403 Forbidden` and the call is legitimate
 |---|---|
 | `scripts/mcp-servers.json` | Baseline entries for `cloudflare` and `cloudflare-docs` |
 | `scripts/sync-mcp.sh` | Propagates entries to 6 host configs |
+| `scripts/cloudflare-access-login-graphql.sh` | One-shot GraphQL Analytics reader for Access service-token login events |
+| `scripts/mcp-cloudflare-diagnostics.sh` | Local-only fan-out, log, and `last_cf_mcp_429` inspection without API calls |
+| `scripts/mcp-cloudflare-quarantine.sh` | Local disable/reap switch for authenticated Cloudflare MCP during 429 containment |
 | `home/dot_local/bin/executable_mcp-cloudflare-server.tmpl` | Chezmoi template; deployed to `~/.local/bin/mcp-cloudflare-server` |
 | `home/dot_config/mcp/private_common.env` | Manifest including `CLOUDFLARE_API_TOKEN=op://Dev/cloudflare-mcp-jefahnierocks/token` |
 | `docs/mcp-config.md` | MCP framework (scope model, sync behavior, launch patterns) |
@@ -386,10 +506,16 @@ If a Cloudflare MCP operation returns `403 Forbidden` and the call is legitimate
 | `docs/secrets.md` | 1Password policy; lists the `mcp-cloudflare-server` wrapper |
 | `docs/project-conventions.md` | Lists the `cloudflare-mcp-jefahnierocks` 1P item |
 | `docs/host-capability-substrate/2026-04-23-claude-desktop-op-consent-cycle.md` | Field report explaining the wrapper pattern's GUI-host interaction |
+| `docs/host-capability-substrate/2026-04-24-cloudflare-mcp-429-fanout.md` | Field report for multi-agent Cloudflare MCP fan-out and 429 handling |
+| `docs/host-capability-substrate/2026-04-25-cloudflare-access-tunnel-audtag.md` | Field report and HCS design rule for Access app AUDs behind `cloudflared` JWT validation |
 
 ## External references
 
 - [Cloudflare's own MCP servers](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/) — official catalog of all 13 Cloudflare MCP servers (we use 2)
+- [Cloudflare API rate limits](https://developers.cloudflare.com/fundamentals/api/reference/limits/) — official 429, `retry-after`, and cumulative API token limit behavior
+- [Cloudflare Access authentication logs](https://developers.cloudflare.com/cloudflare-one/insights/logs/dashboard-logs/access-authentication-logs/) — identity-vs-non-identity logging split
+- [Querying Access login events with GraphQL](https://developers.cloudflare.com/analytics/graphql-api/tutorials/querying-access-login-events/) — GraphQL query shape for Access 403 Ray IDs
+- [Cloudflare Tunnel origin parameters](https://developers.cloudflare.com/tunnel/advanced/origin-parameters/) — `originRequest.access.required` and `audTag` validation at `cloudflared`
 - [`cloudflare/mcp` on GitHub](https://github.com/cloudflare/mcp) — canonical source for the Cloudflare API MCP server
 - [Cloudflare Codemode](https://developers.cloudflare.com/agents/api-reference/codemode/) — the technique powering `search` + `execute`
 - [Cloudflare API reference](https://developers.cloudflare.com/api/) — 2,500+ endpoints; the MCP is a view over this
@@ -398,4 +524,6 @@ If a Cloudflare MCP operation returns `403 Forbidden` and the call is legitimate
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.0 | 2026-04-25 | Records Access + Tunnel AUD coupling: service-token Access success can still 403 at `cloudflared` when `originRequest.access.audTag` lacks a child app AUD. |
+| 1.1.0 | 2026-04-24 | Adds Cloudflare 429 fan-out diagnosis, single-broker rate-limit discipline, and local no-API diagnostic script. |
 | 1.0.0 | 2026-04-23 | Initial doc. Matches the Cloudflare MCP state after commit `946a058` (sync to Claude Desktop) and `9210aae` (account-scoped token). |

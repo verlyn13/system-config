@@ -27,6 +27,12 @@ set -euo pipefail
 OP_URI="op://Dev/cloudflare-mcp-jefahnierocks/token"
 REMOTE_URL="https://mcp.cloudflare.com/mcp"
 MCP_REMOTE_VERSION="0.1.38"
+DISABLE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/system-config/mcp-cloudflare.disabled"
+
+if [[ -e "$DISABLE_FILE" ]]; then
+  echo "mcp-cloudflare-server: disabled by $DISABLE_FILE" >&2
+  exit 78
+fi
 
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]] && command -v op >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
   CLOUDFLARE_API_TOKEN="$(timeout "$HCS_SECRET_TIMEOUT" op read --account "$HCS_SECRET_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
