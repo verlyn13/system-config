@@ -48,6 +48,7 @@ Plugins have access to all core helpers:
 | `mas` | Mac App Store apps | disabled | `mas` |
 | `gem` | Ruby gems | disabled | `gem` |
 | `go-tools` | Go tools (go install) | disabled | `go` |
+| `r-packages` | CRAN packages in R user library | disabled | `Rscript` |
 | `android-studio-canary` | Android Studio Preview | disabled | `curl python3` |
 
 Enable disabled plugins via config or CLI:
