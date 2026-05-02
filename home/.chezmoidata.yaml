@@ -64,6 +64,8 @@ ssh:
   host_migrations:
     github_personal: "~/.ssh/id_ed25519_personal.1password.pub"
     github_happy_patterns: "~/.ssh/id_ed25519_happy_patterns.1password.pub"
+    hetzner_user: "~/.ssh/id_ed25519_hetzner_primary_admin.1password.pub"
+    hetzner_runner: "~/.ssh/id_ed25519_hetzner_runner_admin.1password.pub"
     runpod_inference: "~/.ssh/runpod-inference.1password.pub"
   defaults:
     server_alive_interval: 30
