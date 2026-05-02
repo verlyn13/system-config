@@ -1028,7 +1028,7 @@ The v0.2.0 architecture is settled. The next risk is **implementation entropy**:
 
 ### 22.1 Repo and package layout
 
-**Decision:** Dedicated HCS repo (working name `jfr-hcs` pending user choice). Substrate cadence, policy review, launchd packaging, host install, and audit durability differ from ordinary project code.
+**Decision:** Dedicated HCS repo (`host-capability-substrate`). Substrate cadence, policy review, launchd packaging, host install, and audit durability differ from ordinary project code.
 
 ```
 host-capability-substrate/

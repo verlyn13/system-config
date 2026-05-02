@@ -5,7 +5,7 @@
     "Dynamic Profile Parent Name": "NG Base",
     "Custom Command": "Yes",
     "Command": "/bin/zsh -l",
-    "Tags": ["nash-group", "agentic"],
+    "Tags": ["workstation", "agentic"],
     "Working Directory": "~/Organizations",
     "Custom Directory": "Yes",
     "Set Environment Variables": {
