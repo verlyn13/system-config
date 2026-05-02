@@ -17,10 +17,11 @@ mkdir -p "$DYN_DIR"
 
 # Remove stale managed symlinks that no longer have a source profile.
 for target in "$DYN_DIR"/*.json; do
-  [[ -e "$target" ]] || continue
+  [[ -e "$target" || -L "$target" ]] || continue
   if [[ -L "$target" ]]; then
     resolved="$(readlink "$target")"
     if [[ "$resolved" == "$PROFILES_SRC/"* ]] && [[ ! -e "$resolved" ]]; then
+      echo "  Removing stale managed profile symlink: $(basename "$target")"
       rm "$target"
     fi
   fi
