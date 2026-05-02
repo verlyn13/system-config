@@ -66,11 +66,11 @@ Synced by `scripts/sync-mcp.sh` to all six hosts (with per-host variations where
 | Server | Source | Auth | Wrapper required? |
 |---|---|---|---|
 | `context7` | remote HTTP | none (public) | no |
-| `memory` | npm stdio | none | no |
-| `sequential-thinking` | npm stdio | none | no |
+| `memory` | npm stdio | none | yes (`~/.local/bin/mcp-npx`, cwd-neutral) |
+| `sequential-thinking` | npm stdio | none | yes (`~/.local/bin/mcp-npx`, cwd-neutral) |
 | `brave-search` | npm stdio | `BRAVE_API_KEY` via `op://Dev/brave-search/api-key` | yes (`~/.local/bin/mcp-brave-search-server`) |
 | `firecrawl` | stdio | `FIRECRAWL_API_KEY` via `op://Dev/firecrawl/api-key` | yes (`~/.local/bin/mcp-firecrawl-server`) |
-| `github` | remote HTTP (GitHub-hosted) | per-host — see `docs/github-mcp.md` | Cursor only |
+| `github` | remote HTTP (GitHub-hosted) | per-host — see `docs/github-mcp.md` | yes for Claude Code, Claude Desktop, Cursor, Codex |
 | `runpod` | npm stdio (`@runpod/mcp-server`) | `RUNPOD_API_KEY` via `op://Dev/runpod-api/api-key` | yes (`~/.local/bin/mcp-runpod-server`) |
 | `runpod-docs` | remote HTTP | none (public) | no |
 | `cloudflare` | remote HTTP (Codemode) via `mcp-remote` stdio relay | account-scoped token — see `docs/cloudflare-mcp.md` | yes (`~/.local/bin/mcp-cloudflare-server`) |
@@ -99,15 +99,13 @@ op run --account my.1password.com --env-file=$HOME/.config/mcp/common.env -- cla
 op run --account my.1password.com --env-file=$HOME/.config/mcp/common.env -- codex
 ```
 
-`op run` resolves all `op://` URIs once and injects the three env vars
-into the tool's process. Native configs (Claude Code `${GITHUB_PAT}` in
-headers, Codex `bearer_token_env_var = "GITHUB_PAT"`, stdio wrappers
-reading from env) all pick up the resolved values.
+`op run` resolves all `op://` URIs once and injects the env vars into the
+tool's process. The stdio wrappers read from env first, so this is a fast
+path that avoids per-server `op read` calls.
 
-Bare launches (`claude` without `op run`) still work — the stdio wrappers
-fall back to `op read` themselves; but Claude Code and Codex native
-configs that rely on `${GITHUB_PAT}` will send unresolved placeholders
-and get 401s until the user re-launches via `op run`.
+Bare launches (`claude` or `codex` without `op run`) still work for
+wrapper-backed auth servers. Those wrappers fall back to `op read`
+themselves and never require a token to be exported globally.
 
 ### Launch pattern for GUI hosts (Cursor, Windsurf)
 
@@ -189,12 +187,16 @@ separately. To keep one programmatically managed surface, `sync-mcp.sh`
 writes every baseline server in Claude Desktop as stdio:
 
 - Our `type: "stdio"` wrappers pass through (the `type` field is stripped)
-- Our `type: "http"` remotes are wrapped via `npx -y mcp-remote@<ver> <url>`
+- Our `type: "http"` remotes are wrapped via
+  `~/.local/bin/mcp-npx -y mcp-remote@<ver> <url>`
 
-The `mcp-remote` version is pinned in `sync-mcp.sh` as `MCP_REMOTE_VERSION`
-and matches the version used by the auth-required wrappers. Claude
-Desktop's Electron enriches PATH before spawning MCP children so
-`~/.local/bin` wrappers and `op` resolve correctly.
+The `mcp-remote` version is pinned in `sync-mcp.sh` as
+`MCP_REMOTE_VERSION` and matches the version used by the auth-required
+wrappers. `mcp-npx` changes into a project-neutral temporary directory
+before invoking npm so project-level `package.json` files cannot break
+global MCP startup. Claude Desktop's Electron enriches PATH before
+spawning MCP children so `~/.local/bin` wrappers and `op` resolve
+correctly.
 
 ## Project-level MCP servers
 

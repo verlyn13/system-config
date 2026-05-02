@@ -25,21 +25,17 @@ CODEX_CONFIG="$HOME/.codex/config.toml"
 # file does not natively accept remote-HTTP MCP entries (Claude Desktop).
 # Keep in lockstep with the wrappers in home/dot_local/bin/.
 MCP_REMOTE_VERSION="0.1.38"
+MCP_NPX_WRAPPER_PATH="$HOME/.local/bin/mcp-npx"
 
 # GitHub MCP is rendered per-host rather than from mcp-servers.json:
 # - Claude Code: stdio wrapper (SDK OAuth/DCR discovery breaks on static bearer)
 # - Claude Desktop: stdio wrapper (same reason; app's config file is stdio-only)
 # - Cursor: stdio wrapper (OAuth has open bugs; env interp quirks)
 # - Windsurf: native serverUrl, OAuth 2.1 + PKCE (shipped 1.12.41, Dec 2025)
-# - Codex: native url + bearer_token_env_var + http_headers (literal toolsets)
+# - Codex: stdio wrapper (same no-global-secret contract as Claude/GUI hosts)
 # - Copilot CLI: skipped (built-in github-mcp-server ships with the tool)
 GITHUB_BASE_URL="https://api.githubcopilot.com/mcp/"
 GITHUB_WRAPPER_PATH="$HOME/.local/bin/mcp-github-server"
-GITHUB_ENV_VAR="GITHUB_PAT"
-# Curated toolset list — matches the scopes granted on op://Dev/github-mcp/token.
-# Fine-grained PATs do not get server-side scope filtering; this header gives
-# us the filtered view. Update in lockstep with PAT scope changes.
-GITHUB_TOOLSETS="context,repos,issues,pull_requests,users,actions,code_security,dependabot,discussions,gists,labels,orgs,projects,releases,security_advisories,secret_protection,github_support_docs_search"
 
 DRY_RUN=false
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
@@ -173,7 +169,7 @@ sync_codex_toml() {
 
 # Transform the cross-tool server set into Claude Desktop's native shape:
 # - Remove type field (Claude Desktop's config file is stdio-only: command+args+env)
-# - Wrap type:"http" entries via `npx -y mcp-remote@VERSION <url>` as stdio
+# - Wrap type:"http" entries via `mcp-npx -y mcp-remote@VERSION <url>` as stdio
 # - stdio entries pass through (strip type)
 #
 # Why all stdio: Claude Desktop's claude_desktop_config.json file format
@@ -183,11 +179,13 @@ sync_codex_toml() {
 # through mcp-remote the same way the github/cloudflare wrappers do.
 transform_for_claude_desktop() {
     local servers_json="$1"
-    echo "$servers_json" | jq --arg mcp_remote "mcp-remote@${MCP_REMOTE_VERSION}" '
+    echo "$servers_json" | jq \
+        --arg mcp_npx "$MCP_NPX_WRAPPER_PATH" \
+        --arg mcp_remote "mcp-remote@${MCP_REMOTE_VERSION}" '
         with_entries(
             .value as $v |
             if ($v.type // "stdio") == "http" then
-                .value = { command: "npx", args: ["-y", $mcp_remote, $v.url] }
+                .value = { command: $mcp_npx, args: ["-y", $mcp_remote, $v.url] }
             else
                 .value = ($v | del(.type))
             end
@@ -232,20 +230,17 @@ GITHUB_STDIO_WRAPPER=$(jq -n --arg cmd "$GITHUB_WRAPPER_PATH" \
 GITHUB_WINDSURF=$(jq -n --arg url "$GITHUB_BASE_URL" \
     '{serverUrl: $url}')
 
-# Codex: native url + bearer_token_env_var + http_headers (literal toolsets).
-GITHUB_CODEX=$(jq -n \
-    --arg url "$GITHUB_BASE_URL" \
-    --arg env "$GITHUB_ENV_VAR" \
-    --arg toolsets "$GITHUB_TOOLSETS" \
-    '{url: $url, bearer_token_env_var: $env,
-      http_headers: {"X-MCP-Toolsets": $toolsets}}')
+# Codex: stdio wrapper. This keeps bare `codex` launches working without
+# exporting GITHUB_PAT globally or requiring every session to be started via
+# `op run --env-file`.
+GITHUB_CODEX="$GITHUB_STDIO_WRAPPER"
 
 SERVERS_WITH_WRAPPER=$(echo "$BASE_SERVERS"  | jq --argjson gh "$GITHUB_STDIO_WRAPPER" '. + {github: $gh}')
 SERVERS_WITH_WINDSURF=$(echo "$BASE_SERVERS" | jq --argjson gh "$GITHUB_WINDSURF"       '. + {github: $gh}')
 SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS"    | jq --argjson gh "$GITHUB_CODEX"          '. + {github: $gh}')
 
-# Claude Desktop: stdio-only config format. Reuse the Claude-Code/Cursor
-# github stdio wrapper, then transform the whole set to Claude Desktop's
+# Claude Desktop: stdio-only config format. Reuse the CLI-host github stdio
+# wrapper, then transform the whole set to Claude Desktop's
 # native shape (strip type, wrap HTTP via mcp-remote).
 SERVERS_CLAUDE_DESKTOP=$(transform_for_claude_desktop "$SERVERS_WITH_WRAPPER")
 
@@ -259,7 +254,7 @@ sync_json_config "Windsurf"        "$WINDSURF_CONFIG"       "$SERVERS_WITH_WINDS
 # Copilot: skip github (built-in); any existing github key is removed via MANAGED_KEYS.
 sync_json_config "Copilot CLI"     "$COPILOT_CONFIG"        "$BASE_SERVERS"          "$MANAGED_KEYS"
 
-# Codex: native remote HTTP with env-var bearer + literal toolset header.
+# Codex: stdio wrapper with 1Password fallback.
 sync_codex_toml "$SERVERS_WITH_CODEX"
 
 echo ""

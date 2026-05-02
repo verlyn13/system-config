@@ -24,4 +24,5 @@ load_secret() {
 }
 
 load_secret
-exec npx -y firecrawl-mcp "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/mcp-npx" -y firecrawl-mcp "$@"

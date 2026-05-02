@@ -44,7 +44,9 @@ if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
   exit 1
 fi
 
-exec npx -y "mcp-remote@${MCP_REMOTE_VERSION}" \
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec "$SCRIPT_DIR/mcp-npx" -y "mcp-remote@${MCP_REMOTE_VERSION}" \
   "$REMOTE_URL" \
   --transport http-only \
   --silent \

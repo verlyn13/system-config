@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # mcp-github-server — stdio wrapper that relays to GitHub's remote MCP server.
 #
-# This wrapper exists for Cursor, the only synced host that can't consume the
-# remote endpoint natively with env-backed auth. Claude Code, Codex, Windsurf,
-# and Copilot CLI all use native remote configs; see docs/mcp-config.md and
-# docs/github-mcp.md for the framework.
+# This wrapper exists for hosts where a self-contained stdio server is more
+# reliable than requiring a launch-time GITHUB_PAT env var or following GitHub's
+# OAuth discovery path. See docs/mcp-config.md and docs/github-mcp.md for the
+# per-host framework.
 #
 # Reads a fine-grained PAT from env or 1Password at launch and proxies
 # stdio MCP traffic to GitHub's remote MCP server over Streamable HTTP
@@ -37,7 +37,9 @@ if [[ -z "${GITHUB_PAT:-}" ]]; then
   exit 1
 fi
 
-exec npx -y "mcp-remote@${MCP_REMOTE_VERSION}" \
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec "$SCRIPT_DIR/mcp-npx" -y "mcp-remote@${MCP_REMOTE_VERSION}" \
   "$REMOTE_URL" \
   --transport http-only \
   --silent \

@@ -379,7 +379,9 @@ These are organizational standards for how agents in this repo should use the Cl
 **The token is exposed in the `mcp-remote` child process's argv.** The wrapper's final `exec` is:
 
 ```bash
-exec npx -y "mcp-remote@${MCP_REMOTE_VERSION}" \
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec "$SCRIPT_DIR/mcp-npx" -y "mcp-remote@${MCP_REMOTE_VERSION}" \
   "$REMOTE_URL" \
   --transport http-only \
   --silent \
@@ -422,7 +424,7 @@ Behavior summary:
 1. If `CLOUDFLARE_API_TOKEN` is set in env, use it (fast path for `op run --env-file` launches).
 2. Else, if `op` is on PATH, `op read --account my.1password.com 'op://Dev/cloudflare-mcp-jefahnierocks/token'`.
 3. If neither path yields a token, print a helpful error to stderr and exit 1.
-4. `exec npx -y mcp-remote@0.1.38 https://mcp.cloudflare.com/mcp --transport http-only --silent --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"`.
+4. `exec ~/.local/bin/mcp-npx -y mcp-remote@0.1.38 https://mcp.cloudflare.com/mcp --transport http-only --silent --header "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}"`.
 
 The wrapper is uniform across all six sync targets. Different hosts may launch it with different working directories and env-var presence, but the auth resolution logic handles both cases (env-first with `op` fallback).
 

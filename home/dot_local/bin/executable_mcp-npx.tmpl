@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# mcp-npx - run npx-backed MCP servers from a project-neutral working directory.
+
+set -euo pipefail
+
+npx_cwd="${MCP_NPX_CWD:-${TMPDIR:-/tmp}/system-config-mcp-npx}"
+if ! mkdir -p "$npx_cwd" 2>/dev/null; then
+  npx_cwd="/tmp"
+fi
+
+cd "$npx_cwd"
+exec npx "$@"

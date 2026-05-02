@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/mcp-servers.json",
-  "_comment": "Global MCP baseline synced by scripts/sync-mcp.sh. Project-specific servers belong in each project's .mcp.json. GitHub MCP is rendered per-host by sync-mcp.sh (stdio wrapper for Claude/Cursor/Windsurf, direct remote for Codex, built-in for Copilot) and is intentionally absent from this baseline.",
+  "_comment": "Global MCP baseline synced by scripts/sync-mcp.sh. Project-specific servers belong in each project's .mcp.json. GitHub MCP is rendered per-host by sync-mcp.sh (stdio wrapper for Claude/Cursor/Codex, native OAuth for Windsurf, built-in for Copilot) and is intentionally absent from this baseline.",
   "mcpServers": {
     "context7": {
       "type": "http",
@@ -9,7 +9,7 @@
     },
     "memory": {
       "type": "stdio",
-      "command": "npx",
+      "command": "${HOME}/.local/bin/mcp-npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
       "env": {
         "MEMORY_FILE_PATH": "${HOME}/.local/share/ai-memory/global-memory.jsonl"
@@ -18,7 +18,7 @@
     },
     "sequential-thinking": {
       "type": "stdio",
-      "command": "npx",
+      "command": "${HOME}/.local/bin/mcp-npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       "_description": "Complex problem decomposition"
     },

@@ -39,6 +39,7 @@ Rules:
 - `which codex` should resolve to the installed CLI binary.
 - If MCP state looks stale, rerun `scripts/sync-mcp.sh`; it is idempotent and replaces the managed block.
 - If an auth-required global server fails, fix the env var or 1Password item used by the runtime wrapper.
+- If an `npx`-backed global server fails inside one project with `npm` package metadata errors, make sure the live config was regenerated after the `mcp-npx` change; managed global servers should not run `npx` from the project working directory.
 - Keep `OPENAI_API_KEY` project-scoped via `.envrc` unless there is a clear reason to export it more broadly.
 
 ## Related

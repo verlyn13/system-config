@@ -24,4 +24,5 @@ load_secret() {
 }
 
 load_secret
-exec npx -y @modelcontextprotocol/server-brave-search "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/mcp-npx" -y @modelcontextprotocol/server-brave-search "$@"

@@ -25,4 +25,5 @@ load_secret() {
 }
 
 load_secret
-exec npx -y @runpod/mcp-server@latest "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/mcp-npx" -y @runpod/mcp-server@latest "$@"

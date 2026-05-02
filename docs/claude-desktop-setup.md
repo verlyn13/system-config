@@ -38,7 +38,8 @@ To keep one programmatically managed surface, the sync writes every
 baseline server as stdio:
 
 - `type: "stdio"` wrappers pass through (the `type` field is stripped)
-- `type: "http"` remotes are wrapped as `npx -y mcp-remote@<ver> <url>`
+- `type: "http"` remotes are wrapped as
+  `~/.local/bin/mcp-npx -y mcp-remote@<ver> <url>`
 
 See [`mcp-config.md`](./mcp-config.md) for the full framework.
 
