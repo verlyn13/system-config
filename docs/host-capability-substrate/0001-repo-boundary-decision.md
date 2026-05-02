@@ -3,15 +3,15 @@ title: HCS Repo Boundary & Scaffolding Decision
 category: decision
 component: host_capability_substrate
 status: accepted
-version: 1.1.0
-last_updated: 2026-04-22
+version: 1.2.0
+last_updated: 2026-05-01
 tags: [decision, naming, path, scaffolding, policy, governance, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, opus-4-7, gpt-5-4, skills, ontology]
 priority: high
 ---
 
 # HCS Repo Boundary & Scaffolding Decision
 
-Binding decision record for the name, path, repo structure, public/private deployment boundary, and Phase 0a scaffolding of the Host Capability Substrate. Derived from Nash Covenant principles, jefahnierocks subsidiary governance, actual repo-naming practice on GitHub, IDE/tool integration surfaces, and 2026 Claude Code + Codex best practices. Amended in v1.1.0 with expert-reviewed refinements.
+Binding decision record for the name, path, repo structure, public/private deployment boundary, and Phase 0a scaffolding of the Host Capability Substrate. Inputs cited during decision-making: external Nash Covenant principles (planning context only), jefahnierocks workspace conventions, actual repo-naming practice on GitHub, IDE/tool integration surfaces, and 2026 Claude Code + Codex best practices. Amended in v1.1.0 with expert-reviewed refinements; v1.2.0 retires parent-inheritance framing in favor of citation-as-input — HCS operating authority comes from this repo's charter, ADRs, decision ledger, and the named external policy source, not from runtime parent inheritance.
 
 Parent research plan: [`../host-capability-substrate-research-plan.md`](../host-capability-substrate-research-plan.md) (v0.3.0+). Charter: [`implementation-charter.md`](./implementation-charter.md). Tooling surface matrix: [`tooling-surface-matrix.md`](./tooling-surface-matrix.md).
 
@@ -22,7 +22,7 @@ Parent research plan: [`../host-capability-substrate-research-plan.md`](../host-
 - **Product name:** Host Capability Substrate (HCS)
 - **Local path:** `~/Organizations/jefahnierocks/host-capability-substrate/`
 - **GitHub repo:** `verlyn13/host-capability-substrate` (public source, private deployment boundary)
-- **Subsidiary:** jefahnierocks (Stronghold governance tier)
+- **Workspace:** jefahnierocks (its own authority; parent-organization material may be cited as research input only)
 - **Charter ring:** Infrastructure (sibling to `apps/`, `packages/`, `docs/`, like `system-config`)
 - **Tool baseline (early phases, binding):** Claude Code ≥ `1.3883.0 (93ff6c)` with Claude Opus 4.7; Codex ≥ `26.417.41555 (1858)` with GPT-5.4
 - **Runtime state dir:** `~/Library/Application Support/host-capability-substrate/`
@@ -37,7 +37,7 @@ Parent research plan: [`../host-capability-substrate-research-plan.md`](../host-
 
 ## 1. Findings (unchanged from v1.0.0)
 
-### 1.1 Nash Covenant principles (inherited by HCS)
+### 1.1 Nash Covenant principles (cited as planning input)
 
 From `~/Organizations/the-nash-group/the-covenant/PRINCIPLES.md`:
 
@@ -58,15 +58,15 @@ From `~/Organizations/the-nash-group/the-covenant/PRINCIPLES.md`:
 15. The Three Circles of Trust
 16. These Principles Are Living Law
 
-HCS inherits all 16 through jefahnierocks's Stronghold governance tier.
+HCS cites all 16 as external planning input, not as runtime authority. HCS operating authority comes from this repo's charter, ADRs, decision ledger, and the named external policy source.
 
-### 1.2 Subsidiary naming: governance vs reality
+### 1.2 Naming convention: prior framing vs reality
 
-`.subsidiary.yaml` claims `prefix: jfr`, `repo_prefix: "jfr-"`. Actual practice: zero `verlyn13/jfr-*` repos exist. Same stale-governance pattern as happy-patterns (already memory-tracked). HCS follows observed practice — no prefix. Separate cleanup task spawned to retire the stale yaml entries.
+The former Jefahnierocks root `.subsidiary.yaml` (since removed) had claimed `prefix: jfr`, `repo_prefix: "jfr-"`. Actual practice: zero `verlyn13/jfr-*` repos exist. The file was removed rather than renamed because no Jefahnierocks-owned local metadata consumer exists yet. HCS followed observed practice from the start — no prefix.
 
 ### 1.3 Host-scoped infrastructure precedent
 
-`system-config` sets the precedent: sibling to `apps/packages/docs/` at subsidiary root, unprefixed, role = host-scoped infrastructure. HCS is analogous.
+`system-config` sets the precedent: sibling to `apps/packages/docs/` at the jefahnierocks workspace root, unprefixed, role = host-scoped infrastructure. HCS is analogous.
 
 ### 1.4 IDE / tool integration expectations
 
@@ -292,7 +292,7 @@ Warp prioritizes `WARP.md` over `AGENTS.md` when both exist. Creating a `WARP.md
 
 ### 8.1 Layer 1 — Constitutional principles
 
-The 16 Nash Covenant principles mapped to concrete HCS manifestations. Full table below.
+The 16 Nash Covenant principles, cited as planning input, mapped to concrete HCS manifestations. Citation only — HCS authority for these manifestations comes from this charter and the ADRs that adopt them. Full table below.
 
 | # | Nash principle | HCS manifestation |
 |---|----------------|-------------------|
@@ -726,7 +726,7 @@ Gated on: approval grants + audit hash chain + dashboard review + lease manager 
 - Long repo name — mitigated by `hcs` alias and tab-completion
 - Public source, tighter private deployment boundary — requires discipline on what enters the repo
 - Skills discipline `.agents/skills/` canonical, `.claude/skills/` wrappers only — adds one thin Claude wrapper per skill only when Claude Code can't discover the canonical content otherwise
-- Stronghold governance (lighter than parent) — appropriate for subsidiary infrastructure
+- Lightweight workspace-scoped governance — appropriate for host-scoped infrastructure that does not need a heavier review surface
 - Project-scope subagents only — HCS subagents invisible in other projects by design
 - Opus 4.7 + GPT-5.4 specific versions — re-evaluate at end of Phase 0b; subsequent minor updates acceptable
 
@@ -764,7 +764,7 @@ Gated on: approval grants + audit hash chain + dashboard review + lease manager 
 - Create local directory + git init + GitHub repo create (`verlyn13/host-capability-substrate`, public)
 - Bootstrap scaffold (all files per §9, including 6 subagents, 6 skills in `.agents/skills/`, settings.json per §12, hook helper, ADR stubs, regression seed, CI scripts)
 - Append three Codex profiles + trust-list entry to `~/.codex/config.toml` (back up first)
-- Spawned separately (chip in UI): retire stale `jfr-` prefix in `.subsidiary.yaml` and jefahnierocks/CLAUDE.md
+- ~~Spawned separately (chip in UI): retire stale `jfr-` prefix in `.subsidiary.yaml` and jefahnierocks/CLAUDE.md~~ — completed 2026-05-01: `.subsidiary.yaml` removed, jefahnierocks/CLAUDE.md and AGENTS.md rewritten in workspace-own voice (v1.2.0)
 
 ---
 
@@ -799,5 +799,6 @@ Gated on: approval grants + audit hash chain + dashboard review + lease manager 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.0 | 2026-05-01 | Parent-inheritance framing retired. Nash Covenant principles reframed as cited planning input rather than runtime-inherited authority. Jefahnierocks reframed as a workspace with its own authority rather than a subsidiary tier. `.subsidiary.yaml` cleanup recorded as complete (file removed rather than renamed because no Jefahnierocks-owned local metadata consumer exists yet). Decision content (name, path, GitHub slug, deployment boundary, policy set, scaffolding stance) is unchanged from v1.1.0; only the authority/citation framing changes. |
 | 1.1.0 | 2026-04-22 | Expert-reviewed refinements. Public/private deployment boundary made explicit (§3). Runtime paths + env vars + LaunchAgent reverse-DNS label standardized (§4). Sixth subagent `hcs-ontology-reviewer` added (§5). Skills discipline: `.agents/skills/` canonical, `.claude/skills/` Claude-specific wrappers only (§6). No `WARP.md` in Phase 0a (§7). Four-layer policy set with expanded forbidden list (§8). Tool baseline pinned: Claude Code 1.3883.0+ Opus 4.7, Codex 26.417.41555+ GPT-5.4 (§2.5). Quality gates expanded (§10). Example settings.json (§12). Added references to tooling-surface-matrix.md and ADR 0011 public-private-boundary. |
-| 1.0.0 | 2026-04-22 | Initial decision. Name `host-capability-substrate`; path `~/Organizations/jefahnierocks/host-capability-substrate/`; GitHub `verlyn13/host-capability-substrate` (no prefix — matches observed practice). Stale `jfr-` prefix flagged as separate cleanup. Full Phase 0a layout specified. Policy set = 16 Nash principles + 12 2026 agentic additions. |
+| 1.0.0 | 2026-04-22 | Initial decision. Name `host-capability-substrate`; path `~/Organizations/jefahnierocks/host-capability-substrate/`; GitHub `verlyn13/host-capability-substrate` (no prefix — matches observed practice). Stale `jfr-` prefix flagged as separate cleanup. Full Phase 0a layout specified. Policy set cited 16 Nash principles + 12 2026 agentic additions as planning input (framing later clarified in v1.2.0). |

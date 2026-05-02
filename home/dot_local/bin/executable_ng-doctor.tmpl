@@ -822,19 +822,9 @@ check_org_claude_md_present() {
   fi
 }
 
-check_subsidiary_yaml_present() {
-  local yaml="$HOME/Organizations/jefahnierocks/.subsidiary.yaml"
-  if [[ -f "$yaml" ]]; then
-    pass "subsidiary_yaml_present" ".subsidiary.yaml exists"
-  else
-    fail "subsidiary_yaml_present" ".subsidiary.yaml" "exists at $yaml" "not found"
-  fi
-}
-
 run_governance_checks() {
   section "governance"
   check_org_claude_md_present
-  check_subsidiary_yaml_present
 }
 
 # --- Main ---------------------------------------------------------------------
@@ -896,7 +886,6 @@ list_checks() {
   printf "%-14s %s\n" "hygiene" "chezmoi_source_clean"
   printf "%-14s %s\n" "hygiene" "git_ignorecase_false"
   printf "%-14s %s\n" "governance" "org_claude_md_present"
-  printf "%-14s %s\n" "governance" "subsidiary_yaml_present"
 }
 
 run_category() {

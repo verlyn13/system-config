@@ -175,7 +175,7 @@ Every enrolled project must declare:
 
 - workspace class
 - lifecycle
-- owner and subsidiary
+- owner and entity
 - requested resources
 - stable labels
 - service categories
@@ -315,7 +315,7 @@ driver = "none"
 sunset_date = "2026-06-07"
 
 [ownership]
-subsidiary = "happy-patterns"
+entity = "happy-patterns"
 primary_owner = "verlyn13"
 guardian_accounts = ["verlyn13", "happy-patterns"]
 github_repository = "verlyn13/manim"
@@ -325,7 +325,7 @@ cpus = 2
 memory = "4GiB"
 
 [labels]
-subsidiary = "happy-patterns"
+entity = "happy-patterns"
 workspace_class = "experiment"
 lifecycle = "experimental"
 owner = "verlyn13"
@@ -392,7 +392,7 @@ Project-local runtime remains the source of truth:
 
 The proof of concept should use these stable values:
 
-- `subsidiary = happy-patterns`
+- `entity = happy-patterns`
 - `workspace_class = experiment`
 - `lifecycle = experimental`
 - `owner = verlyn13`
