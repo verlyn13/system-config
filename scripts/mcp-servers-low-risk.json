@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/mcp-servers.json",
+  "_comment": "Low-risk MCP profile (plan P7). Docs/search read-only set for sessions that review untrusted external content (web pages, GitHub PR/issue bodies, third-party docs). Excludes the four servers that, per Meta's 2025-10 Agents Rule of Two, would combine with the (B) untrusted-content servers in this set to form an exploitable combination: memory (private-data sink that injections can write to and exfiltrate via a later (C)-capable session), github (private repos + write authority), runpod (state-change: pod create runs arbitrary image), cloudflare (state-change: DNS write is textbook exfil; Worker deploy is RCE). Activate with: scripts/sync-mcp.sh --profile low-risk. See docs/security-hardening-implementation-plan.md §P7.",
+  "mcpServers": {
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "_description": "Developer documentation lookup"
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "${HOME}/.local/bin/mcp-npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "_description": "Complex problem decomposition"
+    },
+    "brave-search": {
+      "type": "stdio",
+      "command": "${HOME}/.local/bin/mcp-brave-search-server",
+      "_description": "Web search via Brave"
+    },
+    "firecrawl": {
+      "type": "stdio",
+      "command": "${HOME}/.local/bin/mcp-firecrawl-server",
+      "_description": "Web scraping/crawling"
+    },
+    "runpod-docs": {
+      "type": "http",
+      "url": "https://docs.runpod.io/mcp",
+      "_description": "Runpod documentation search (no auth)"
+    },
+    "cloudflare-docs": {
+      "type": "http",
+      "url": "https://docs.mcp.cloudflare.com/mcp",
+      "_description": "Cloudflare documentation search (no auth)"
+    }
+  }
+}

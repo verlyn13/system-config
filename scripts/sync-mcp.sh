@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOURCE_FILE="$SCRIPT_DIR/mcp-servers.json"
+# SOURCE_FILE is resolved after argument parsing (depends on --profile)
 
 # Tool config locations (user-level)
 CLAUDE_CODE_CONFIG="$HOME/.claude.json"
@@ -38,10 +38,81 @@ GITHUB_BASE_URL="https://api.githubcopilot.com/mcp/"
 GITHUB_WRAPPER_PATH="$HOME/.local/bin/mcp-github-server"
 
 DRY_RUN=false
-[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
+PROFILE="engineering"
+
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [--dry-run] [--profile {engineering,low-risk}] [--help]
+
+Sync the global MCP server baseline to all six AI tool configs.
+
+Profiles:
+  engineering (default)  Full baseline: github, cloudflare, runpod, memory,
+                         plus the docs/search/sequential-thinking set.
+                         For trusted local engineering work where the human
+                         is reviewing each step.
+  low-risk               Docs/search/sequential-thinking only. Excludes
+                         github, cloudflare, runpod, and memory per the
+                         Agents Rule of Two (Meta, 2025-10). For sessions
+                         that read untrusted external content.
+
+Switching profiles is destructive: this script overwrites the managed
+mcpServers block in each tool's config. Re-run with the other profile
+to switch back. Restart any running tool process to pick up the change.
+
+See docs/security-hardening-implementation-plan.md §P7 for the
+trust-profile design and per-tool switching reality.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --profile)
+            PROFILE="${2:-}"
+            if [[ -z "$PROFILE" ]]; then
+                echo "Error: --profile requires a value (engineering|low-risk)" >&2
+                exit 2
+            fi
+            shift 2
+            ;;
+        --profile=*)
+            PROFILE="${1#--profile=}"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Error: unknown argument '$1'" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+case "$PROFILE" in
+    engineering)
+        SOURCE_FILE="$SCRIPT_DIR/mcp-servers.json"
+        INCLUDE_GITHUB=true
+        ;;
+    low-risk)
+        SOURCE_FILE="$SCRIPT_DIR/mcp-servers-low-risk.json"
+        INCLUDE_GITHUB=false
+        ;;
+    *)
+        echo "Error: unknown profile '$PROFILE' (expected: engineering|low-risk)" >&2
+        exit 2
+        ;;
+esac
 
 # Check dependencies
 command -v jq &>/dev/null || { echo "Error: jq required"; exit 1; }
+[[ -f "$SOURCE_FILE" ]] || { echo "Error: source file not found: $SOURCE_FILE" >&2; exit 1; }
 
 # Strip metadata keys (keys starting with _) and expand ${HOME}
 prepare_servers() {
@@ -194,7 +265,7 @@ transform_for_claude_desktop() {
 }
 
 # Main
-echo "Syncing global MCP servers"
+echo "Syncing global MCP servers (profile: $PROFILE)"
 echo "Source: $SOURCE_FILE"
 echo ""
 $DRY_RUN && echo "[DRY RUN]" && echo ""
@@ -235,9 +306,18 @@ GITHUB_WINDSURF=$(jq -n --arg url "$GITHUB_BASE_URL" \
 # `op run --env-file`.
 GITHUB_CODEX="$GITHUB_STDIO_WRAPPER"
 
-SERVERS_WITH_WRAPPER=$(echo "$BASE_SERVERS"  | jq --argjson gh "$GITHUB_STDIO_WRAPPER" '. + {github: $gh}')
-SERVERS_WITH_WINDSURF=$(echo "$BASE_SERVERS" | jq --argjson gh "$GITHUB_WINDSURF"       '. + {github: $gh}')
-SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS"    | jq --argjson gh "$GITHUB_CODEX"          '. + {github: $gh}')
+# In low-risk profile, github is excluded entirely (per Rule of Two: github
+# combines all three legs in one server). MANAGED_KEYS still includes "github"
+# above so any pre-existing github entry on a target gets cleaned up on sync.
+if $INCLUDE_GITHUB; then
+    SERVERS_WITH_WRAPPER=$(echo "$BASE_SERVERS"  | jq --argjson gh "$GITHUB_STDIO_WRAPPER" '. + {github: $gh}')
+    SERVERS_WITH_WINDSURF=$(echo "$BASE_SERVERS" | jq --argjson gh "$GITHUB_WINDSURF"       '. + {github: $gh}')
+    SERVERS_WITH_CODEX=$(echo "$BASE_SERVERS"    | jq --argjson gh "$GITHUB_CODEX"          '. + {github: $gh}')
+else
+    SERVERS_WITH_WRAPPER="$BASE_SERVERS"
+    SERVERS_WITH_WINDSURF="$BASE_SERVERS"
+    SERVERS_WITH_CODEX="$BASE_SERVERS"
+fi
 
 # Claude Desktop: stdio-only config format. Reuse the CLI-host github stdio
 # wrapper, then transform the whole set to Claude Desktop's

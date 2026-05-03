@@ -3,8 +3,8 @@ title: Security Hardening Implementation Plan
 category: implementation
 component: security_posture
 status: active
-version: 0.3.1
-last_updated: 2026-05-02
+version: 0.3.2
+last_updated: 2026-05-03
 tags: [security, hardening, 1password, ssh, mcp, containers, macos, audit]
 priority: critical
 ---
@@ -962,20 +962,42 @@ Server-side scope reduction (current state):
 - **RunPod MCP**: scope at the API key (RunPod supports read-only API
   keys) — issue distinct keys per profile.
 
-Implementation approach for `system-config`:
+Implementation status (v0.3.2, landed 2026-05-03):
 
-1. Add a second source-of-truth file `scripts/mcp-servers-low-risk.json`
-   containing only the `low-risk` set.
-2. Extend `scripts/sync-mcp.sh` to accept `--profile {engineering,low-risk}`
-   and route to the appropriate source file. Default remains
-   `engineering` for backwards compatibility.
-3. For the wrappers that accept scope flags (GitHub, RunPod), add a
-   parallel `home/dot_local/bin/executable_mcp-github-readonly-server.tmpl`
-   that injects `--read-only` and a read-only PAT if a separate
-   `op://Dev/github-mcp-readonly/token` item exists. Otherwise document
-   the gap.
-4. Document Claude Desktop and Windsurf as "file-swap only" until vendor
-   support changes.
+1. **Done** — `scripts/mcp-servers-low-risk.json` lands the low-risk source
+   file with the 6-server set (`context7`, `cloudflare-docs`, `runpod-docs`,
+   `sequential-thinking`, `brave-search`, `firecrawl`).
+2. **Done** — `scripts/sync-mcp.sh` accepts `--profile {engineering,low-risk}`
+   plus `--help`. Default profile remains `engineering` for backwards
+   compatibility. Both `--profile foo --dry-run` and `--profile=foo` shapes
+   are supported. Invalid profiles error with exit 2. The github wrapper
+   injection (Claude Code, Claude Desktop, Cursor, Windsurf, Codex) is
+   gated on the active profile and is suppressed entirely under low-risk.
+3. **Deferred** — the `home/dot_local/bin/executable_mcp-github-readonly-server.tmpl`
+   wrapper is not yet implemented. Rationale: low-risk profile excludes
+   github entirely, which is the safer default. The read-only wrapper
+   would only be useful for a "github-allowed-but-read-only" middle
+   profile, which is not currently planned. If added later, it requires
+   creating a new `op://Dev/github-mcp-readonly/token` item with a
+   read-only fine-grained PAT.
+4. **Done** — Claude Desktop and Windsurf documented as "no native switch"
+   in the per-tool table above; profile change is a file rewrite for those
+   surfaces. The script behaves identically for them — it just rewrites
+   their single global config to the active profile's content.
+
+Switching usage:
+
+```bash
+# Default: engineering profile to all six tools
+scripts/sync-mcp.sh
+
+# Switch to low-risk for an untrusted-content review session
+scripts/sync-mcp.sh --profile low-risk
+
+# Restart any running tool to pick up the new MCP set, then do the
+# review work, then switch back when done
+scripts/sync-mcp.sh --profile engineering
+```
 
 Acceptance gate:
 
@@ -1207,6 +1229,7 @@ risk:
    - P7 profile design: add `scripts/mcp-servers-low-risk.json`,
      extend `scripts/sync-mcp.sh` with `--profile`, optionally add a
      `mcp-github-readonly-server` wrapper.
+     **(Landed in v0.3.2 less the optional wrapper.)**
    - P6 LaunchAgent disposition for system-config-owned agents:
      `com.jefahnierocks.mcp-usage-collector` is healthy, no action.
 
