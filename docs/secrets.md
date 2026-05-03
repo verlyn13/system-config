@@ -3,8 +3,8 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 2.2.0
-last_updated: 2026-04-23
+version: 2.2.1
+last_updated: 2026-05-02
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
 ---
@@ -190,5 +190,6 @@ session, regardless of which repo you're in):**
 - [`docs/github-mcp.md`](./github-mcp.md) — GitHub MCP integration
 - [`docs/cloudflare-mcp.md`](./cloudflare-mcp.md) — Cloudflare MCP integration
 - [`docs/ssh.md`](./ssh.md) — SSH client policy
+- [`docs/security-hardening-implementation-plan.md`](./security-hardening-implementation-plan.md) — 2026-05-02 security audit follow-up, including staged SSH key migration through 1Password
 - [`docs/agentic-tooling.md`](./agentic-tooling.md) — shell + tool contract
 - `~/Repos/verlyn13/infisical` — self-hosted Infisical management repo (HPUSS-SEC, server-side)

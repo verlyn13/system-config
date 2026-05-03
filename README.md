@@ -3,8 +3,8 @@ title: system-config
 category: reference
 component: overview
 status: active
-version: 4.1.0
-last_updated: 2026-04-25
+version: 4.1.1
+last_updated: 2026-05-02
 tags: [overview, setup, chezmoi, mise, zsh, mcp]
 priority: critical
 ---
@@ -71,6 +71,7 @@ scripts/sync-mcp.sh
 - [`docs/github-mcp.md`](docs/github-mcp.md) — GitHub MCP integration
 - [`docs/secrets.md`](docs/secrets.md) — 1Password + `op` policy
 - [`docs/ssh.md`](docs/ssh.md) — SSH client policy
+- [`docs/security-hardening-implementation-plan.md`](docs/security-hardening-implementation-plan.md) — UA wired-network audit follow-up and hardening todo plan
 - [`docs/agentic-tooling.md`](docs/agentic-tooling.md) — shell + tool contract
 - [`docs/workspace-management.md`](docs/workspace-management.md) — workspace POC
 - [`docs/claude-cli-setup.md`](docs/claude-cli-setup.md)

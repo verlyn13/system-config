@@ -3,8 +3,8 @@ title: SSH Policy
 category: reference
 component: ssh_policy
 status: active
-version: 1.1.0
-last_updated: 2026-04-15
+version: 1.1.1
+last_updated: 2026-05-02
 tags: [ssh, git, signing, 1password, security, agentic]
 priority: high
 ---
@@ -198,4 +198,5 @@ git log --show-signature -1
 - [`AGENTS.md`](../AGENTS.md)
 - [`README.md`](../README.md)
 - [`docs/secrets.md`](./secrets.md)
+- [`docs/security-hardening-implementation-plan.md`](./security-hardening-implementation-plan.md)
 - [`docs/agentic-tooling.md`](./agentic-tooling.md)

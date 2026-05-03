@@ -12,6 +12,7 @@ Read these for current state:
 - [`docs/project-conventions.md`](./docs/project-conventions.md) — compatibility guide for downstream projects (link this from a project's own `AGENTS.md`)
 - [`docs/secrets.md`](./docs/secrets.md) — secret-handling policy (1Password)
 - [`docs/ssh.md`](./docs/ssh.md) — SSH client policy
+- [`docs/security-hardening-implementation-plan.md`](./docs/security-hardening-implementation-plan.md) — audited hardening backlog and implementation plan
 - [`docs/mcp-config.md`](./docs/mcp-config.md) — MCP framework (scope model, launch patterns, sync behavior)
 - [`docs/github-mcp.md`](./docs/github-mcp.md) — GitHub MCP integration
 - [`docs/cloudflare-mcp.md`](./docs/cloudflare-mcp.md) — Cloudflare MCP integration (Codemode usage, token scope, conventions)
