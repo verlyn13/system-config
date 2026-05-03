@@ -827,12 +827,116 @@ run_governance_checks() {
   check_org_claude_md_present
 }
 
+# --- Category: posture --------------------------------------------------------
+#
+# Posture checks added per the 2026-05-02 security hardening plan v0.3.0+
+# (docs/security-hardening-implementation-plan.md, P10).
+#
+# All checks land in skip-mode initially. Each is promoted to pass/fail
+# semantics individually as the underlying P-track stabilizes, per the plan's
+# Work Order. Promotion is its own change with its own validation. Do not
+# promote a check without first verifying the underlying surface is stable.
+
+check_firewall_enabled() {
+  skip "firewall_enabled" \
+    "P5: socketfilterfw --getglobalstate should report state=1"
+}
+
+check_firewall_stealth_mode_on() {
+  skip "firewall_stealth_mode_on" \
+    "P5: socketfilterfw --getstealthmode should report enabled"
+}
+
+check_sharing_remote_login_off() {
+  skip "sharing_remote_login_off" \
+    "P5: system-level Remote Login (sshd) should not be loaded"
+}
+
+check_sharing_smb_off() {
+  skip "sharing_smb_off" \
+    "P5: system-level File Sharing (smbd) should not be loaded"
+}
+
+check_sharing_screen_off() {
+  skip "sharing_screen_off" \
+    "P5: system-level Screen Sharing should not be loaded"
+}
+
+check_sharing_airplay_off() {
+  skip "sharing_airplay_off" \
+    "P5: AirPlay Receiver should be off in System Settings"
+}
+
+check_sharing_no_guest_writable_share_points() {
+  skip "sharing_no_guest_writable_share_points" \
+    "P5: 'sharing -l' should report no share points with guest access enabled"
+}
+
+check_docker_no_publishes_to_zero_zero_zero_zero() {
+  skip "docker_no_publishes_to_zero_zero_zero_zero" \
+    "P1: 'docker ps' Ports column should not show 0.0.0.0 or [::] bindings"
+}
+
+check_non_container_listeners_only_expected() {
+  skip "non_container_listeners_only_expected" \
+    "P2: lsof TCP listeners on the public IP should only include declared apps"
+}
+
+check_ssh_no_empty_passphrase_keys() {
+  skip "ssh_no_empty_passphrase_keys" \
+    "P3: every ~/.ssh/*_ed25519* private key should require a passphrase (count threshold)"
+}
+
+check_shell_history_no_sensitive_patterns() {
+  skip "shell_history_no_sensitive_patterns" \
+    "P4: zsh + XDG state history should report zero sensitive-pattern matches (count threshold)"
+}
+
+check_launchagents_no_persistent_failure_loops() {
+  skip "launchagents_no_persistent_failure_loops" \
+    "P6: 'launchctl print' for each custom user agent should report last exit 0 or service not loaded"
+}
+
+check_wireshark_chmodbpf_present_only_if_used() {
+  skip "wireshark_chmodbpf_present_only_if_used" \
+    "P5: ChmodBPF LaunchDaemon should be loaded only if Wireshark is in active use"
+}
+
+check_warp_connected_and_dns_gateway_enforced() {
+  skip "warp_connected_and_dns_gateway_enforced" \
+    "P9: warp-cli reports Connected with adults-profile contract; home Gateway DoH probe (cloudflare-dns/state.json owns the DoH endpoint) returns NXDOMAIN/0.0.0.0 for malware.testcategory.com"
+}
+
+check_warp_http_proxy_enforced() {
+  skip "warp_http_proxy_enforced" \
+    "P9: cdn-cgi/trace should report gateway=on; gated on org-admin enabling Secure Web Gateway proxy toggle in Traffic Settings — do not promote without that decision"
+}
+
+run_posture_checks() {
+  section "posture"
+  check_firewall_enabled
+  check_firewall_stealth_mode_on
+  check_sharing_remote_login_off
+  check_sharing_smb_off
+  check_sharing_screen_off
+  check_sharing_airplay_off
+  check_sharing_no_guest_writable_share_points
+  check_docker_no_publishes_to_zero_zero_zero_zero
+  check_non_container_listeners_only_expected
+  check_ssh_no_empty_passphrase_keys
+  check_shell_history_no_sensitive_patterns
+  check_launchagents_no_persistent_failure_loops
+  check_wireshark_chmodbpf_present_only_if_used
+  check_warp_connected_and_dns_gateway_enforced
+  check_warp_http_proxy_enforced
+}
+
 # --- Main ---------------------------------------------------------------------
 
-ALL_CATEGORIES=(shell path tools ssh iterm2 agentic filesystem hygiene governance)
+ALL_CATEGORIES=(shell path tools ssh iterm2 agentic filesystem hygiene governance posture)
 
 list_checks() {
-  echo "ng-doctor checks (48 checks, 9 categories):"
+  echo "ng-doctor checks (65 checks, 10 categories):"
   echo ""
   printf "%-14s %s\n" "CATEGORY" "CHECK"
   printf "%-14s %s\n" "────────" "─────"
@@ -886,6 +990,21 @@ list_checks() {
   printf "%-14s %s\n" "hygiene" "chezmoi_source_clean"
   printf "%-14s %s\n" "hygiene" "git_ignorecase_false"
   printf "%-14s %s\n" "governance" "org_claude_md_present"
+  printf "%-14s %s\n" "posture" "firewall_enabled"
+  printf "%-14s %s\n" "posture" "firewall_stealth_mode_on"
+  printf "%-14s %s\n" "posture" "sharing_remote_login_off"
+  printf "%-14s %s\n" "posture" "sharing_smb_off"
+  printf "%-14s %s\n" "posture" "sharing_screen_off"
+  printf "%-14s %s\n" "posture" "sharing_airplay_off"
+  printf "%-14s %s\n" "posture" "sharing_no_guest_writable_share_points"
+  printf "%-14s %s\n" "posture" "docker_no_publishes_to_zero_zero_zero_zero"
+  printf "%-14s %s\n" "posture" "non_container_listeners_only_expected"
+  printf "%-14s %s\n" "posture" "ssh_no_empty_passphrase_keys"
+  printf "%-14s %s\n" "posture" "shell_history_no_sensitive_patterns"
+  printf "%-14s %s\n" "posture" "launchagents_no_persistent_failure_loops"
+  printf "%-14s %s\n" "posture" "wireshark_chmodbpf_present_only_if_used"
+  printf "%-14s %s\n" "posture" "warp_connected_and_dns_gateway_enforced"
+  printf "%-14s %s\n" "posture" "warp_http_proxy_enforced"
 }
 
 run_category() {
@@ -899,6 +1018,7 @@ run_category() {
     filesystem) run_filesystem_checks ;;
     hygiene)    run_hygiene_checks ;;
     governance) run_governance_checks ;;
+    posture)    run_posture_checks ;;
     *) echo "Unknown category: $1"; exit 2 ;;
   esac
 }
