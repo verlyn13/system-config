@@ -3,8 +3,8 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 2.2.1
-last_updated: 2026-05-02
+version: 2.3.0
+last_updated: 2026-05-04
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
 ---
@@ -14,6 +14,20 @@ priority: critical
 Single authoritative guide for how agents and humans handle secrets on
 this system. Other docs should point here for secret policy, not restate
 it.
+
+## Item shape — parent standard
+
+The structural shape of every 1Password item referenced from this repo
+(field names, label-uniqueness rules, `op://` URI semantics, the cleanup
+recipe for duplicate-label drift) is governed by Nash's
+**1Password Item Shape Standard** at
+`~/Organizations/the-nash-group/.org/standards/op-item-shape.md`.
+
+This file restates the *jefahnierocks-side* policy (which references are
+live, which agent operations are authorized) and inherits the structural
+contract from that standard. When the two diverge, the Nash standard is
+authoritative for shape; this document is authoritative for which
+references this repo owns.
 
 ## Core rules
 

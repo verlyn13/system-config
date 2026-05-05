@@ -298,8 +298,11 @@ new pattern.
   ```
 - **Public-key extraction** is reliable:
   ```bash
-  op read "op://Dev/ssh-hetzner-primary-2026/public_key"
+  op read --account my.1password.com "op://Dev/ssh-hetzner-primary-2026/public key"
   ```
+  `op` accepts `public key`, `public_key`, and `publickey` interchangeably for
+  `SSH_KEY` items. This repo standardizes on the spaced form `public key` to
+  match active chezmoi templates.
 
 ### `IdentityAgent` multi-vault behavior
 
