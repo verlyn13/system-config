@@ -3,9 +3,9 @@ title: Workspace Management Design
 category: design
 component: workspace_management
 status: proposed
-version: 1.2.1
-last_updated: 2026-04-15
-tags: [workspace, orbstack, podman, proof-of-concept, resource-management]
+version: 1.2.2
+last_updated: 2026-05-06
+tags: [workspace, orbstack, podman, proof-of-concept, resource-management, substrate]
 priority: high
 ---
 
@@ -15,6 +15,9 @@ This document defines the minimal local workspace-management design that fits th
 
 Projects that need to configure themselves to be compatible with this system should also follow [`docs/agentic-tooling.md`](./agentic-tooling.md), which defines the project-local tool, env, instruction, and workspace-compatibility expectations.
 For live system-wide secret-handling rules, use [`docs/secrets.md`](./secrets.md); this document only assigns ownership boundaries around project secrets and `.envrc`.
+For shared Proxmox runners or project-scoped substrate infrastructure, use
+[`docs/host-capability-substrate/project-substrate-adoption.md`](./host-capability-substrate/project-substrate-adoption.md);
+workspace enrollment alone does not authorize shared substrate capacity.
 
 It intentionally does not design a full platform. It makes only the choices needed to decide:
 

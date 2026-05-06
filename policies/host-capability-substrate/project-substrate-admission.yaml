@@ -1,0 +1,179 @@
+---
+policy_version: "0.1.0"
+kind: host_capability_substrate.project_substrate_admission
+status: active
+last_updated: "2026-05-06"
+
+source_authority:
+  owner: the-citadel
+  repository: The-Nash-Group/citadel-config
+  pull_request: 37
+  merged_commit: 46c55857427af4b887194277bac2218c20b595b6
+  standard_path: /Users/verlyn13/Organizations/the-nash-group/the-citadel/docs/project-substrate-control-plane-standard.md
+  example_contract_path: /Users/verlyn13/Organizations/the-nash-group/the-citadel/docs/reference/project-substrate-contract.example.yaml
+
+adoption_boundary:
+  current_policy_owner: system-config
+  future_policy_owner: host-capability-substrate
+  posture: transitional_host_local_policy
+  applies_to:
+    - shared Proxmox runner substrate admission
+    - GitHub Actions self-hosted runner use on trusted hardware
+    - project-scoped VMs, containers, services, databases, and dev stacks
+  does_not_authorize:
+    - direct Proxmox mutation
+    - GitHub runner registration
+    - GitHub provider mutation
+    - Cloudflare provider mutation
+    - 1Password item creation or mutation
+    - project credential creation
+
+ownership:
+  citadel:
+    owns:
+      - GitHub runner groups
+      - selected repository access
+      - repository rulesets
+      - workflow policy checks
+  runner_substrate:
+    owns:
+      - physical Proxmox host operation
+      - VM templates
+      - storage and network implementation records
+      - backup evidence
+  system_config:
+    owns:
+      - host-local policy adoption guidance
+      - generated host-local policy snapshots
+      - project-facing compatibility guidance
+  project_repo:
+    owns:
+      - docs/infrastructure/project-substrate-contract.yaml
+      - project workload code
+      - project runtime data
+      - repo-local evidence required by the contract
+  hcs:
+    future_owns:
+      - typed runner and project evidence model
+      - evidence freshness checks
+      - operation gating
+
+contract:
+  required_before_use: true
+  recommended_project_path: docs/infrastructure/project-substrate-contract.yaml
+  example_shape_path: /Users/verlyn13/Organizations/the-nash-group/the-citadel/docs/reference/project-substrate-contract.example.yaml
+  allowed_statuses:
+    - draft
+    - accepted
+    - provisionable
+    - active
+    - suspended
+    - retired
+  required_fields:
+    - contract_version
+    - project_id
+    - owner_entity
+    - authority_repo
+    - repo_refs
+    - workload_lanes
+    - trust_class
+    - data_classification
+    - resource_budget
+    - network_profile
+    - storage_profile
+    - backup_profile
+    - machine_identities
+    - iac_owner
+    - evidence_required
+    - teardown_policy
+    - guardian_approval
+    - status
+  conditional_fields:
+    secret_refs: required_when_workload_needs_secrets
+  active_requires:
+    - accepted_contract
+    - scoped_machine_identity_or_approved_issuance_steps
+    - iac_owner_and_backend_declared
+    - lane_specific_runner_or_infrastructure_evidence
+    - no_secret_material_in_git_or_state
+    - resource_budget_declared
+    - network_storage_backup_and_teardown_policy_declared
+
+lanes:
+  ci_execution:
+    purpose: GitHub Actions jobs on trusted self-hosted hardware.
+    required_controls:
+      - GitHub runner group access is Citadel-managed.
+      - Workflows use runs-on.group plus explicit labels.
+      - Generic runs-on self-hosted is forbidden.
+      - Hosted smoke checks remain present for self-hosted workflows.
+      - Public fork pull-request code never runs on self-hosted hardware.
+      - Apply or deploy jobs use the IaC runner group and protected environments.
+      - Runner registration uses short-lived material only.
+      - Runner tokens, JIT configs, private keys, and personal credentials never enter git or OpenTofu state.
+    evidence_required:
+      - selected_repository_access
+      - workflow_policy_check
+      - runner_group_and_label_mapping
+      - hosted_smoke_status
+      - public_fork_self_hosted_block
+      - short_lived_registration_procedure
+
+  project_infrastructure:
+    purpose: Project-scoped VMs, containers, dev services, databases, preview environments, build caches, and service stacks.
+    required_controls:
+      - Every workload has a project substrate contract before provisioning.
+      - Provisioning and teardown are idempotent and IaC-owned.
+      - Resource budgets cover CPU, memory, storage, concurrency, and runtime limits.
+      - Network profiles declare management access, egress, ingress, LAN or VPN dependencies, and firewall or reverse-proxy ownership.
+      - Storage profiles classify data as ephemeral, rebuildable, persistent_project_data, or regulated_or_sensitive.
+      - Persistent project data has backup and restore expectations before active use.
+      - Ephemeral containers and VMs have explicit cleanup rules.
+      - Project agents mutate only their declared project scope.
+      - Host-level Proxmox operations remain outside project repos.
+    evidence_required:
+      - template_or_image_source
+      - network_profile
+      - storage_and_backup_profile
+      - restore_expectation_when_persistent
+      - runtime_secret_reference_inventory
+      - teardown_evidence_for_ephemeral_resources
+
+machine_identity:
+  canonical_form: machine/<entity>/<project>/<purpose>
+  rules:
+    - Do not use personal credentials for project infrastructure.
+    - Do not share one broad machine identity across unrelated projects.
+    - Prefer short-lived platform-native identities where supported.
+    - 1Password may custody bootstrap or integration material, never broad unscoped authority.
+    - OpenTofu may reference secret names, item aliases, or provider-managed identifiers, never secret values.
+    - Issuance, rotation, and retirement evidence stays separate from workload admission evidence.
+
+stop_rules:
+  - id: direct-host-mutation
+    trigger: Project agent attempts direct host SSH, Docker, or Proxmox console mutation as the normal path.
+    action: stop_for_guardian_review
+  - id: proxmox-console-drift
+    trigger: Proxmox console state differs from IaC or is changed outside the substrate owner.
+    action: stop_for_drift_reconciliation
+  - id: unscoped-machine-identity
+    trigger: Workload asks to use broad parent, human, or unrelated project credentials.
+    action: stop_until_scoped_identity_exists
+  - id: secret-material-in-files-or-state
+    trigger: Secret values, runner tokens, JIT configs, private keys, or recovery material would enter git, docs, chat, local files, or OpenTofu state.
+    action: stop_and_rotate_if_exposed
+  - id: workload-without-contract
+    trigger: Project workload wants shared substrate capacity before a contract exists.
+    action: stop_until_contract_is_reviewed
+  - id: public-management-exposure
+    trigger: Proxmox management, VM management, runner VM management, or privileged service surfaces would become publicly reachable.
+    action: stop_for_network_review
+  - id: persistent-data-without-backup
+    trigger: Persistent project data would run before backup and restore expectations exist.
+    action: stop_until_backup_readiness_is_recorded
+  - id: public-fork-self-hosted-execution
+    trigger: Public fork pull-request code would reach trusted self-hosted runners.
+    action: stop_until_workflow_policy_blocks_it
+  - id: hidden-provider-mutation
+    trigger: A docs, project, or Citadel PR would register runners, mutate providers, create credentials, or alter Proxmox state as a side effect.
+    action: stop_and_split_into_reviewed_operator_action
