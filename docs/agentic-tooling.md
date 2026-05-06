@@ -3,9 +3,9 @@ title: Agentic Tooling
 category: reference
 component: agentic_tooling
 status: active
-version: 1.5.0
-last_updated: 2026-04-25
-tags: [agentic, mcp, zsh, claude, codex, cursor, windsurf, copilot, gemini, workspace]
+version: 1.6.0
+last_updated: 2026-05-06
+tags: [agentic, mcp, zsh, claude, codex, cursor, windsurf, copilot, gemini, workspace, substrate]
 priority: high
 ---
 
@@ -44,6 +44,7 @@ Keep repo-specific decisions in the repo:
 | Project MCP servers | `.mcp.json` |
 | Project instructions | `AGENTS.md`, `CLAUDE.md`, tool-native project docs |
 | Workspace identity and lifecycle | `.workspace/workspace.toml` when the project is workspace-enrolled |
+| Shared substrate admission | `docs/infrastructure/project-substrate-contract.yaml` when the project uses shared substrate capacity |
 
 ## Workspace-Compatible Projects
 
@@ -55,6 +56,8 @@ Projects that want to be compatible with this system should keep a narrow, expli
 - The repo owns its own env and secret-loading contract.
 - The repo owns its own agent instructions.
 - The repo must not depend on user-global MCP or shell config for project-specific behavior.
+- The repo must carry a reviewed substrate contract before using shared
+  Proxmox runners or project-scoped substrate infrastructure.
 
 ### Recommended checked-in files
 
@@ -69,6 +72,7 @@ Projects that want to be compatible with this system should keep a narrow, expli
 | `.cursor/rules/` | Cursor project rules if used |
 | `.workspace/workspace.toml` | Workspace identity, lifecycle, labels, service categories when enrolled |
 | `.workspace/README.md` | Short human-readable explanation of the workspace contract |
+| `docs/infrastructure/project-substrate-contract.yaml` | Non-secret admission contract for shared runners or project infrastructure |
 
 ### Command-surface rule
 
@@ -151,6 +155,26 @@ If a project uses managed containers later:
 - move system packages and runtime dependencies needed for containerized execution into the image or container contract
 - keep `.envrc` focused on project env and secrets, not substrate bootstrap
 
+### Shared substrate admission
+
+Projects that use the shared Proxmox runner substrate or project-scoped
+infrastructure must follow
+[`docs/host-capability-substrate/project-substrate-adoption.md`](./host-capability-substrate/project-substrate-adoption.md).
+
+There are two lanes:
+
+- `ci_execution` covers GitHub Actions runner groups, explicit runner labels,
+  selected repository access, hosted smoke checks, and public-fork protection.
+- `project_infrastructure` covers project-scoped VMs, containers, services,
+  IaC provisioning, resource budgets, network/storage/backup policy, and
+  teardown.
+
+Project agents stop before direct host mutation, Proxmox console drift,
+unscoped machine identities, secret material in files or state, and workloads
+without a reviewed substrate contract. The contract shape comes from Citadel's
+example at
+`/Users/verlyn13/Organizations/the-nash-group/the-citadel/docs/reference/project-substrate-contract.example.yaml`.
+
 ## MCP Configuration
 
 The unified MCP framework for this system — scope model, baseline server
@@ -207,5 +231,6 @@ decisions:
 - [`docs/github-mcp.md`](./github-mcp.md) — GitHub MCP integration
 - [`docs/secrets.md`](./secrets.md)
 - [`docs/workspace-management.md`](./workspace-management.md)
+- [`docs/host-capability-substrate/project-substrate-adoption.md`](./host-capability-substrate/project-substrate-adoption.md)
 - [`README.md`](../README.md)
 - [`AGENTS.md`](../AGENTS.md)

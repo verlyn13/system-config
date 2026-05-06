@@ -13,6 +13,7 @@ Read these for current state:
 - [`docs/secrets.md`](./docs/secrets.md) — secret-handling policy (1Password)
 - [`docs/ssh.md`](./docs/ssh.md) — SSH client policy
 - [`docs/security-hardening-implementation-plan.md`](./docs/security-hardening-implementation-plan.md) — audited hardening backlog and implementation plan
+- [`docs/host-capability-substrate/project-substrate-adoption.md`](./docs/host-capability-substrate/project-substrate-adoption.md) — transitional host-local project substrate admission policy
 - [`docs/mcp-config.md`](./docs/mcp-config.md) — MCP framework (scope model, launch patterns, sync behavior)
 - [`docs/github-mcp.md`](./docs/github-mcp.md) — GitHub MCP integration
 - [`docs/cloudflare-mcp.md`](./docs/cloudflare-mcp.md) — Cloudflare MCP integration (Codemode usage, token scope, conventions)

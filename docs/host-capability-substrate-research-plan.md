@@ -3,9 +3,9 @@ title: Host Capability Substrate — Research Plan
 category: research
 component: host_capability_substrate
 status: draft
-version: 0.3.0
-last_updated: 2026-04-22
-tags: [substrate, kernel, mcp, a2a, apps, agentic, ontology, policy, audit, operations, implementation, macos]
+version: 0.3.1
+last_updated: 2026-05-06
+tags: [substrate, kernel, mcp, a2a, apps, agentic, ontology, policy, audit, operations, implementation, macos, runners]
 priority: high
 ---
 
@@ -20,12 +20,14 @@ Related live docs:
 - [`docs/mcp-config.md`](./mcp-config.md) — current MCP framework and sync behavior
 - [`docs/secrets.md`](./secrets.md) — 1Password + `op` policy the substrate must follow
 - [`docs/agentic-tooling.md`](./agentic-tooling.md) — shell and tool contract the substrate composes with
+- [`docs/host-capability-substrate/project-substrate-adoption.md`](./host-capability-substrate/project-substrate-adoption.md) — transitional host-local project substrate admission policy
+- [`policies/host-capability-substrate/project-substrate-admission.yaml`](../policies/host-capability-substrate/project-substrate-admission.yaml) — structured project substrate admission policy snapshot
 - [`policies/version-policy.md`](../policies/version-policy.md) — existing policy-as-data precedent
 - [`policies/opa/policy.rego`](../policies/opa/policy.rego) — existing OPA policy precedent
 - [`docs/host-capability-substrate/implementation-charter.md`](./host-capability-substrate/implementation-charter.md) — binding four-ring rule
 - [`docs/host-capability-substrate/templates/`](./host-capability-substrate/templates/) — target-repo scaffolding drafts
 
-This is a research plan. It enumerates investigations, measurements, ontology work, resolved decisions, an agent operating system, human rituals, and an ordered implementation sequence. v0.3.0 closes the eight open items from v0.2.0 and adds a full Implementation Program — the discipline required to prevent implementation entropy once work begins.
+This is a research plan. It enumerates investigations, measurements, ontology work, resolved decisions, an agent operating system, human rituals, and an ordered implementation sequence. v0.3.0 closes the eight open items from v0.2.0 and adds a full Implementation Program — the discipline required to prevent implementation entropy once work begins. v0.3.1 records the transitional project substrate admission policy adopted from Citadel PR #37 while HCS is not yet primary for typed evidence and operation gating.
 
 ## Context — why a substrate, not a server
 
@@ -956,7 +958,7 @@ HCS consumes workspace identity from `.workspace/workspace.toml` (`docs/workspac
 
 ### Existing policies
 
-HCS policy directory extends `policies/` pattern (`version-policy.md`, `opa/policy.rego`). New artifacts under `policies/host-capability-substrate/`.
+HCS policy directory extends `policies/` pattern (`version-policy.md`, `opa/policy.rego`). New artifacts live under `policies/host-capability-substrate/`. The current transitional project substrate admission snapshot is [`policies/host-capability-substrate/project-substrate-admission.yaml`](../policies/host-capability-substrate/project-substrate-admission.yaml), derived from Citadel PR #37.
 
 ## 21. Decisions
 
@@ -964,7 +966,7 @@ All eight open items from v0.2.0 resolved. Cited.
 
 ### 21.1 Policy YAML location
 
-**Decision:** `system-config/policies/host-capability-substrate/` is the source of truth. The HCS target repo may vendor or symlink a generated snapshot for tests, but **policy ownership stays covenant-adjacent and host-governed**.
+**Decision:** `system-config/policies/host-capability-substrate/` is the source of truth for host-local HCS policy, including transitional project substrate admission policy. The HCS target repo may vendor or symlink a generated snapshot for tests, but **policy ownership stays covenant-adjacent and host-governed**.
 
 **Why:** Governance integrates with existing `policies/` review process. Cross-host consistency is automatic because policy travels with chezmoi-managed configuration. Prevents policy drift when the HCS repo eventually has multiple consumers.
 

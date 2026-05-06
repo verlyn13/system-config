@@ -3,9 +3,9 @@ title: Project Conventions
 category: reference
 component: project_conventions
 status: active
-version: 1.2.0
-last_updated: 2026-04-24
-tags: [project, conventions, 1password, mcp, mise, ssh, compatibility, rate-limit]
+version: 1.3.0
+last_updated: 2026-05-06
+tags: [project, conventions, 1password, mcp, mise, ssh, compatibility, rate-limit, substrate]
 priority: high
 ---
 
@@ -31,6 +31,8 @@ A project is "system-config compatible" when it:
 - Uses Conventional Commits, signed via SSH signing
 - Assumes OpenSSH-compatible remotes; no hard dependency on private key filenames
 - Uses zsh/POSIX semantics in hook scripts and subshells
+- Commits a project substrate contract before using shared Proxmox runners,
+  project VMs, containers, services, databases, or preview infrastructure
 
 ## Files to commit
 
@@ -45,6 +47,7 @@ A project is "system-config compatible" when it:
 | `.codex/config.toml` | Codex project MCP (requires user-side trust opt-in) | if used |
 | `.copilot/mcp-config.json` | Copilot CLI project MCP | if used |
 | `.workspace/workspace.toml` | Workspace identity, labels, service categories | if workspace-enrolled |
+| `docs/infrastructure/project-substrate-contract.yaml` | Shared substrate admission contract | if using shared substrate capacity |
 | `.infisical.json` | Infisical scope — config only, not a secret | if project uses Infisical |
 
 ## Files to gitignore
@@ -339,6 +342,41 @@ Projects may be workspace-compatible in multiple modes: local-process,
 enrolled with `driver = "none"`, or fully workspace-managed. Compatibility
 does not require every project to be containerized.
 
+## Project substrate admission
+
+Shared substrate capacity is broader than local workspace enrollment. It
+includes trusted GitHub Actions self-hosted runners and project-scoped
+infrastructure such as VMs, containers, dev services, databases, preview
+environments, build caches, and service stacks.
+
+Before a project uses that capacity, it must commit a non-secret contract at:
+
+```text
+docs/infrastructure/project-substrate-contract.yaml
+```
+
+Use the Citadel example shape at:
+
+```text
+/Users/verlyn13/Organizations/the-nash-group/the-citadel/docs/reference/project-substrate-contract.example.yaml
+```
+
+The live host-local adoption policy is
+[`docs/host-capability-substrate/project-substrate-adoption.md`](./host-capability-substrate/project-substrate-adoption.md),
+with the structured policy snapshot in
+[`../policies/host-capability-substrate/project-substrate-admission.yaml`](../policies/host-capability-substrate/project-substrate-admission.yaml).
+
+Projects must declare one or both lanes:
+
+- `ci_execution` for GitHub Actions runner groups, explicit labels, selected
+  repository access, hosted smoke checks, and public-fork protection
+- `project_infrastructure` for project-scoped VMs, containers, services, IaC
+  provisioning, resource budgets, network/storage/backup policy, and teardown
+
+Stop before direct host SSH, Docker, or Proxmox console mutation; unscoped
+machine identities; secret values in files, docs, chat, or OpenTofu state; and
+project workloads that have no reviewed substrate contract.
+
 ## Tool-native user configs (not synced)
 
 These live outside `scripts/sync-mcp.sh` and are not part of the managed
@@ -392,4 +430,5 @@ shellcheck scripts/*.sh
 | SSH and Git signing | [`docs/ssh.md`](./ssh.md) |
 | Shell and tool contract | [`docs/agentic-tooling.md`](./agentic-tooling.md) |
 | Workspace management | [`docs/workspace-management.md`](./workspace-management.md) |
+| Project substrate admission | [`docs/host-capability-substrate/project-substrate-adoption.md`](./host-capability-substrate/project-substrate-adoption.md) |
 | System-wide agent contract | [`../AGENTS.md`](../AGENTS.md) |

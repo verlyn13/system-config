@@ -3,15 +3,15 @@ title: HCS Repo Boundary & Scaffolding Decision
 category: decision
 component: host_capability_substrate
 status: accepted
-version: 1.2.0
-last_updated: 2026-05-01
-tags: [decision, naming, path, scaffolding, policy, governance, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, opus-4-7, gpt-5-4, skills, ontology]
+version: 1.2.1
+last_updated: 2026-05-06
+tags: [decision, naming, path, scaffolding, policy, governance, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, opus-4-7, gpt-5-4, skills, ontology, runner-substrate]
 priority: high
 ---
 
 # HCS Repo Boundary & Scaffolding Decision
 
-Binding decision record for the name, path, repo structure, public/private deployment boundary, and Phase 0a scaffolding of the Host Capability Substrate. Inputs cited during decision-making: external Nash Covenant principles (planning context only), jefahnierocks workspace conventions, actual repo-naming practice on GitHub, IDE/tool integration surfaces, and 2026 Claude Code + Codex best practices. Amended in v1.1.0 with expert-reviewed refinements; v1.2.0 retires parent-inheritance framing in favor of citation-as-input — HCS operating authority comes from this repo's charter, ADRs, decision ledger, and the named external policy source, not from runtime parent inheritance.
+Binding decision record for the name, path, repo structure, public/private deployment boundary, and Phase 0a scaffolding of the Host Capability Substrate. Inputs cited during decision-making: external Nash Covenant principles (planning context only), jefahnierocks workspace conventions, actual repo-naming practice on GitHub, IDE/tool integration surfaces, and 2026 Claude Code + Codex best practices. Amended in v1.1.0 with expert-reviewed refinements; v1.2.0 retires parent-inheritance framing in favor of citation-as-input — HCS operating authority comes from this repo's charter, ADRs, decision ledger, and the named external policy source, not from runtime parent inheritance. v1.2.1 records the transitional project substrate admission policy under the existing system-config live policy authority.
 
 Parent research plan: [`../host-capability-substrate-research-plan.md`](../host-capability-substrate-research-plan.md) (v0.3.0+). Charter: [`implementation-charter.md`](./implementation-charter.md). Tooling surface matrix: [`tooling-surface-matrix.md`](./tooling-surface-matrix.md).
 
@@ -146,7 +146,7 @@ Public HCS repo (verlyn13/host-capability-substrate):
   implementation charter, AGENTS.md, CLAUDE.md, PLAN.md, IMPLEMENT.md, DECISIONS.md
 
 system-config (verlyn13/system-config, public):
-  canonical live policy YAML (policies/host-capability-substrate/tiers.yaml)
+  canonical live policy YAML (policies/host-capability-substrate/)
   launchd plist templates
   sync-mcp integration (if HCS graduates to baseline)
   ng-doctor integration
@@ -510,7 +510,7 @@ unit tests                          # vitest
 schema generation check             # Zod → JSON Schema
 schema drift check                  # regenerate and diff
 boundary import check               # adapter cannot import kernel-private; kernel cannot import adapter
-policy schema lint                  # tiers.yaml validates against PolicyRule schema
+policy schema lint                  # policy YAML under system-config validates against its schema
 forbidden-string scan               # no raw op:// values, no forbidden-list patterns in strings
 hook dry-run tests                  # .claude/hooks/hcs-hook runs clean on test inputs
 AGENTS/CLAUDE pointer check         # CLAUDE.md imports AGENTS.md; AGENTS.md present
@@ -772,9 +772,10 @@ Gated on: approval grants + audit hash chain + dashboard review + lease manager 
 
 ### Internal
 
-- [HCS research plan](../host-capability-substrate-research-plan.md) (v0.3.0+)
+- [HCS research plan](../host-capability-substrate-research-plan.md) (v0.3.1+)
 - [Implementation charter](./implementation-charter.md) (v1.1.0+)
 - [Tooling surface matrix](./tooling-surface-matrix.md) (v1.0.0+)
+- [Project substrate adoption](./project-substrate-adoption.md) (v0.1.0+)
 - [Target-repo templates](./templates/)
 - `~/Organizations/the-nash-group/the-covenant/PRINCIPLES.md` — 16 principles
 - [`docs/project-conventions.md`](../project-conventions.md)
@@ -799,6 +800,7 @@ Gated on: approval grants + audit hash chain + dashboard review + lease manager 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.1 | 2026-05-06 | Recorded transitional project substrate admission policy under the existing system-config live policy authority. Replaced the single-file `tiers.yaml` wording with the policy directory boundary and linked the project substrate adoption guide. |
 | 1.2.0 | 2026-05-01 | Parent-inheritance framing retired. Nash Covenant principles reframed as cited planning input rather than runtime-inherited authority. Jefahnierocks reframed as a workspace with its own authority rather than a subsidiary tier. `.subsidiary.yaml` cleanup recorded as complete (file removed rather than renamed because no Jefahnierocks-owned local metadata consumer exists yet). Decision content (name, path, GitHub slug, deployment boundary, policy set, scaffolding stance) is unchanged from v1.1.0; only the authority/citation framing changes. |
 | 1.1.0 | 2026-04-22 | Expert-reviewed refinements. Public/private deployment boundary made explicit (§3). Runtime paths + env vars + LaunchAgent reverse-DNS label standardized (§4). Sixth subagent `hcs-ontology-reviewer` added (§5). Skills discipline: `.agents/skills/` canonical, `.claude/skills/` Claude-specific wrappers only (§6). No `WARP.md` in Phase 0a (§7). Four-layer policy set with expanded forbidden list (§8). Tool baseline pinned: Claude Code 1.3883.0+ Opus 4.7, Codex 26.417.41555+ GPT-5.4 (§2.5). Quality gates expanded (§10). Example settings.json (§12). Added references to tooling-surface-matrix.md and ADR 0011 public-private-boundary. |
 | 1.0.0 | 2026-04-22 | Initial decision. Name `host-capability-substrate`; path `~/Organizations/jefahnierocks/host-capability-substrate/`; GitHub `verlyn13/host-capability-substrate` (no prefix — matches observed practice). Stale `jfr-` prefix flagged as separate cleanup. Full Phase 0a layout specified. Policy set cited 16 Nash principles + 12 2026 agentic additions as planning input (framing later clarified in v1.2.0). |
