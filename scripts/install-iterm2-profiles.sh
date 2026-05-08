@@ -53,8 +53,10 @@ validate_sources() {
 
   local src
   for src in "${sources[@]}"; do
-    jq empty "$src" >/dev/null 2>&1   || die "invalid JSON: $src"
-    plutil -lint "$src" >/dev/null    || die "invalid property list: $src"
+    jq empty "$src" >/dev/null 2>&1                    || die "invalid JSON: $src"
+    # plutil -lint rejects the JSON dialect that iTerm2 actually accepts; use
+    # convert-to-xml (parse-only via /dev/null sink) as the syntax gate instead.
+    plutil -convert xml1 -o /dev/null "$src" >/dev/null || die "invalid property list: $src"
   done
 
   # Collect <file>\t<guid>\t<parent_guid> for every profile in every source.
