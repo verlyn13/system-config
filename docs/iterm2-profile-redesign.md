@@ -473,7 +473,7 @@ be updated, ask for that explicitly after the repo work lands.
 | R8 | Direct terminal output from `.envrc` can corrupt `direnv export zsh` output | `.envrc` only exports `ITERM_BADGE_TEXT`; zsh emits the badge in `precmd`. |
 | R9 | iTerm2 shell integration mutates `PS1`, `precmd_functions`, and `preexec_functions` | Source it last (`zz-iterm2.zsh`), skip in `NG_MODE=agentic`, inspect hook order after install. |
 | R10 | One malformed DynamicProfiles plist can block all iTerm2 profile reloads | Installer validates managed files before symlinking and fails closed. |
-| R11 | `Allow Clipboard Access From Terminal` lets terminal programs write the clipboard | Do not carry this forward silently. Either set `false` or record explicit acceptance before enabling `it2copy`-style behavior. |
+| R11 | `Allow Clipboard Access From Terminal` lets terminal programs write the clipboard | Decided `false` on Dev 2026-05-08 (see Decisions baked in). Closes OSC 52 / 1337 SetClipboard injection vector relevant to the agentic workload on this host. Re-evaluate only if a concrete neovim/tmux relay friction is observed. |
 | R12 | Shell integration skips tmux/screen by default | Do not claim APS/cwd reporting inside tmux unless `ITERM_ENABLE_SHELL_INTEGRATION_WITH_TMUX` is deliberately tested. |
 | R13 | `defaults write` to `Default Bookmark Guid` can race with a running iTerm2 prefs cache | Read back after write, kill `cfprefsd`, warn if iTerm2 is running, and verify with a new window. |
 | R14 | Offline shell startup must remain clean | All runtime paths verified network-free (see "Offline guarantees"). Installer is the only network-dependent action; it is one-time and explicitly online. |
@@ -490,6 +490,7 @@ be updated, ask for that explicitly after the repo work lands.
 | Themes | Color Presets (runtime-swappable) | Decouples palette from profile; rebrand by import. |
 | Default Bookmark | Installer sets it deterministically | Consistent setup across machines; matches "deterministic" goal. |
 | Shell-integration scope | Interactive only (skipped in agentic) | Preserves agentic startup budget. |
+| Clipboard write (`Allow Clipboard Access From Terminal`) | `false` on Dev (and inherited by SSH variant in Phase C) | Closes OSC 52 / OSC 1337 SetClipboard injection vector. This workstation runs agentic tools (Claude Code, Codex, MCP) that pipe untrusted remote text through the terminal — any such text containing a clipboard-write escape would silently overwrite the system clipboard. Industry default for hardened multi-host setups. Read access (paste) unaffected. Escape hatch: edit the field to `true` in `iterm2/profiles/00-dev.json` and re-run `scripts/install-iterm2-profiles.sh`; iTerm2 reloads dynamically. Add a sibling "Dev (clipboard)" profile only if friction emerges in practice — do not pre-build. Decided 2026-05-08. |
 
 ## Out of scope
 
