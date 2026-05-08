@@ -12,6 +12,8 @@
       "NG_MODE": "agentic"
     },
     "Title Components": 2,
-    "Badge Text": "AGENTIC"
+    "Badge Text": "AGENTIC",
+    "Unlimited Scrollback": false,
+    "Scrollback Lines": 200000
   }]
 }
