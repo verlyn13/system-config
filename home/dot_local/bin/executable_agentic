@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# agentic — enter NG_MODE=agentic from any context (any terminal, any profile, ssh, tmux).
+# Decouples agentic mode from iTerm2 profile selection.
+
+exec env NG_MODE=agentic /bin/zsh -l "$@"

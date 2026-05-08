@@ -154,6 +154,17 @@ use_mise() {
 }
 
 # ---------------------------------------------------------------------------
+# iTerm2 badge text (env-only; emission is in zshrc.d/zz-iterm2.zsh precmd)
+# ---------------------------------------------------------------------------
+# Do NOT emit terminal escape codes here. direnv captures .envrc stdout for the
+# `direnv export zsh` eval stream, and OSC sequences in that stream corrupt it.
+# Set the env var only; zsh's precmd hook reads it and emits SetBadgeFormat.
+
+use_iterm_badge() {
+  export ITERM_BADGE_TEXT="$*"
+}
+
+# ---------------------------------------------------------------------------
 # User-scoped MCP secret loader (rewritten to use host_secret_export)
 # ---------------------------------------------------------------------------
 # Scope: user identity, not project identity — projects opt in via
