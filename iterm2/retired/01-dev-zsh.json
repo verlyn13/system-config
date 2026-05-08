@@ -1,6 +1,6 @@
 {
   "Profiles": [{
-    "Name": "Dev (zsh)",
+    "Name": "Dev (zsh) [retired]",
     "Guid": "ng-dev-zsh",
     "Dynamic Profile Parent Name": "NG Base",
     "Custom Command": "Yes",

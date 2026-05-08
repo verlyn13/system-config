@@ -1,6 +1,6 @@
 {
   "Profiles": [{
-    "Name": "Agentic (zsh)",
+    "Name": "Agentic (zsh) [retired]",
     "Guid": "ng-agentic-zsh",
     "Dynamic Profile Parent Name": "NG Base",
     "Custom Command": "Yes",

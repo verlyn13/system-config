@@ -2,6 +2,7 @@
 # install-iterm2-profiles.sh — symlink managed profiles into iTerm2 DynamicProfiles
 # Idempotent. Safe to re-run.
 set -euo pipefail
+shopt -s nullglob
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"

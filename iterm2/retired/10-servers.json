@@ -1,7 +1,7 @@
 {
   "Profiles": [
     {
-      "Name": "SSH — Hetzner (Production)",
+      "Name": "SSH — Hetzner (Production) [retired]",
       "Guid": "A7B2D9F1-HETZ-PROD-SECURE",
       "Badge Text": "PROD • HETZNER",
       "Custom Command": "Yes",
@@ -183,7 +183,7 @@
       ]
     },
     {
-      "Name": "SSH — Hetzner Docker (Root)",
+      "Name": "SSH — Hetzner Docker (Root) [retired]",
       "Guid": "B8C3E0G2-HETZ-ROOT-EMERGENCY",
       "Badge Text": "ROOT • DOCKER",
       "Custom Command": "Yes",
@@ -345,7 +345,7 @@
       ]
     },
     {
-      "Name": "SSH — Hetzner Tailscale (Mesh)",
+      "Name": "SSH — Hetzner Tailscale (Mesh) [retired]",
       "Guid": "C9D4F1H3-HETZ-TAILSCALE",
       "Badge Text": "TAILSCALE • MESH",
       "Custom Command": "Yes",
