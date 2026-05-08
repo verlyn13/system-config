@@ -2,19 +2,25 @@
 
 iTerm2 is an adapter layer, not a system boundary. Shell/runtime policy lives in chezmoi-managed shell config. iTerm2-managed artifacts are limited to profile presentation and session entrypoints.
 
-## Current state — no managed dynamic profiles
+## Active managed profiles
 
-The previously-managed profiles (NG Base, Dev (zsh), Agentic (zsh), 3 Hetzner SSH profiles) are **retired**. iTerm2 falls back to its built-in Default profile (whatever `Default Bookmark Guid` resolves to in `com.googlecode.iterm2.plist`).
+| File | Profile name | Purpose |
+|------|--------------|---------|
+| `profiles/00-dev.json` | `Dev` | Default presentation profile (font, scrollback, key bindings). No working directory, no command, no env block — behavior is shell-driven. |
 
-The retired JSONs are kept in [`retired/`](./retired/) as historical reference. Each profile's `Name` field carries a `[retired]` suffix so it's obvious they are not the active config if anyone loads them by hand.
+The Dev profile is set as iTerm2's Default Bookmark by `scripts/install-iterm2-profiles.sh`. The pre-existing static default profile (GUID `904E3177-…`) is **not** removed; we only redirect `Default Bookmark Guid` to the managed Dev profile.
+
+## Authoritative design
+
+`docs/iterm2-profile-redesign.md` is the authoritative design document. Phase A (shell-integration foundation) landed 2026-05-08. Phase B (managed Dev profile) is the active phase. Phases C (SSH variant via `Bound Hosts`) and D (cleanup) follow.
 
 ## Directories
 
 | Path | Purpose |
 |------|---------|
-| `profiles/` | Active source for `scripts/install-iterm2-profiles.sh`. Currently empty (only `.gitkeep`). Drop a JSON here to re-activate it. |
-| `retired/` | Historical profiles, suffix-marked, not installed. |
-| `themes/` | Color-only reference presets (tokyonight-moon, tokyonight-storm, wild-cherry). Not loaded as profiles. |
+| `profiles/` | Active source for `scripts/install-iterm2-profiles.sh`. Each `*.json` becomes a symlink in iTerm2's `DynamicProfiles/`. |
+| `retired/` | Historical profiles from the pre-redesign era, suffix-marked `[retired]`. Kept until Phase D cleanup. |
+| `themes/` | Color-only reference presets (tokyonight-moon, tokyonight-storm, wild-cherry). Not loaded as profiles. Superseded by `color-presets/` in Phase B (planned). |
 
 ## Installer
 
@@ -22,25 +28,34 @@ The retired JSONs are kept in [`retired/`](./retired/) as historical reference. 
 scripts/install-iterm2-profiles.sh
 ```
 
-Behavior unchanged. With `profiles/` empty, the script:
+Behavior:
 
-- removes any stale managed symlinks in `~/Library/Application Support/iTerm2/DynamicProfiles/` whose source no longer exists,
-- installs nothing,
-- runs the GUID-uniqueness check on whatever remains in DynamicProfiles (e.g., app-managed `OrbStack.json`).
+1. **Validate** every `iterm2/profiles/*.json` (jq + plutil) and check GUID conflicts (managed-vs-managed and managed-vs-static) and parent ordering. Fail-closed — on any validation failure, existing symlinks are left intact.
+2. **Install symlinks** into `~/Library/Application Support/iTerm2/DynamicProfiles/`, removing stale managed entries whose source is gone.
+3. **GUID-uniqueness sanity** across the whole `DynamicProfiles/` directory (includes app-managed files like `OrbStack.json`).
+4. **Default Bookmark** — if `00-dev.json` exists, set its GUID as `Default Bookmark Guid` in `com.googlecode.iterm2.plist` (idempotent, with `killall cfprefsd` and read-back).
 
-## Re-enabling a profile
+## Adding a profile
 
 ```bash
-git mv iterm2/retired/<file>.json iterm2/profiles/
-# remove the "[retired]" suffix from the Name field
+uuidgen              # generate a fresh GUID
+# author iterm2/profiles/NN-name.json with that GUID
 scripts/install-iterm2-profiles.sh
 ```
 
-iTerm2 watches DynamicProfiles and reloads automatically; no restart needed.
+iTerm2 watches `DynamicProfiles/` and reloads automatically; no restart needed.
+
+## Re-enabling a retired profile
+
+```bash
+git mv iterm2/retired/<file>.json iterm2/profiles/
+# strip the "[retired]" suffix from the Name field
+scripts/install-iterm2-profiles.sh
+```
 
 ## Policy
 
 - `LoadPrefsFromCustomFolder`: disabled. Standard macOS prefs path.
-- Dynamic profiles only when active; do not manage `com.googlecode.iterm2.plist` directly.
+- Dynamic profiles only when active; do not manage `com.googlecode.iterm2.plist` directly except for `Default Bookmark Guid` via the installer.
 - zsh is the only managed shell entrypoint, ever (no fish — see `feedback_avoid_fish.md`).
 - HCS uses whichever profile is active; it does not own its own iTerm2 profile (per HCS boundary §11.1).

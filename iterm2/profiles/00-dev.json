@@ -1,0 +1,31 @@
+{
+  "Profiles": [
+    {
+      "Name": "Dev",
+      "Guid": "C4668B75-BF86-4207-B268-CA34ED11AAD8",
+      "Tags": ["workstation"],
+      "Rewritable": false,
+
+      "Normal Font": "FiraCode-Regular 13",
+      "Use Bold Font": true,
+      "Use Italic Font": true,
+      "Draw Powerline Glyphs": true,
+      "ASCII Anti Aliased": true,
+      "Non-ASCII Anti Aliased": true,
+
+      "Unlimited Scrollback": true,
+      "Columns": 120,
+      "Rows": 36,
+
+      "Option Key Sends": 2,
+      "Right Option Key Sends": 2,
+
+      "Allow Title Setting": true,
+      "Allow Clipboard Access From Terminal": false,
+      "Close Sessions On End": true,
+
+      "Custom Command": "No",
+      "Custom Directory": "No"
+    }
+  ]
+}
