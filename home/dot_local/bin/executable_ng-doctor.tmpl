@@ -557,37 +557,81 @@ check_dynamic_profiles_dir_exists() {
   fi
 }
 
-check_dev_profile_installed() {
+check_managed_profiles_installed() {
+  local src_dir="$SYSTEM_CONFIG_DIR/iterm2/profiles"
   local dp_dir="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+
   if [[ ! -d "$dp_dir" ]]; then
-    skip "dev_profile_installed" "DynamicProfiles dir missing"
+    skip "managed_profiles_installed" "DynamicProfiles dir missing"
     return
   fi
-  if find "$dp_dir" -name '*.json' -exec grep -l '"Name".*[Dd]ev' {} + &>/dev/null; then
-    pass "dev_profile_installed" "Dev profile found in DynamicProfiles"
+
+  if [[ ! -d "$src_dir" ]]; then
+    skip "managed_profiles_installed" "iterm2/profiles/ missing in repo"
+    return
+  fi
+
+  shopt -s nullglob
+  local sources=("$src_dir"/*.json)
+  shopt -u nullglob
+
+  if [[ ${#sources[@]} -eq 0 ]]; then
+    skip "managed_profiles_installed" "no managed profiles in repo (retired state)"
+    return
+  fi
+
+  local missing=()
+  local src name target resolved
+  for src in "${sources[@]}"; do
+    name="$(basename "$src")"
+    target="$dp_dir/$name"
+    if [[ -L "$target" ]]; then
+      resolved="$(readlink "$target")"
+      if [[ "$resolved" == "$src" ]]; then
+        continue
+      fi
+    fi
+    missing+=("$name")
+  done
+
+  if [[ ${#missing[@]} -eq 0 ]]; then
+    pass "managed_profiles_installed" "${#sources[@]} managed profile(s) symlinked into DynamicProfiles"
   else
-    fail "dev_profile_installed" "Dev profile" "installed" "not found"
+    fail "managed_profiles_installed" "all managed profiles symlinked" \
+         "${#sources[@]} symlink(s)" \
+         "${#missing[@]} missing (${missing[*]})"
   fi
 }
 
-check_agentic_profile_installed() {
-  local dp_dir="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
-  if [[ ! -d "$dp_dir" ]]; then
-    skip "agentic_profile_installed" "DynamicProfiles dir missing"
+check_iterm2_shell_integration() {
+  local installer="$SYSTEM_CONFIG_DIR/scripts/install-iterm2-shell-integration.sh"
+
+  if [[ ! -d "/Applications/iTerm.app" ]]; then
+    skip "iterm2_shell_integration" "iTerm2 not installed"
     return
   fi
-  if find "$dp_dir" -name '*.json' -exec grep -l '"Name".*[Aa]gentic' {} + &>/dev/null; then
-    pass "agentic_profile_installed" "Agentic profile found in DynamicProfiles"
+
+  if [[ ! -x "$installer" ]]; then
+    skip "iterm2_shell_integration" "installer script missing or not executable"
+    return
+  fi
+
+  if "$installer" --verify >/dev/null 2>&1; then
+    pass "iterm2_shell_integration" "shell-integration script present and SHA matches pinned value"
   else
-    fail "agentic_profile_installed" "Agentic profile" "installed" "not found"
+    local detail
+    detail="$("$installer" --verify 2>&1 | head -1 || true)"
+    fail "iterm2_shell_integration" "shell-integration script" \
+         "present and matches pinned SHA" \
+         "${detail:-not verified}"
   fi
 }
 
 run_iterm2_checks() {
   section "iterm2"
   check_dynamic_profiles_dir_exists
-  check_dev_profile_installed
-  check_agentic_profile_installed
+  check_managed_profiles_installed
+  check_iterm2_shell_integration
 }
 
 # --- Category: agentic -------------------------------------------------------
@@ -973,8 +1017,8 @@ list_checks() {
   printf "%-14s %s\n" "ssh" "ssh_allowed_signers_present"
   printf "%-14s %s\n" "ssh" "ssh_allowed_signers_match_signing_identity"
   printf "%-14s %s\n" "iterm2" "dynamic_profiles_dir_exists"
-  printf "%-14s %s\n" "iterm2" "dev_profile_installed"
-  printf "%-14s %s\n" "iterm2" "agentic_profile_installed"
+  printf "%-14s %s\n" "iterm2" "managed_profiles_installed"
+  printf "%-14s %s\n" "iterm2" "iterm2_shell_integration"
   printf "%-14s %s\n" "agentic" "agentic_mode_loads_minimal"
   printf "%-14s %s\n" "agentic" "agentic_prompt_is_static"
   printf "%-14s %s\n" "agentic" "agentic_startup_under_200ms"
