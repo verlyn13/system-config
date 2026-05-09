@@ -3,8 +3,8 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 2.6.0
-last_updated: 2026-05-08
+version: 2.7.0
+last_updated: 2026-05-09
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
 ---
@@ -160,6 +160,70 @@ Human-owned tasks:
 - Creating or editing 1Password items.
 - Deciding naming and organization for new shared secrets.
 - Scope and expiry changes on fine-grained PATs.
+
+## Creating Login items with secret values
+
+Use this pattern when a human has an existing password, TOTP seed, recovery
+code, or other secret that must be stored in a new 1Password Login item.
+
+Do **not** use assignment statements for secret values. `op item create`
+supports assignment statements, but those are command arguments and can appear
+in shell history or process inspection. Use the edited JSON template file flow
+instead.
+
+Generic workflow:
+
+```bash
+ITEM_JSON="$(mktemp -t op-login-item.XXXXXX.json)"
+chmod 600 "$ITEM_JSON"
+trap 'rm -f "$ITEM_JSON"' EXIT
+
+op item template get --account my.1password.com --out-file "$ITEM_JSON" Login
+
+${EDITOR:-nano} "$ITEM_JSON"
+
+op item create \
+  --account my.1password.com \
+  --vault Dev \
+  --title "<kebab-case-item-name>" \
+  --url "<login-url>" \
+  --tags "<comma-separated-non-secret-tags>" \
+  --format json \
+  --template "$ITEM_JSON"
+```
+
+In the template:
+
+- Set built-in `username`, `password`, and `notesPlain` values as needed.
+- Add TOTP as a custom field with label `one-time-password`, type `OTP`, and
+  an `otpauth://` value. Use kebab-case custom labels.
+- Keep all resolved secret values inside the editor or 1Password UI only.
+
+Example non-secret envelope for the Uptime Kuma admin login:
+
+```bash
+op item create \
+  --account my.1password.com \
+  --vault Dev \
+  --title "citadel-uptime-kuma-admin" \
+  --url "http://127.0.0.1:3001/" \
+  --tags "project:hetzner,provider:uptime-kuma,kind:admin-login,scope:tng-iac-runner" \
+  --format json \
+  --template "$ITEM_JSON"
+```
+
+Set the secret-bearing fields in the edited template, not in the shell:
+
+- `username`: `verlyn13-admin`
+- `password`: the existing Uptime Kuma admin password
+- `notesPlain`: `Access via ssh -L 3001:127.0.0.1:3001 tng-runner`
+- custom OTP field `one-time-password`: the Uptime Kuma `otpauth://totp/...`
+  URI
+
+Do not use `--generate-password` unless the password is also changed in the
+provider application. If the item is owned by another project, record the
+non-secret credential metadata in that owning project; add it to
+`docs/secret-records.md` only if `system-config` becomes a runtime consumer.
 
 ## Project pattern
 
