@@ -75,6 +75,7 @@ scripts/sync-mcp.sh
 - [`docs/host-capability-substrate/project-substrate-adoption.md`](docs/host-capability-substrate/project-substrate-adoption.md) — transitional host-local project substrate admission policy
 - [`docs/agentic-tooling.md`](docs/agentic-tooling.md) — shell + tool contract
 - [`docs/workspace-management.md`](docs/workspace-management.md) — workspace POC
+- [`docs/github-org-setup.md`](docs/github-org-setup.md) — org-level GitHub config (teams, ruleset, CODEOWNERS)
 - [`docs/claude-cli-setup.md`](docs/claude-cli-setup.md)
 - [`docs/codex-cli-setup.md`](docs/codex-cli-setup.md)
 - [`docs/copilot-cli-setup.md`](docs/copilot-cli-setup.md)

@@ -1,0 +1,6 @@
+# CODEOWNERS for jefahnierocks/system-config
+#
+# Owners are auto-requested for review on PRs touching matching paths.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+
+* @jefahnierocks/system-config-maintainers

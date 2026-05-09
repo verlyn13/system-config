@@ -19,6 +19,7 @@ Read these for current state:
 - [`docs/cloudflare-mcp.md`](./docs/cloudflare-mcp.md) — Cloudflare MCP integration (Codemode usage, token scope, conventions)
 - [`docs/agentic-tooling.md`](./docs/agentic-tooling.md) — shell + tool contract
 - [`docs/workspace-management.md`](./docs/workspace-management.md) — workspace POC
+- [`docs/github-org-setup.md`](./docs/github-org-setup.md) — org-level GitHub config (teams, ruleset, CODEOWNERS) and reproduce recipe
 - [`docs/claude-cli-setup.md`](./docs/claude-cli-setup.md), [`docs/codex-cli-setup.md`](./docs/codex-cli-setup.md), [`docs/copilot-cli-setup.md`](./docs/copilot-cli-setup.md), [`docs/claude-desktop-setup.md`](./docs/claude-desktop-setup.md) — per-tool setup
 
 ## Directory layout
