@@ -3,15 +3,15 @@ title: HCS Repo Boundary & Scaffolding Decision
 category: decision
 component: host_capability_substrate
 status: accepted
-version: 1.2.1
-last_updated: 2026-05-06
+version: 1.3.0
+last_updated: 2026-05-08
 tags: [decision, naming, path, scaffolding, policy, governance, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, opus-4-7, gpt-5-4, skills, ontology, runner-substrate]
 priority: high
 ---
 
 # HCS Repo Boundary & Scaffolding Decision
 
-Binding decision record for the name, path, repo structure, public/private deployment boundary, and Phase 0a scaffolding of the Host Capability Substrate. Inputs cited during decision-making: external Nash Covenant principles (planning context only), jefahnierocks workspace conventions, actual repo-naming practice on GitHub, IDE/tool integration surfaces, and 2026 Claude Code + Codex best practices. Amended in v1.1.0 with expert-reviewed refinements; v1.2.0 retires parent-inheritance framing in favor of citation-as-input — HCS operating authority comes from this repo's charter, ADRs, decision ledger, and the named external policy source, not from runtime parent inheritance. v1.2.1 records the transitional project substrate admission policy under the existing system-config live policy authority.
+Binding decision record for the name, path, repo structure, public/private deployment boundary, and Phase 0a scaffolding of the Host Capability Substrate. Inputs cited during decision-making: external Nash Covenant principles (planning context only), jefahnierocks workspace conventions, actual repo-naming practice on GitHub, IDE/tool integration surfaces, and 2026 Claude Code + Codex best practices. Amended in v1.1.0 with expert-reviewed refinements; v1.2.0 retires parent-inheritance framing in favor of citation-as-input — HCS operating authority comes from this repo's charter, ADRs, decision ledger, and the named external policy source, not from runtime parent inheritance. v1.2.1 records the transitional project substrate admission policy under the existing system-config live policy authority. v1.3.0 records the GitHub ownership transfer to the `jefahnierocks` organization (in concert with the system-config repo move).
 
 Parent research plan: [`../host-capability-substrate-research-plan.md`](../host-capability-substrate-research-plan.md) (v0.3.0+). Charter: [`implementation-charter.md`](./implementation-charter.md). Tooling surface matrix: [`tooling-surface-matrix.md`](./tooling-surface-matrix.md).
 
@@ -21,7 +21,7 @@ Parent research plan: [`../host-capability-substrate-research-plan.md`](../host-
 
 - **Product name:** Host Capability Substrate (HCS)
 - **Local path:** `~/Organizations/jefahnierocks/host-capability-substrate/`
-- **GitHub repo:** `verlyn13/host-capability-substrate` (public source, private deployment boundary)
+- **GitHub repo:** `jefahnierocks/host-capability-substrate` (public source, private deployment boundary)
 - **Workspace:** jefahnierocks (its own authority; parent-organization material may be cited as research input only)
 - **Charter ring:** Infrastructure (sibling to `apps/`, `packages/`, `docs/`, like `system-config`)
 - **Tool baseline (early phases, binding):** Claude Code ≥ `1.3883.0 (93ff6c)` with Claude Opus 4.7; Codex ≥ `26.417.41555 (1858)` with GPT-5.4
@@ -107,7 +107,7 @@ See appended references. Key guidance honored: project-scoped subagents with `to
 
 ### 2.3 GitHub repo
 
-**Decision:** `verlyn13/host-capability-substrate`, public source. See §3 for public/private deployment boundary.
+**Decision:** `jefahnierocks/host-capability-substrate`, public source. See §3 for public/private deployment boundary.
 
 ### 2.4 Charter ring classification
 
@@ -133,7 +133,7 @@ The HCS GitHub repo is **public source**. It does not carry the authority or dat
 ### 3.1 What lives where
 
 ```text
-Public HCS repo (verlyn13/host-capability-substrate):
+Public HCS repo (jefahnierocks/host-capability-substrate):
   source code (packages/)
   schemas (packages/schemas)
   generated JSON Schema (CI artifact, committed for consumers)
@@ -145,7 +145,7 @@ Public HCS repo (verlyn13/host-capability-substrate):
   generated policy snapshots for tests only (policies/generated-snapshot)
   implementation charter, AGENTS.md, CLAUDE.md, PLAN.md, IMPLEMENT.md, DECISIONS.md
 
-system-config (verlyn13/system-config, public):
+system-config (jefahnierocks/system-config, public):
   canonical live policy YAML (policies/host-capability-substrate/)
   launchd plist templates
   sync-mcp integration (if HCS graduates to baseline)
@@ -761,7 +761,7 @@ Gated on: approval grants + audit hash chain + dashboard review + lease manager 
 
 ### 14.2 Requires user approval before execution
 
-- Create local directory + git init + GitHub repo create (`verlyn13/host-capability-substrate`, public)
+- Create local directory + git init + GitHub repo create (`jefahnierocks/host-capability-substrate`, public)
 - Bootstrap scaffold (all files per §9, including 6 subagents, 6 skills in `.agents/skills/`, settings.json per §12, hook helper, ADR stubs, regression seed, CI scripts)
 - Append three Codex profiles + trust-list entry to `~/.codex/config.toml` (back up first)
 - ~~Spawned separately (chip in UI): retire stale `jfr-` prefix in `.subsidiary.yaml` and jefahnierocks/CLAUDE.md~~ — completed 2026-05-01: `.subsidiary.yaml` removed, jefahnierocks/CLAUDE.md and AGENTS.md rewritten in workspace-own voice (v1.2.0)
@@ -800,6 +800,7 @@ Gated on: approval grants + audit hash chain + dashboard review + lease manager 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.3.0 | 2026-05-08 | GitHub ownership transferred from the personal `verlyn13` account to the `jefahnierocks` GitHub organization (in concert with the system-config repo move). Live decision text updated to `jefahnierocks/host-capability-substrate` and `jefahnierocks/system-config`; historical change-log entries preserved. No structural decisions changed. |
 | 1.2.1 | 2026-05-06 | Recorded transitional project substrate admission policy under the existing system-config live policy authority. Replaced the single-file `tiers.yaml` wording with the policy directory boundary and linked the project substrate adoption guide. |
 | 1.2.0 | 2026-05-01 | Parent-inheritance framing retired. Nash Covenant principles reframed as cited planning input rather than runtime-inherited authority. Jefahnierocks reframed as a workspace with its own authority rather than a subsidiary tier. `.subsidiary.yaml` cleanup recorded as complete (file removed rather than renamed because no Jefahnierocks-owned local metadata consumer exists yet). Decision content (name, path, GitHub slug, deployment boundary, policy set, scaffolding stance) is unchanged from v1.1.0; only the authority/citation framing changes. |
 | 1.1.0 | 2026-04-22 | Expert-reviewed refinements. Public/private deployment boundary made explicit (§3). Runtime paths + env vars + LaunchAgent reverse-DNS label standardized (§4). Sixth subagent `hcs-ontology-reviewer` added (§5). Skills discipline: `.agents/skills/` canonical, `.claude/skills/` Claude-specific wrappers only (§6). No `WARP.md` in Phase 0a (§7). Four-layer policy set with expanded forbidden list (§8). Tool baseline pinned: Claude Code 1.3883.0+ Opus 4.7, Codex 26.417.41555+ GPT-5.4 (§2.5). Quality gates expanded (§10). Example settings.json (§12). Added references to tooling-surface-matrix.md and ADR 0011 public-private-boundary. |
