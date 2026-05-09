@@ -3,8 +3,8 @@ title: Cloudflare MCP Integration
 category: reference
 component: cloudflare_mcp
 status: active
-version: 1.3.0
-last_updated: 2026-05-08
+version: 1.3.1
+last_updated: 2026-05-09
 tags: [cloudflare, mcp, codemode, api-token, bearer, mcp-remote, 1password, workers, dns, zero-trust, tunnel, rate-limit]
 priority: high
 ---
@@ -37,6 +37,7 @@ For the Access + Tunnel AUD coupling lesson from the runpod 403, see
 | Local wrapper | `~/.local/bin/mcp-cloudflare-server` (stdio via `mcp-remote`) |
 | Chezmoi source | `home/dot_local/bin/executable_mcp-cloudflare-server.tmpl` |
 | Token op URI | wired alias, currently cleared: `op://Dev/cloudflare-mcp-jefahnierocks/token`; replacement staging: `op://Dev/cloudflare-jefahnierocks-mcp-readonly/credential` |
+| Runtime status | Hard-disabled by `~/.local/state/system-config/mcp-cloudflare.disabled`; wrapper exits before token read |
 | Token account | current personal-custody Cloudflare account (`13eb584192d9cefb730fde0cfd271328`) |
 | Token TTL | replacement staging credential valid 2026-05-08 → 2026-11-04; old `cloudflare-mcp-jefahnierocks` token and prior replacement were deleted in Cloudflare UI |
 | Transport to Cloudflare | Streamable HTTP via `mcp-remote@0.1.38` stdio relay |
@@ -79,6 +80,11 @@ blocked. The replacement value is stored in the staging item
 `op://Dev/cloudflare-jefahnierocks-mcp-readonly/credential`, verified, and
 not runtime-wired. Do not wire any staging alias into the wrapper until the
 replacement bridge no longer passes bearer material through process argv.
+
+The live wrapper also checks `~/.local/state/system-config/mcp-cloudflare.disabled`
+before resolving `CLOUDFLARE_API_TOKEN`. While that marker exists,
+authenticated Cloudflare MCP launches exit `78` before `op read` or
+`mcp-remote`.
 
 **Resolvable identity checks after human credential entry:**
 

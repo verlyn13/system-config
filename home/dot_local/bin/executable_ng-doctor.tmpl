@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2088
-# ng-doctor — Nash Group development machine verification harness
+# ng-doctor — system-config development machine verification harness
 # Delivered via chezmoi from home/dot_local/bin/ng-doctor.tmpl
 # Contract: AGENTS.md
 #
@@ -711,17 +711,17 @@ run_agentic_checks() {
 
 check_xdg_dirs_exist() {
   local all_ok=true
-  local missing=""
+  local missing_dirs=""
   for dir in "$HOME/.config" "$HOME/.local/share" "$HOME/.local/state" "$HOME/.cache"; do
     if [[ ! -d "$dir" ]]; then
       all_ok=false
-      missing="${missing} ${dir}"
+      missing_dirs="${missing_dirs} ${dir}"
     fi
   done
   if $all_ok; then
     pass "xdg_dirs_exist" "XDG base directories exist"
   else
-    fail "xdg_dirs_exist" "XDG directories" "all exist" "missing:${missing}"
+    fail "xdg_dirs_exist" "XDG directories" "all exist" "missing:${missing_dirs}"
   fi
 }
 
@@ -1068,7 +1068,7 @@ run_category() {
 }
 
 main() {
-  echo "ng-doctor — Nash Group development machine verification"
+  echo "ng-doctor — system-config development machine verification"
   echo ""
 
   case "${1:-}" in

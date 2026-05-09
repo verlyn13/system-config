@@ -2,9 +2,9 @@
 title: GitHub MCP Integration
 category: reference
 component: mcp_github
-status: active
-version: 2.4.0
-last_updated: 2026-05-08
+status: blocked
+version: 2.4.1
+last_updated: 2026-05-09
 tags: [mcp, github, 1password, sync-mcp, oauth, pat]
 priority: high
 ---
@@ -24,9 +24,9 @@ landed (commits `a8e0b64` through `fcf59fc`).
 
 | Host | Auth | Config shape | Wrapper? |
 |---|---|---|---|
-| Claude Code CLI | PAT via stdio wrapper | stdio entry pointing at `~/.local/bin/mcp-github-server` | **yes** |
-| Cursor | PAT via stdio wrapper | same stdio entry | **yes** |
-| Codex CLI | PAT via stdio wrapper | same stdio entry | **yes** |
+| Claude Code CLI | PAT via stdio wrapper, currently hard-disabled | stdio entry pointing at `~/.local/bin/mcp-github-server` | **yes** |
+| Cursor | PAT via stdio wrapper, currently hard-disabled | same stdio entry | **yes** |
+| Codex CLI | PAT via stdio wrapper, currently hard-disabled | same stdio entry | **yes** |
 | Windsurf | OAuth 2.1 + PKCE (native, shipped 1.12.41) | `serverUrl` only | no (verified working 2026-04-17) |
 | Copilot CLI | Copilot-internal | **no synced entry** (built-in `github-mcp-server`) | n/a |
 
@@ -82,7 +82,8 @@ in the Codex TOML.
 | Provider account | `jefahnierocks` GitHub organization |
 | Target provider UI name | `github/jefahnierocks/macpro-mcp` |
 | Rotation | manual, fine-grained PAT with 90-day expiry while this remains PAT-based |
-| Status | `transitional` |
+| Status | `out-of-spec`; runtime hard-disabled |
+| Disable marker | `~/.local/state/system-config/mcp-github.disabled` |
 
 The 1P item is dedicated to the MCP integration. Do not reuse
 `op://Dev/github-dev-tools/token` (that entry serves `gh` CLI and other
@@ -101,18 +102,26 @@ PAT value into the staging item
 alias into the wrapper until the replacement bridge no longer passes bearer
 material through process argv.
 
+2026-05-09 runtime containment: the deployed wrapper checks
+`~/.local/state/system-config/mcp-github.disabled` before reading
+`GITHUB_PAT` or calling `op`. While that file exists, all Claude Code, Cursor,
+and Codex GitHub MCP launches exit `78`, even if a caller inherits a
+`GITHUB_PAT` from the environment.
+
 ### Identity override: happy-patterns tree
 
-When any MCP host is launched from within `~/Organizations/happy-patterns/`,
-the repo's `.envrc` exports `GITHUB_PAT` from
+When GitHub MCP is re-enabled after the no-argv bridge lands, any MCP host
+launched from within `~/Organizations/happy-patterns/` can use the repo's
+`.envrc` export of `GITHUB_PAT` from
 `op://Dev/github-happy-patterns/token` (fine-grained PAT, resource owner
 `happy-patterns-org`) before the host starts. The stdio wrapper at
 `~/.local/bin/mcp-github-server` honors an inherited `GITHUB_PAT` and
 skips its own `op read`, so the GitHub MCP server acts as the
 `happy-patterns` identity for that session. Codex uses
 the same wrapper and picks up the same override.
-Launching from any other directory preserves the default `jefahnierocks`
-identity via `op://Dev/github-mcp/token`.
+While the disable marker exists, this override path is intentionally blocked
+too. After re-enable, launching from any other directory preserves the default
+`jefahnierocks` identity via `op://Dev/github-mcp/token`.
 
 Rotation procedure:
 1. GitHub → Settings → Developer settings → Personal access tokens →
@@ -200,12 +209,15 @@ shape changes.
 
 ### Claude Code CLI, Codex CLI, and Cursor (stdio wrapper)
 
-Launch normally. The stdio wrapper at `~/.local/bin/mcp-github-server`
-reads `op://Dev/github-mcp/token` at subprocess start — works regardless
-of how the host was launched. Launching via `op run --env-file=…` is
-still fine and makes the wrapper fast-path (skips its own `op read`
-when `GITHUB_PAT` is already in the inherited env), but it is not
-required.
+Do not expect authenticated GitHub MCP to connect while containment is active.
+The stdio wrapper at `~/.local/bin/mcp-github-server` exits `78` when
+`~/.local/state/system-config/mcp-github.disabled` exists, before reading
+`op://Dev/github-mcp/token` or honoring an inherited `GITHUB_PAT`.
+
+After the no-argv bridge is implemented and the disable marker is removed,
+normal launches may resume. Launching via `op run --env-file=…` is still fine
+and makes the wrapper fast-path by inheriting `GITHUB_PAT`, but the replacement
+bridge must not materialize that value into process argv.
 
 ### Windsurf (GUI)
 
@@ -235,7 +247,7 @@ copilot --disable-builtin-mcps                  # turn it off
 ```bash
 # 1Password readiness
 op vault get Dev --account my.1password.com >/dev/null && echo "op ok"
-op read --account my.1password.com "op://Dev/github-mcp/token" >/dev/null && echo "token ok"
+test -e "$HOME/.local/state/system-config/mcp-github.disabled" && echo "github mcp disabled"
 
 # Resolved env (no values printed)
 op run --account my.1password.com --env-file=$HOME/.config/mcp/common.env -- \
@@ -247,8 +259,11 @@ jq '.mcpServers.github // "absent"' \
   ~/.copilot/mcp-config.json
 python3 -c "import tomllib,json; print(json.dumps(tomllib.load(open('/Users/verlyn13/.codex/config.toml','rb'))['mcp_servers']['github'], indent=2))"
 
-# Wrapper smoke test (Cursor path): 0 bytes stderr (no token leakage),
-# reasonable tool count from the curated set.
+# Wrapper containment smoke test: exits 78 before token read while disabled.
+~/.local/bin/mcp-github-server </dev/null
+
+# Post-bridge wrapper smoke test after explicitly re-enabling: 0 bytes stderr
+# (no token leakage), reasonable tool count from the curated set.
 ( printf '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0.0.0"}}}\n'
   printf '{"jsonrpc":"2.0","method":"notifications/initialized"}\n'
   printf '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n'
@@ -263,6 +278,7 @@ rm /tmp/w.err /tmp/w.out
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
+| GitHub wrapper: `disabled by ~/.local/state/system-config/mcp-github.disabled`, exit `78` | Intentional argv-exposure containment | Leave disabled until the no-argv bridge exists; do not bypass by pasting a PAT into the wired alias. |
 | Claude Code / Cursor / Codex github status: failed, `SDK auth failed: Incompatible auth server: does not support dynamic client registration` | Config still uses native `type: "http"`; SDK is attempting OAuth DCR against GitHub | Rerun `scripts/sync-mcp.sh` — these hosts must use the stdio wrapper entry, not native HTTP. |
 | GitHub wrapper: "unable to resolve GITHUB_PAT" | `op` can't reach the item; 1Password desktop integration off | Enable 1P Settings → Developer → Integrate with 1Password CLI; confirm `op vault get Dev --account my.1password.com` |
 | Windsurf: stuck on connecting / no OAuth prompt | Windsurf version below 1.12.41 or OAuth discovery blocked | Upgrade Windsurf; if persistent, revert to stdio wrapper (see Fallback above) |

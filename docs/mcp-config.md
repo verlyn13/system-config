@@ -3,8 +3,8 @@ title: MCP Configuration Framework
 category: reference
 component: mcp_config
 status: active
-version: 1.4.0
-last_updated: 2026-05-08
+version: 1.4.1
+last_updated: 2026-05-09
 tags: [mcp, chezmoi, sync-mcp, 1password, scopes, rate-limit]
 priority: high
 ---
@@ -104,6 +104,12 @@ Replacement values should be staged only in
 `op://Dev/github-jefahnierocks-macpro-mcp/credential` and
 `op://Dev/cloudflare-jefahnierocks-mcp-readonly/credential`; those staging
 aliases are not runtime-wired.
+
+Runtime containment is hard, not only policy-based. The deployed wrappers check
+these marker files before resolving any token:
+
+- `~/.local/state/system-config/mcp-github.disabled`
+- `~/.local/state/system-config/mcp-cloudflare.disabled`
 
 ### Launch pattern for CLI hosts
 

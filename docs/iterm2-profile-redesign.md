@@ -2,9 +2,9 @@
 title: iTerm2 Profile Redesign (Hybrid)
 category: design
 component: iterm2
-status: proposed
-version: 0.1.0
-last_updated: 2026-05-08
+status: active
+version: 0.2.0
+last_updated: 2026-05-09
 tags: [iterm2, dynamic-profiles, automatic-profile-switching, shell-integration, direnv]
 priority: medium
 ---
@@ -14,6 +14,13 @@ priority: medium
 Redesign for `iterm2/` after the 2026-05-08 retirement (HEAD `8cdc6e6`). Adopts iTerm2 3.7-line capabilities (shell integration, Automatic Profile Switching, escape-code-driven runtime mutation) to decouple presentation from filesystem layout.
 
 This doc is the authoritative reference for implementation. Schema claims here are verified against current iTerm2 3.7 documentation (cited inline). Do not implement against unverified claims.
+
+Current implementation status (2026-05-09): Phase A is landed. Phase B has a
+managed Dev profile, deterministic Default Bookmark setter, fail-closed
+profile validation, and a managed `tokyonight-moon.itermcolors` preset that
+the installer validates. Color Preset import remains manual until a known-good
+`Custom Color Presets` preference schema is captured. Phase C (`Bound Hosts`)
+has not started.
 
 2026-05-08 consult pass: the high-level decisions below still stand, but three
 implementation details changed after deeper shell/direnv inspection:
@@ -420,21 +427,31 @@ comes up without errors and badge precmd fires.
 
 ### Phase B — Single profile (replaces all retired)
 
-B0. Extend `scripts/install-iterm2-profiles.sh` before installing new profiles:
-validate managed JSON/plist files, fail on duplicate managed GUIDs, fail when a
-managed GUID matches a static iTerm2 profile, and fail if a child references a
-parent GUID not loaded earlier.
-B1. Generate UUID for Dev profile (`uuidgen`).
-B2. Author `iterm2/profiles/00-dev.json` per shape above.
-B3. Convert `iterm2/themes/tokyonight-moon.json` to a proper `.itermcolors` Color Preset; place in `iterm2/color-presets/`.
-B4. Spike Color Preset install separately. Preferred order: manual/UI import for first proof, then scripted import only after the `Custom Color Presets` schema is copied from a known-good export. Do not direct-write that preference in the same commit as the default-profile change.
-B5. Extend `scripts/install-iterm2-profiles.sh` with the Default Bookmark setter.
+B0. **Done.** `scripts/install-iterm2-profiles.sh` validates managed JSON/plist
+files, fails on duplicate managed GUIDs, fails when a managed GUID matches a
+real static iTerm2 profile, ignores iTerm2's `Is Dynamic Profile` mirror entries
+when reading `New Bookmarks`, and fails if a child references a parent GUID not
+loaded earlier.
+B1. **Done.** Dev profile GUID:
+`C4668B75-BF86-4207-B268-CA34ED11AAD8`.
+B2. **Done.** `iterm2/profiles/00-dev.json` is the managed Dev profile.
+B3. **Done.** `iterm2/color-presets/tokyonight-moon.itermcolors` is the managed
+Color Preset artifact converted from `iterm2/themes/tokyonight-moon.json`.
+B4. **Partial.** Manual/UI import remains the current proof path. Scripted
+import is intentionally deferred until the `Custom Color Presets` schema is
+copied from a known-good export. Do not direct-write that preference yet.
+B5. **Done.** `scripts/install-iterm2-profiles.sh` sets `Default Bookmark Guid`
+to the managed Dev profile.
 **Leave the static profile with GUID `904E3177-4CE0-4D77-B7B6-38F2E2769773` (the
 current Default Bookmark) in place** — setting `Default Bookmark Guid` to our
 managed Dev profile is sufficient. Do not delete iTerm2's seeded default profile.
-B6. Run installer; verify `ng-doctor iterm2` passes after the installer/doctor checks are extended beyond symlink presence.
+B6. **Current verification.** The installer passes with one managed profile and
+one managed color preset. `ng-doctor`'s iTerm2 category passes its current
+checks. It does not yet prove color import or badge behavior.
 
-**Acceptance**: New iTerm2 windows open with Dev profile. Color preset applied. Badge updates per direnv.
+**Acceptance remaining**: manually import/apply the Color Preset, verify the
+new-window visual state, and verify badge updates per direnv. Scripted color
+import waits for a captured preference schema.
 
 ### Phase C — SSH variant (`Bound Hosts`)
 

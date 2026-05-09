@@ -10,6 +10,11 @@ iTerm2 is an adapter layer, not a system boundary. Shell/runtime policy lives in
 
 The Dev profile is set as iTerm2's Default Bookmark by `scripts/install-iterm2-profiles.sh`. The pre-existing static default profile (GUID `904E3177-…`) is **not** removed; we only redirect `Default Bookmark Guid` to the managed Dev profile.
 
+Current status: Phase B is partially landed. The Dev profile and Default
+Bookmark are managed, and `color-presets/tokyonight-moon.itermcolors` is
+validated by the installer. Color Preset import/application is still manual;
+the repo does not write iTerm2's `Custom Color Presets` preference yet.
+
 ## Authoritative design
 
 `docs/iterm2-profile-redesign.md` is the authoritative design document. Phase A (shell-integration foundation) landed 2026-05-08. Phase B (managed Dev profile) is the active phase. Phases C (SSH variant via `Bound Hosts`) and D (cleanup) follow.
