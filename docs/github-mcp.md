@@ -246,7 +246,7 @@ copilot --disable-builtin-mcps                  # turn it off
 
 ```bash
 # 1Password readiness
-op vault get Dev --account my.1password.com >/dev/null && echo "op ok"
+op vault get Dev --account my.1password.com && echo "op ok"
 test -e "$HOME/.local/state/system-config/mcp-github.disabled" && echo "github mcp disabled"
 
 # Resolved env (no values printed)

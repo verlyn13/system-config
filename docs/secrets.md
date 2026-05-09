@@ -55,7 +55,7 @@ references this repo owns.
 - Readiness check:
 
   ```bash
-  op vault get Dev --account my.1password.com >/dev/null
+  op vault get Dev --account my.1password.com
   ```
 
   `op whoami` is not the canonical signal under desktop-app integration;
@@ -225,7 +225,7 @@ Current repo-owned examples:
 ## Verification
 
 ```bash
-op vault get Dev --account my.1password.com >/dev/null && echo "op ok"
+op vault get Dev --account my.1password.com && echo "op ok"
 op read --account my.1password.com "op://Dev/brave-search/api-key" >/dev/null && echo brave ok
 op read --account my.1password.com "op://Dev/firecrawl/api-key" >/dev/null && echo firecrawl ok
 

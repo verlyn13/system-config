@@ -263,6 +263,14 @@ check_op_ready() {
     return
   fi
 
+  if [[ "$output" == *"connecting to desktop app"* || "$output" == *"couldn't connect to the 1Password desktop app"* ]]; then
+    printf 'op_ready: retrying with direct op output for the 1Password Touch ID flow\n' >&2
+    if op vault get "$OP_VAULT" --account "$OP_ACCOUNT"; then
+      pass "op_ready" "1Password CLI can access ${OP_VAULT} vault on ${OP_ACCOUNT}"
+      return
+    fi
+  fi
+
   case "$output" in
     *"not currently signed in"*|*"not signed in"*|*"signin"*|*"sign in"*)
       fail "op_ready" "1Password vault access" "${OP_VAULT} vault accessible on ${OP_ACCOUNT}" "no authenticated account"

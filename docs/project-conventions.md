@@ -77,7 +77,7 @@ split lives in [`docs/secrets.md`](./secrets.md) § Infisical.
 - **Readiness check**:
 
   ```bash
-  op vault get Dev --account my.1password.com >/dev/null
+  op vault get Dev --account my.1password.com
   ```
 
   Do not use `op whoami` alone as a readiness signal — under desktop-app
@@ -124,7 +124,7 @@ Validated patterns for everyday project use:
 
 ```bash
 # Readiness
-op vault get Dev --account my.1password.com >/dev/null && echo "op ok"
+op vault get Dev --account my.1password.com && echo "op ok"
 
 # Single-value read
 op read --account my.1password.com "op://Dev/<item>/<field>"
@@ -410,7 +410,7 @@ Useful checks for a project to run on initial setup or in a doctor command:
 
 ```bash
 # 1Password reachable, Dev vault accessible
-op vault get Dev --account my.1password.com >/dev/null && echo "op ok"
+op vault get Dev --account my.1password.com && echo "op ok"
 
 # Project's op:// references all resolve (replace VAR with expected name)
 op run --account my.1password.com --env-file=.env.1p -- \

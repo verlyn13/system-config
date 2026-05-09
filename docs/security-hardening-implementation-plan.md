@@ -208,7 +208,7 @@ Live contracts:
 
 - Account: `my.1password.com`
 - Primary vault: `Dev`
-- Readiness check: `op vault get Dev --account my.1password.com >/dev/null`
+- Readiness check: `op vault get Dev --account my.1password.com`
 - Runtime resolution pattern: inherited env var, then `op read --account
   my.1password.com`, then fail.
 - Project references use `op://` URIs; raw values must not appear in repo

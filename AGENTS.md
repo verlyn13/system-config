@@ -98,7 +98,7 @@ scripts/sync-mcp.sh --dry-run
 
 - 1Password account: `my.1password.com`; primary vault: `Dev`
 - Retrieval: `op read "op://Dev/<item>/<field>"`
-- Readiness check: `op vault get Dev --account my.1password.com >/dev/null`
+- Readiness check: `op vault get Dev --account my.1password.com`
 - Live policy: [`docs/secrets.md`](./docs/secrets.md)
 - Never commit tokens, passphrases, or API keys.
 - Never write secret values into persistent user config files.
