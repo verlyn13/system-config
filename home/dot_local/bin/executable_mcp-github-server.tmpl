@@ -25,7 +25,13 @@ set -euo pipefail
 OP_URI="op://Dev/github-mcp/token"
 REMOTE_URL="https://api.githubcopilot.com/mcp/"
 MCP_REMOTE_VERSION="0.1.38"
+DISABLE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/system-config/mcp-github.disabled"
 TOOLSETS="context,repos,issues,pull_requests,users,actions,code_security,dependabot,discussions,gists,labels,orgs,projects,releases,security_advisories,secret_protection,github_support_docs_search"
+
+if [[ -e "$DISABLE_FILE" ]]; then
+  echo "mcp-github-server: disabled by $DISABLE_FILE" >&2
+  exit 78
+fi
 
 if [[ -z "${GITHUB_PAT:-}" ]] && command -v op >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
   GITHUB_PAT="$(timeout "$HCS_SECRET_TIMEOUT" op read --account "$HCS_SECRET_ACCOUNT" "$OP_URI" 2>/dev/null || true)"
