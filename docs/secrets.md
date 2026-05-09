@@ -199,8 +199,9 @@ Generic workflow:
 In the template:
 
 - Set built-in `username`, `password`, and `notesPlain` values as needed.
-- Add TOTP as a custom field with label `one-time-password`, type `OTP`, and
-  an `otpauth://` value. Use kebab-case custom labels.
+- If TOTP is available at creation time, add it as a custom field with label
+  `one-time-password`, type `OTP`, and an `otpauth://` value. Use kebab-case
+  custom labels. If TOTP enrollment happens later, add it in the 1Password GUI.
 - Keep all resolved secret values inside the editor or 1Password UI only.
 
 Example non-secret envelope for the Uptime Kuma admin login:
