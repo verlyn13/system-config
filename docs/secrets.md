@@ -174,22 +174,26 @@ instead.
 Generic workflow:
 
 ```bash
-ITEM_JSON="$(mktemp -t op-login-item.XXXXXX.json)"
-chmod 600 "$ITEM_JSON"
-trap 'rm -f "$ITEM_JSON"' EXIT
+(
+  set -euo pipefail
 
-op item template get --account my.1password.com --out-file "$ITEM_JSON" Login
+  ITEM_JSON="$(mktemp -t op-login-item.XXXXXX.json)"
+  chmod 600 "$ITEM_JSON"
+  trap 'rm -f "$ITEM_JSON"' EXIT
 
-${EDITOR:-nano} "$ITEM_JSON"
+  op item template get --account my.1password.com --out-file "$ITEM_JSON" Login
 
-op item create \
-  --account my.1password.com \
-  --vault Dev \
-  --title "<kebab-case-item-name>" \
-  --url "<login-url>" \
-  --tags "<comma-separated-non-secret-tags>" \
-  --format json \
-  --template "$ITEM_JSON"
+  ${EDITOR:-nano} "$ITEM_JSON"
+
+  op item create \
+    --account my.1password.com \
+    --vault Dev \
+    --title "<kebab-case-item-name>" \
+    --url "<login-url>" \
+    --tags "<comma-separated-non-secret-tags>" \
+    --format json \
+    --template "$ITEM_JSON"
+)
 ```
 
 In the template:
