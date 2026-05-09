@@ -15,6 +15,7 @@ shopt -s nullglob
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 PROFILES_SRC="$REPO_DIR/iterm2/profiles"
+COLOR_PRESETS_SRC="$REPO_DIR/iterm2/color-presets"
 DYN_DIR="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
 ITERM_PLIST="$HOME/Library/Preferences/com.googlecode.iterm2.plist"
 DEV_PROFILE="$PROFILES_SRC/00-dev.json"
@@ -30,6 +31,10 @@ command -v jq     >/dev/null 2>&1 || die "jq required for validation"
 command -v plutil >/dev/null 2>&1 || die "plutil required for validation"
 
 sources=("$PROFILES_SRC"/*.json)
+color_presets=()
+if [[ -d "$COLOR_PRESETS_SRC" ]]; then
+  color_presets=("$COLOR_PRESETS_SRC"/*.itermcolors)
+fi
 
 # --- Static iTerm2 profile GUIDs (read from main plist) ---------------------
 
@@ -38,7 +43,7 @@ static_guids() {
     return 0
   fi
   plutil -extract "New Bookmarks" json -o - "$ITERM_PLIST" 2>/dev/null \
-    | jq -r '.[]?.Guid // empty' 2>/dev/null || true
+    | jq -r '.[]? | select(.["Is Dynamic Profile"] != true) | .Guid // empty' 2>/dev/null || true
 }
 
 # --- Phase 1: validate ALL managed sources ----------------------------------
@@ -111,6 +116,29 @@ validate_sources() {
   done < <(printf '%s\n' "$managed_records")
 
   log "Validation passed (${#sources[@]} file(s), all checks)."
+}
+
+# --- Phase 1b: validate managed Color Presets -------------------------------
+# Phase B owns the preset artifacts, but does not import them yet. Direct plist
+# writes wait until a known-good Custom Color Presets schema is captured.
+
+validate_color_presets() {
+  if [[ ${#color_presets[@]} -eq 0 ]]; then
+    log "No managed color presets in $COLOR_PRESETS_SRC; skipping validation."
+    return 0
+  fi
+
+  log "Validating ${#color_presets[@]} managed color preset(s)..."
+
+  local preset
+  for preset in "${color_presets[@]}"; do
+    plutil -convert xml1 -o /dev/null "$preset" >/dev/null || die "invalid color preset plist: $preset"
+    plutil -convert json -o - "$preset" \
+      | jq -e 'type == "object" and (has("Profiles") | not)' >/dev/null \
+      || die "invalid color preset shape: $preset"
+  done
+
+  log "Color preset validation passed (${#color_presets[@]} file(s))."
 }
 
 # --- Phase 2: install symlinks ---------------------------------------------
@@ -226,6 +254,7 @@ set_default_bookmark() {
 # --- Main flow --------------------------------------------------------------
 
 validate_sources
+validate_color_presets
 install_symlinks
 guid_sanity_check
 set_default_bookmark

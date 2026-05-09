@@ -88,7 +88,7 @@ Operational constraints from the same doc:
 - Dynamic profiles load by filename order. Parent profiles must be in an earlier file than children.
 - A dynamic profile whose `Guid` equals an existing static profile is ignored.
 
-Installer implication: validate every managed profile with `jq` and `plutil -convert xml1 -o /dev/null`, check managed GUIDs against both dynamic and static profile GUIDs, then update symlinks. Do not symlink first and hope iTerm2 rejects only the bad file.
+Installer implication: validate every managed profile with `jq` and `plutil -convert xml1 -o /dev/null`, check managed GUIDs against both managed dynamic profiles and real static profile GUIDs, then update symlinks. When reading `New Bookmarks`, entries marked `Is Dynamic Profile` are iTerm2's loaded dynamic-profile mirror and must not be treated as static conflicts. Do not symlink first and hope iTerm2 rejects only the bad file.
 
 ### Automatic Profile Switching (`Bound Hosts`)
 
