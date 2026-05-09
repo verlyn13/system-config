@@ -1,0 +1,123 @@
+{
+  "Profiles": [
+    {
+      "Name": "Guardian L0",
+      "Guid": "010B3D18-0369-41A8-994C-765185D9C014",
+      "Dynamic Profile Parent GUID": "C4668B75-BF86-4207-B268-CA34ED11AAD8",
+      "Tags": ["workstation", "the-nash-group", "parent-l0", "guardian"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "/Users/verlyn13/Organizations/the-nash-group",
+        "/Users/verlyn13/Organizations/the-nash-group/*"
+      ],
+
+      "Badge Text": "\uD83D\uDEE1\uFE0F THE GUARDIAN L0",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.8313725490196079,
+        "Green Component": 0.6862745098039216,
+        "Blue Component": 0.21568627450980393,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.803921568627451,
+        "Green Component": 0.4980392156862745,
+        "Blue Component": 0.19607843137254902,
+        "Alpha Component": 0.55,
+        "Color Space": "sRGB"
+      },
+
+      "Normal Font": "SFMono-Regular 13",
+      "Use Bold Font": true,
+      "Use Bright Bold": false,
+
+      "Background Color": {
+        "Red Component": 0.10980392156862745,
+        "Green Component": 0.1450980392156863,
+        "Blue Component": 0.14901960784313725,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Foreground Color": {
+        "Red Component": 0.9098039215686274,
+        "Green Component": 0.9098039215686274,
+        "Blue Component": 0.9098039215686274,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.8313725490196079,
+        "Green Component": 0.6862745098039216,
+        "Blue Component": 0.21568627450980393,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Cursor Color": {
+        "Red Component": 0.058823529411764705,
+        "Green Component": 0.3215686274509804,
+        "Blue Component": 0.7294117647058823,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Cursor Text Color": {
+        "Red Component": 0.9098039215686274,
+        "Green Component": 0.9098039215686274,
+        "Blue Component": 0.9098039215686274,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Link Color": {
+        "Red Component": 0.058823529411764705,
+        "Green Component": 0.3215686274509804,
+        "Blue Component": 0.7294117647058823,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Selection Color": {
+        "Red Component": 0.058823529411764705,
+        "Green Component": 0.3215686274509804,
+        "Blue Component": 0.7294117647058823,
+        "Alpha Component": 0.35,
+        "Color Space": "sRGB"
+      },
+      "Selected Text Color": {
+        "Red Component": 0.9098039215686274,
+        "Green Component": 0.9098039215686274,
+        "Blue Component": 0.9098039215686274,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+
+      "Ansi 3 Color": {
+        "Red Component": 0.803921568627451,
+        "Green Component": 0.4980392156862745,
+        "Blue Component": 0.19607843137254902,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 4 Color": {
+        "Red Component": 0.058823529411764705,
+        "Green Component": 0.3215686274509804,
+        "Blue Component": 0.7294117647058823,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 11 Color": {
+        "Red Component": 0.8313725490196079,
+        "Green Component": 0.6862745098039216,
+        "Blue Component": 0.21568627450980393,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 12 Color": {
+        "Red Component": 0.27058823529411763,
+        "Green Component": 0.47843137254901963,
+        "Blue Component": 0.9254901960784314,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

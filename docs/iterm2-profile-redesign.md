@@ -3,7 +3,7 @@ title: iTerm2 Profile Redesign (Hybrid)
 category: design
 component: iterm2
 status: active
-version: 0.2.0
+version: 0.3.0
 last_updated: 2026-05-09
 tags: [iterm2, dynamic-profiles, automatic-profile-switching, shell-integration, direnv]
 priority: medium
@@ -17,10 +17,10 @@ This doc is the authoritative reference for implementation. Schema claims here a
 
 Current implementation status (2026-05-09): Phase A is landed. Phase B has a
 managed Dev profile, deterministic Default Bookmark setter, fail-closed
-profile validation, and a managed `tokyonight-moon.itermcolors` preset that
-the installer validates. Color Preset import remains manual until a known-good
-`Custom Color Presets` preference schema is captured. Phase C (`Bound Hosts`)
-has not started.
+profile validation, Nash path-scoped visual profiles, and a managed
+`tokyonight-moon.itermcolors` preset that the installer validates. Color Preset
+import remains manual until a known-good `Custom Color Presets` preference
+schema is captured. Phase C (`Bound Hosts`) for SSH safety has not started.
 
 2026-05-08 consult pass: the high-level decisions below still stand, but three
 implementation details changed after deeper shell/direnv inspection:
@@ -60,7 +60,10 @@ explicit, and offline shell startup is verified safe:
 
 ## Goals
 
-1. **Project-path independence** — profiles must not bake `~/Organizations/...` into JSON. Project moves should require zero profile edits.
+1. **Project-path independence by default** — default and reusable profiles must
+   not bake `~/Organizations/...` into JSON. Explicit authority-zone profiles
+   may use documented local paths when their purpose is path-specific visual
+   signaling.
 2. **Decoupled agentic mode** — `NG_MODE=agentic` must work from any launcher (any iTerm2 profile, ssh, tmux, alternate terminal), not only the agentic profile.
 3. **Deterministic Default Bookmark** across machines.
 4. **SSH safety colors automatic** when ssh'd to a marked host, no wrapper required for the common path.
@@ -378,7 +381,8 @@ internet connection. All Phase A runtime paths verified network-free.
 |------|---------------------|-------|
 | `zz-iterm2.zsh` source-time | No | `[[ -r ... ]] && source` — graceful when shell-integration absent. |
 | `~/.iterm2_shell_integration.zsh` body | No | Audited 2026-05-08 against pinned SHA. Only local commands: `printf`, `base64`, `tr`, `whence`, `hostname -f`. No `curl`/`wget`/`http`. |
-| `_iterm2_emit_badge` precmd hook | No | Pure `printf` + `base64` of an env var. Local-only. |
+| `_iterm2_emit_badge` precmd hook | No | Pure `printf` + `base64` of resolved badge text. Local-only. |
+| Nash badge fallback | No | Runs `git -C "$PWD" rev-parse --show-toplevel` only under `~/Organizations/the-nash-group`, cached by `PWD`. No network. |
 | `agentic` wrapper | No | `exec env NG_MODE=agentic /bin/zsh -l`. No I/O. |
 | `use_iterm_badge` direnv helper | No | `export ITERM_BADGE_TEXT="$*"`. Env mutation only. |
 | `ng-doctor iterm2_shell_integration` probe | No | Local SHA compare against pinned value. |
@@ -448,10 +452,16 @@ managed Dev profile is sufficient. Do not delete iTerm2's seeded default profile
 B6. **Current verification.** The installer passes with one managed profile and
 one managed color preset. `ng-doctor`'s iTerm2 category passes its current
 checks. It does not yet prove color import or badge behavior.
+B7. **Done.** `Guardian L0` and `Nash Repo` profiles add path-scoped visual
+signaling for `/Users/verlyn13/Organizations/the-nash-group`. This is a
+documented exception to default project-path independence because the profile's
+purpose is to distinguish Parent L0 context from nested repo context. See
+`docs/iterm2-guardian-profiles.md`.
 
 **Acceptance remaining**: manually import/apply the Color Preset, verify the
-new-window visual state, and verify badge updates per direnv. Scripted color
-import waits for a captured preference schema.
+new-window visual state, verify Nash APS switches, and verify badge updates per
+direnv/path fallback. Scripted color import waits for a captured preference
+schema.
 
 ### Phase C — SSH variant (`Bound Hosts`)
 
@@ -496,6 +506,7 @@ be updated, ask for that explicitly after the repo work lands.
 | R14 | Offline shell startup must remain clean | All runtime paths verified network-free (see "Offline guarantees"). Installer is the only network-dependent action; it is one-time and explicitly online. |
 | R15 | Upstream shell-integration script changes invalidate the pinned SHA | Installer fails closed on mismatch with both expected and actual SHA. Bumping `EXPECTED_SHA` in `scripts/install-iterm2-shell-integration.sh` is a deliberate, reviewed commit; do not paper over a mismatch. |
 | R16 | Installing iTerm2 utilities (`~/.iterm2/`) silently mutates `~/.iterm2_shell_integration.zsh` (appends aliases) and breaks SHA pinning | Phase A explicitly does not install utilities. If utilities become required, the decision is a separate Phase B/C item: prefer `/Applications/iTerm.app/Contents/Resources/utilities` with a managed PATH entry over `~/.iterm2/`. |
+| R17 | Nash path APS could choose the parent profile over a child wildcard rule | Child repo rules are host-qualified (`*:/path`) while the parent rule is path-only, so child rules have a higher APS score. |
 
 ## Decisions baked in (vs the Option-list discussion)
 
@@ -508,6 +519,7 @@ be updated, ask for that explicitly after the repo work lands.
 | Default Bookmark | Installer sets it deterministically | Consistent setup across machines; matches "deterministic" goal. |
 | Shell-integration scope | Interactive only (skipped in agentic) | Preserves agentic startup budget. |
 | Clipboard write (`Allow Clipboard Access From Terminal`) | `false` on Dev (and inherited by SSH variant in Phase C) | Closes OSC 52 / OSC 1337 SetClipboard injection vector. This workstation runs agentic tools (Claude Code, Codex, MCP) that pipe untrusted remote text through the terminal — any such text containing a clipboard-write escape would silently overwrite the system clipboard. Industry default for hardened multi-host setups. Read access (paste) unaffected. Escape hatch: edit the field to `true` in `iterm2/profiles/00-dev.json` and re-run `scripts/install-iterm2-profiles.sh`; iTerm2 reloads dynamically. Add a sibling "Dev (clipboard)" profile only if friction emerges in practice — do not pre-build. Decided 2026-05-08. |
+| Nash Guardian profiles | Path-scoped visual exception | The user explicitly wants Parent L0 and nested-repo visual separation for `~/Organizations/the-nash-group`; the exception is documented and does not set commands, env, working directories, or secrets. |
 
 ## Out of scope
 

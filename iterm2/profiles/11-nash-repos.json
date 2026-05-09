@@ -1,0 +1,128 @@
+{
+  "Profiles": [
+    {
+      "Name": "Nash Repo",
+      "Guid": "6C3C231C-346A-4026-ABE2-14089AAF08AB",
+      "Dynamic Profile Parent GUID": "C4668B75-BF86-4207-B268-CA34ED11AAD8",
+      "Tags": ["workstation", "the-nash-group", "repo"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/the-nash-group/ci-runner",
+        "*:/Users/verlyn13/Organizations/the-nash-group/ci-runner/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/org-assets",
+        "*:/Users/verlyn13/Organizations/the-nash-group/org-assets/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/runner-substrate",
+        "*:/Users/verlyn13/Organizations/the-nash-group/runner-substrate/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-citadel",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-citadel/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-citadel-archived",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-citadel-archived/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-covenant",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-covenant/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-nexus",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-nexus/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-shield",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-shield/*",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-tartan",
+        "*:/Users/verlyn13/Organizations/the-nash-group/the-tartan/*"
+      ],
+
+      "Badge Text": "TNG REPO",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.1803921568627451,
+        "Green Component": 0.6509803921568628,
+        "Blue Component": 0.6509803921568628,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.1803921568627451,
+        "Green Component": 0.6509803921568628,
+        "Blue Component": 0.6509803921568628,
+        "Alpha Component": 0.5,
+        "Color Space": "sRGB"
+      },
+
+      "Background Color": {
+        "Red Component": 0.08627450980392157,
+        "Green Component": 0.12549019607843137,
+        "Blue Component": 0.13725490196078433,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Foreground Color": {
+        "Red Component": 0.8941176470588236,
+        "Green Component": 0.9176470588235294,
+        "Blue Component": 0.9254901960784314,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.4823529411764706,
+        "Green Component": 0.7686274509803922,
+        "Blue Component": 0.7686274509803922,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Cursor Color": {
+        "Red Component": 0.2235294117647059,
+        "Green Component": 0.6549019607843137,
+        "Blue Component": 0.8470588235294118,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Link Color": {
+        "Red Component": 0.2235294117647059,
+        "Green Component": 0.6549019607843137,
+        "Blue Component": 0.8470588235294118,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Selection Color": {
+        "Red Component": 0.16470588235294117,
+        "Green Component": 0.43529411764705883,
+        "Blue Component": 0.5372549019607843,
+        "Alpha Component": 0.42,
+        "Color Space": "sRGB"
+      },
+      "Selected Text Color": {
+        "Red Component": 0.8941176470588236,
+        "Green Component": 0.9176470588235294,
+        "Blue Component": 0.9254901960784314,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+
+      "Ansi 3 Color": {
+        "Red Component": 0.7098039215686275,
+        "Green Component": 0.615686274509804,
+        "Blue Component": 0.38823529411764707,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 4 Color": {
+        "Red Component": 0.2235294117647059,
+        "Green Component": 0.6549019607843137,
+        "Blue Component": 0.8470588235294118,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 6 Color": {
+        "Red Component": 0.1803921568627451,
+        "Green Component": 0.6509803921568628,
+        "Blue Component": 0.6509803921568628,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 14 Color": {
+        "Red Component": 0.4823529411764706,
+        "Green Component": 0.7686274509803922,
+        "Blue Component": 0.7686274509803922,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}
