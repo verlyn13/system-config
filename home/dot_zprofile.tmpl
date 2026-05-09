@@ -6,18 +6,23 @@ if [[ -x {{ .homebrew.prefix }}/bin/brew ]]; then
   eval "$({{ .homebrew.prefix }}/bin/brew shellenv)"
 fi
 
+path_prepend() { [[ -d "$1" ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1:$PATH"; }
+
 # User binaries
-[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
+path_prepend "$HOME/.local/bin"
 
 # npm global packages
-[[ -d "$HOME/.npm-global/bin" ]] && export PATH="$HOME/.npm-global/bin:$PATH"
+path_prepend "$HOME/.npm-global/bin"
 
 # mise shims (global tool versions)
-[[ -d "$XDG_DATA_HOME/mise/shims" ]] && export PATH="$XDG_DATA_HOME/mise/shims:$PATH"
+path_prepend "$XDG_DATA_HOME/mise/shims"
 {{ if (.android | default false) -}}
 
 # Android SDK tools
-[[ -d "$ANDROID_HOME/platform-tools" ]] && export PATH="$ANDROID_HOME/platform-tools:$PATH"
-[[ -d "$ANDROID_HOME/emulator" ]] && export PATH="$ANDROID_HOME/emulator:$PATH"
-[[ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]] && export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+path_prepend "$ANDROID_HOME/platform-tools"
+path_prepend "$ANDROID_HOME/emulator"
+path_prepend "$ANDROID_HOME/cmdline-tools/latest/bin"
 {{ end -}}
+
+export PATH
+unset -f path_prepend
