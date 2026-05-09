@@ -12,6 +12,29 @@
   source "$HOME/.iterm2_shell_integration.zsh"
 
 _iterm2_resolved_badge_text=""
+_iterm2_resolve_root_badge() {
+  local root="$1"
+  local root_badge="$2"
+  local child_prefix="$3"
+  local workspace_badge="$4"
+
+  [[ "$PWD" == "$root" || "$PWD" == "$root"/* ]] || return 1
+
+  local git_root badge
+  git_root="$(command git -C "$PWD" rev-parse --show-toplevel 2>/dev/null)" || git_root=""
+
+  if [[ "$git_root" == "$root" ]]; then
+    badge="$root_badge"
+  elif [[ "$git_root" == "$root"/* ]]; then
+    badge="${child_prefix}${git_root##*/}"
+  else
+    badge="$workspace_badge"
+  fi
+
+  _iterm2_resolved_badge_text="$badge"
+  return 0
+}
+
 _iterm2_resolve_badge_text() {
   _iterm2_resolved_badge_text=""
 
@@ -21,27 +44,28 @@ _iterm2_resolve_badge_text() {
   fi
 
   local nash_root="$HOME/Organizations/the-nash-group"
-  [[ "$PWD" == "$nash_root" || "$PWD" == "$nash_root"/* ]] || return 0
+  local jefahnierocks_root="$HOME/Organizations/jefahnierocks"
+  [[ "$PWD" == "$nash_root" || "$PWD" == "$nash_root"/* ||
+     "$PWD" == "$jefahnierocks_root" || "$PWD" == "$jefahnierocks_root"/* ]] || return 0
 
   if [[ "${_ITERM2_LAST_BADGE_PWD-}" == "$PWD" ]]; then
     _iterm2_resolved_badge_text="${_ITERM2_LAST_RESOLVED_BADGE_TEXT-}"
     return 0
   fi
 
-  local git_root badge
-  git_root="$(command git -C "$PWD" rev-parse --show-toplevel 2>/dev/null)" || git_root=""
-
-  if [[ "$git_root" == "$nash_root" ]]; then
-    badge=$'\U1F6E1\ufe0f THE GUARDIAN L0'
-  elif [[ "$git_root" == "$nash_root"/* ]]; then
-    badge="TNG REPO: ${git_root##*/}"
-  else
-    badge="TNG WORKSPACE"
-  fi
+  _iterm2_resolve_root_badge \
+    "$nash_root" \
+    $'\U1F6E1\ufe0f THE GUARDIAN L0' \
+    "TNG REPO: " \
+    "TNG WORKSPACE" ||
+    _iterm2_resolve_root_badge \
+      "$jefahnierocks_root" \
+      $'\U1F3A8 JEF AHNIE ROCKS \u2022 EXPLORER' \
+      $'\U1F3A8 JEF REPO: ' \
+      "JEF WORKSPACE"
 
   _ITERM2_LAST_BADGE_PWD="$PWD"
-  _ITERM2_LAST_RESOLVED_BADGE_TEXT="$badge"
-  _iterm2_resolved_badge_text="$badge"
+  _ITERM2_LAST_RESOLVED_BADGE_TEXT="$_iterm2_resolved_badge_text"
 }
 
 _iterm2_emit_badge() {

@@ -9,11 +9,13 @@ iTerm2 is an adapter layer, not a system boundary. Shell/runtime policy lives in
 | `profiles/00-dev.json` | `Dev` | Default presentation profile (font, scrollback, key bindings). No working directory, no command, no env block — behavior is shell-driven. |
 | `profiles/10-nash-guardian-l0.json` | `Guardian L0` | Path-scoped Parent L0 visual profile for `/Users/verlyn13/Organizations/the-nash-group`. |
 | `profiles/11-nash-repos.json` | `Nash Repo` | Distinct path-scoped visual profile for known nested repos under The Nash Group org directory. |
+| `profiles/20-jefahnierocks-explorer.json` | `Jefahnierocks Explorer` | Path-scoped personal Explorer profile for `/Users/verlyn13/Organizations/jefahnierocks`. |
+| `profiles/21-jefahnierocks-repos.json` | `Jefahnierocks Repo` | Repo-scoped Explorer variant for known nested repos under the Jefahnierocks org directory. |
 
 The Dev profile is set as iTerm2's Default Bookmark by `scripts/install-iterm2-profiles.sh`. The pre-existing static default profile (GUID `904E3177-…`) is **not** removed; we only redirect `Default Bookmark Guid` to the managed Dev profile.
 
 Current status: Phase B is partially landed. The Dev profile, Default Bookmark,
-and Nash path-scoped visual profiles are managed. The
+and Nash/Jefahnierocks path-scoped visual profiles are managed. The
 `color-presets/tokyonight-moon.itermcolors` preset is validated by the
 installer. Color Preset import/application is still manual; the repo does not
 write iTerm2's `Custom Color Presets` preference yet.
@@ -24,6 +26,9 @@ write iTerm2's `Custom Color Presets` preference yet.
 
 `docs/iterm2-guardian-profiles.md` records the repo-owned Guardian/Nash profile
 customization rules.
+
+`docs/iterm2-jefahnierocks-profiles.md` records the repo-owned
+Jefahnierocks/Explorer customization rules.
 
 ## Directories
 

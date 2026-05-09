@@ -1,0 +1,136 @@
+{
+  "Profiles": [
+    {
+      "Name": "Jefahnierocks Repo",
+      "Guid": "6DEDD8FB-32C9-4A23-9FF7-6CB3C456D3B9",
+      "Dynamic Profile Parent GUID": "C4668B75-BF86-4207-B268-CA34ED11AAD8",
+      "Tags": ["workstation", "jefahnierocks", "repo"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux/*",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux-deploy",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux-deploy/*",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate/*",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/system-config",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/system-config/*"
+      ],
+
+      "Badge Text": "\uD83C\uDFA8 JEF REPO",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.0,
+        "Green Component": 0.8313725490196079,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.8352941176470589,
+        "Blue Component": 0.30980392156862746,
+        "Alpha Component": 0.5,
+        "Color Space": "sRGB"
+      },
+
+      "Normal Font": "SFMono-Regular 13",
+      "Use Bold Font": true,
+      "Use Bright Bold": true,
+
+      "Background Color": {
+        "Red Component": 0.10196078431372549,
+        "Green Component": 0.12156862745098039,
+        "Blue Component": 0.23921568627450981,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Foreground Color": {
+        "Red Component": 0.9411764705882353,
+        "Green Component": 0.9568627450980393,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.5411764705882353,
+        "Blue Component": 0.396078431372549,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Cursor Color": {
+        "Red Component": 0.0,
+        "Green Component": 0.8313725490196079,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Cursor Text Color": {
+        "Red Component": 0.10196078431372549,
+        "Green Component": 0.12156862745098039,
+        "Blue Component": 0.23921568627450981,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Link Color": {
+        "Red Component": 0.0,
+        "Green Component": 0.8313725490196079,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Selection Color": {
+        "Red Component": 0.0,
+        "Green Component": 0.8313725490196079,
+        "Blue Component": 1.0,
+        "Alpha Component": 0.3,
+        "Color Space": "sRGB"
+      },
+      "Selected Text Color": {
+        "Red Component": 0.9411764705882353,
+        "Green Component": 0.9568627450980393,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+
+      "Ansi 3 Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.8352941176470589,
+        "Blue Component": 0.30980392156862746,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 6 Color": {
+        "Red Component": 0.0,
+        "Green Component": 0.8313725490196079,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 9 Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.5411764705882353,
+        "Blue Component": 0.396078431372549,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 11 Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.8352941176470589,
+        "Blue Component": 0.30980392156862746,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 14 Color": {
+        "Red Component": 0.0,
+        "Green Component": 0.8313725490196079,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}
