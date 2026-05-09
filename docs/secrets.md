@@ -3,8 +3,8 @@ title: Secrets Handling
 category: reference
 component: secrets_policy
 status: active
-version: 2.3.0
-last_updated: 2026-05-04
+version: 2.6.0
+last_updated: 2026-05-08
 tags: [secrets, 1password, op, direnv, mcp, security]
 priority: critical
 ---
@@ -35,10 +35,17 @@ references this repo owns.
 - Never commit secrets, tokens, passphrases, or API keys.
 - Never persist resolved secrets into user-global config files like
   `~/.claude.json`, `~/.codex/config.toml`, or IDE MCP configs.
+- Never pass secret values through process argv. Command arguments are
+  observable for the lifetime of the process by local users, process
+  accounting, endpoint tools, and diagnostic captures.
 - Keep project-specific secret loading in each project's `.envrc`.
 - Treat `op://` references as stable API contracts once they appear in
   repo-owned code — renames require every consumer to be updated in the
   same change.
+- Distinguish semantic ownership from current provider placement. A
+  credential may be owned by one entity while its provider resource is
+  hosted under a different account or organization. Treat semantic owner
+  and provider placement as separate fields in the credential record.
 
 ## Canonical setup
 
@@ -76,6 +83,43 @@ scope, and operating conventions. The broader MCP framework (scope
 model, launch patterns, sync behavior) lives in
 [`docs/mcp-config.md`](./mcp-config.md).
 
+Credential records with semantic owner, logical path, storage alias, status,
+rotation cadence, and stop rules live in
+[`docs/secret-records.md`](./secret-records.md). That file is non-secret
+metadata only.
+
+## Logical paths vs storage aliases
+
+The project secrets standards for Jefahnierocks and Happy Patterns are
+proposed and not yet enforced by policy-as-code. This repo should still
+conform to their naming model where possible:
+
+- **Logical path**: the authority name for the credential, such as
+  `github/jefahnierocks/macpro-mcp` or
+  `github/happy-patterns/macpro-mcp`.
+- **Storage alias**: the current 1Password item and field path, such as
+  `op://Dev/github-mcp/token`. Storage aliases remain stable until all
+  consumers are patched in the same change.
+- **Provider UI name**: the dashboard-visible token name. New provider
+  credentials should use the logical path exactly when the provider accepts
+  slash-separated names. If not, use a lossless kebab-case equivalent.
+
+Every material credential referenced by this repo needs non-secret metadata:
+
+| Field | Meaning |
+|---|---|
+| `logical-path` | Standards-shaped authority path |
+| `provider-ui-name` | Dashboard-visible token name |
+| `provider-account` | Current provider account where the token lives |
+| `resource-owner` | GitHub org/user, Cloudflare account, or equivalent target |
+| `runtime-consumer` | Wrapper, `.envrc`, CI job, or service that reads it |
+| `semantic-owner` | Entity that actually owns the credential |
+| `rotation-cadence` | Expected rotation interval |
+| `expires` | Date or provider expiry metadata, when applicable |
+| `status` | `planned`, `issued`, `active`, `transitional`, `retired`, or `out-of-spec` |
+| `evidence-location` | Non-secret doc, PR, run, or provider audit pointer |
+| `stop-rules` | Conditions that require human escalation |
+
 ## Agent rules
 
 Agents may:
@@ -89,6 +133,27 @@ Agents must not, unless explicitly directed by a human:
 - Create, edit, or reorganize 1Password items.
 - Inventory vault contents broadly.
 - Materialize secrets into persistent config files.
+
+When a human explicitly delegates 1Password metadata updates, agents may use
+`op item edit` for **non-secret fields only**. Do not pass secret values as
+assignment arguments; `op` documents that command arguments can be visible to
+other local processes. Secret values must be entered by the human in the
+1Password UI or passed through a bounded template/stdin workflow for that
+exact task.
+
+Preferred non-secret metadata edit shape:
+
+```bash
+op item edit github-mcp --account my.1password.com --vault Dev \
+  'metadata.logical-path[text]=github/jefahnierocks/macpro-mcp' \
+  'metadata.provider-ui-name[text]=github/jefahnierocks/macpro-mcp' \
+  'metadata.semantic-owner[text]=Jefahnierocks' \
+  'metadata.status[text]=transitional'
+```
+
+Use `metadata.<field>[text]=<value>` for non-secret credential-record fields.
+Use `--tags` only for non-secret classification tags. Never use this command
+shape for token, password, private-key, recovery-code, or bearer values.
 
 Human-owned tasks:
 
@@ -120,22 +185,42 @@ Do not move project-specific secret loading into global shell config.
 
 ## Naming rules
 
-- Item names: kebab-case.
+- 1Password storage aliases: kebab-case.
 - Field names: kebab-case.
 - Name items by purpose, not by provider alone when multiple credentials
   may exist for one provider.
 - One item per logical credential group; use multiple fields when a group
   needs several values.
 - Use tags for metadata: `scope:*`, `provider:*`, `project:*`.
+- New provider-side token names should follow the logical path model
+  (`provider/entity/purpose`) so dashboard tokens can be matched to
+  1Password metadata without guessing.
 
 Current repo-owned examples:
 
-- `github-dev-tools` → field `token` — general GitHub PAT (`gh` CLI, misc dev tooling) for the `verlyn13` identity
-- `github-mcp` → field `token` — fine-grained PAT scoped to the GitHub MCP integration ([`docs/github-mcp.md`](./github-mcp.md)) for the `verlyn13` identity
-- `github-happy-patterns` → field `token` — fine-grained PAT for the `happy-patterns` identity (resource owner: `happy-patterns-org`); serves both `gh` CLI and the GitHub MCP when launched from `~/Organizations/happy-patterns/`
-- `ssh-github-happy-patterns` → SSH key item; 1Password-managed ed25519 key for the `happy-patterns` GitHub identity (authentication + signing; public key rendered to `~/.ssh/id_ed25519_happy_patterns.1password.pub`)
+- `github-dev-tools` → field `token` — transitional local-bootstrap
+  GitHub PAT for general dev tooling; see
+  [`docs/secret-records.md`](./secret-records.md).
+- `github-mcp` → field `token` — transitional storage alias for the
+  Jefahnierocks-owned MacPro GitHub MCP token; currently cleared and
+  out-of-spec until the no-argv MCP bridge is implemented
+  ([`docs/github-mcp.md`](./github-mcp.md)).
+- `github-jefahnierocks-macpro-mcp` → field `credential` — replacement
+  staging item for the same logical credential; not runtime-wired.
+- `github-happy-patterns` → field `token` — transitional storage alias for
+  the Happy Patterns MacPro GitHub token; serves both `gh` CLI and GitHub
+  MCP when launched from `~/Organizations/happy-patterns/`.
+- `ssh-github-happy-patterns` → SSH key item — 1Password-managed
+  ed25519 key for the `happy-patterns` GitHub identity (authentication +
+  signing); logical path `github/happy-patterns/macpro-ssh-key`; public key
+  rendered to `~/.ssh/id_ed25519_happy_patterns.1password.pub`.
 - `brave-search` → field `api-key`
 - `firecrawl` → field `api-key`
+- `cloudflare-mcp-jefahnierocks` → field `token` — wired Cloudflare MCP alias;
+  currently cleared and out-of-spec until the no-argv MCP bridge is
+  implemented.
+- `cloudflare-jefahnierocks-mcp-readonly` → field `credential` — replacement
+  staging item for the same logical credential; not runtime-wired.
 
 ## Verification
 

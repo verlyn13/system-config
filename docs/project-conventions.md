@@ -3,8 +3,8 @@ title: Project Conventions
 category: reference
 component: project_conventions
 status: active
-version: 1.3.0
-last_updated: 2026-05-06
+version: 1.5.0
+last_updated: 2026-05-08
 tags: [project, conventions, 1password, mcp, mise, ssh, compatibility, rate-limit, substrate]
 priority: high
 ---
@@ -93,19 +93,30 @@ split lives in [`docs/secrets.md`](./secrets.md) § Infisical.
 | Name by purpose when a provider has multiple creds | `github-dev-tools` vs `github-mcp` vs `github-happy-patterns` |
 | Use tags for metadata | `scope:*`, `provider:*`, `project:*` |
 
+Logical credential names are separate from 1Password storage aliases. New
+project/provider credentials should use the standards-shaped logical path
+model (`services/<project>/<secret>` or `provider/entity/purpose`) and record
+that path as metadata even when the current `op://` alias remains a shorter
+kebab-case compatibility name.
+
 Existing repo-owned items — live `op://` contracts; renaming requires
 updating every consumer in the same change:
 
-| Item | Field | Purpose |
-|------|-------|---------|
-| `github-dev-tools` | `token` | General `verlyn13` GitHub PAT (`gh` CLI, misc tooling) |
-| `github-mcp` | `token` | Fine-grained PAT for GitHub MCP (`verlyn13` identity) |
-| `github-happy-patterns` | `token` | Fine-grained PAT for `happy-patterns` identity |
-| `ssh-github-happy-patterns` | (SSH key item) | 1P-managed ed25519 for `happy-patterns` identity (auth + signing) |
-| `brave-search` | `api-key` | Brave Search MCP |
-| `firecrawl` | `api-key` | Firecrawl MCP |
-| `runpod-api` | `api-key` | Runpod MCP (`@runpod/mcp-server`) |
-| `cloudflare-mcp-jefahnierocks` | `token` | Cloudflare API MCP (account-scoped, 30-day TTL during build-out) |
+| Item | Field | Logical path | Purpose |
+|------|-------|--------------|---------|
+| `github-dev-tools` | `token` | `github/jefahnierocks/macpro-dev-tools` | Transitional local-bootstrap GitHub PAT for MacPro dev tooling |
+| `github-mcp` | `token` | `github/jefahnierocks/macpro-mcp` | Wired runtime alias; cleared and out-of-spec until the no-argv MCP bridge is implemented |
+| `github-jefahnierocks-macpro-mcp` | `credential` | `github/jefahnierocks/macpro-mcp` | Replacement staging item for human GUI credential entry; not runtime-wired |
+| `github-happy-patterns` | `token` | `github/happy-patterns/macpro-mcp` | Transitional storage alias for the Happy Patterns MacPro GitHub identity |
+| `ssh-github-happy-patterns` | SSH key item | `github/happy-patterns/macpro-ssh-key` | 1P-managed ed25519 for `happy-patterns` identity (auth + signing) |
+| `brave-search` | `api-key` | `brave/search/mcp` | Brave Search MCP |
+| `firecrawl` | `api-key` | `firecrawl/mcp` | Firecrawl MCP |
+| `runpod-api` | `api-key` | `runpod/mcp` | Runpod MCP (`@runpod/mcp-server`) |
+| `cloudflare-mcp-jefahnierocks` | `token` | `cloudflare/jefahnierocks/mcp-readonly` | Wired runtime alias; cleared and out-of-spec until the no-argv MCP bridge is implemented |
+| `cloudflare-jefahnierocks-mcp-readonly` | `credential` | `cloudflare/jefahnierocks/mcp-readonly` | Replacement staging item for human GUI credential entry; not runtime-wired |
+
+The authoritative non-secret credential records are in
+[`docs/secret-records.md`](./secret-records.md).
 
 ### CLI commands that work
 
@@ -137,6 +148,8 @@ Never do:
 - Export secrets globally in shell init (`.zshrc`, `.zshenv`)
 - Use `op whoami` alone as a readiness probe in scripts
 - Commit a `.env` with resolved values (the op-reference file is `.env.1p`-style, URIs only)
+- Pass resolved secrets in process argv. Use env, stdin/template, a local
+  broker, or a provider-native credential flow instead.
 
 ### Agent authorization
 

@@ -3,8 +3,8 @@ title: GitHub MCP Integration
 category: reference
 component: mcp_github
 status: active
-version: 2.1.0
-last_updated: 2026-04-17
+version: 2.4.0
+last_updated: 2026-05-08
 tags: [mcp, github, 1password, sync-mcp, oauth, pat]
 priority: high
 ---
@@ -67,21 +67,39 @@ entries; rerun sync instead. Hand-added sub-tables like
 survive regeneration if placed **outside** the `# BEGIN … # END` markers
 in the Codex TOML.
 
-## Secret (1Password)
+## Secret and Credential Record
 
 | Property | Value |
 |---|---|
 | Account | `my.1password.com` |
 | Vault | `Dev` |
-| Item | `github-mcp` |
+| Storage alias | `github-mcp` |
 | Field | `token` |
 | op URI | `op://Dev/github-mcp/token` |
 | Env var name | `GITHUB_PAT` |
-| Rotation | manual, fine-grained PAT with fixed expiry (90 days or 1 year) |
+| Logical path | `github/jefahnierocks/macpro-mcp` |
+| Semantic owner | Jefahnierocks |
+| Provider account | `jefahnierocks` GitHub organization |
+| Target provider UI name | `github/jefahnierocks/macpro-mcp` |
+| Rotation | manual, fine-grained PAT with 90-day expiry while this remains PAT-based |
+| Status | `transitional` |
 
 The 1P item is dedicated to the MCP integration. Do not reuse
 `op://Dev/github-dev-tools/token` (that entry serves `gh` CLI and other
-general dev tooling).
+general dev tooling). The non-secret credential record lives in
+[`docs/secret-records.md`](./secret-records.md).
+
+The 2026-05-08 bearer-token argv incident proved that `mcp-remote@0.1.x`
+materializes the Authorization bearer into argv when launched with
+`--header`. Do not relaunch GitHub MCP with a replacement PAT through the
+current wrapper until the bridge architecture is fixed.
+
+2026-05-08 rotation staging: the currently wired alias
+`op://Dev/github-mcp/token` has been cleared and marked blocked. Paste the new
+PAT value into the staging item
+`op://Dev/github-jefahnierocks-macpro-mcp/credential` only. Do not wire that staging
+alias into the wrapper until the replacement bridge no longer passes bearer
+material through process argv.
 
 ### Identity override: happy-patterns tree
 
@@ -93,15 +111,26 @@ the repo's `.envrc` exports `GITHUB_PAT` from
 skips its own `op read`, so the GitHub MCP server acts as the
 `happy-patterns` identity for that session. Codex uses
 the same wrapper and picks up the same override.
-Launching from any other directory preserves the default `verlyn13`
+Launching from any other directory preserves the default `jefahnierocks`
 identity via `op://Dev/github-mcp/token`.
 
 Rotation procedure:
 1. GitHub → Settings → Developer settings → Personal access tokens →
-   Fine-grained tokens → `github-mcp` → Regenerate.
-2. Update the `token` field on the `github-mcp` item in 1Password.
-3. Verify: `op read --account my.1password.com "op://Dev/github-mcp/token" >/dev/null && echo ok`
-4. If the rotation changes toolset scopes, update the PAT scope set
+   Fine-grained tokens.
+2. Create or rename the provider-side token to match the logical path:
+   `github/jefahnierocks/macpro-mcp`. The token must be created under the
+   `jefahnierocks` GitHub organization, not under a personal account.
+3. Scope the token only to repos and org resources required by the
+   Jefahnierocks MacPro MCP surface. Do not grant all `jefahnierocks` repos
+   as a convenience.
+4. During the current incident response, paste the new token into the staging
+   1Password item `github-jefahnierocks-macpro-mcp`, field `credential`, from the
+   1Password GUI. Do not paste it into the wired `github-mcp` alias until the
+   no-argv bridge is in place.
+5. Verify without printing the value:
+   `op read --account my.1password.com "op://Dev/github-jefahnierocks-macpro-mcp/credential" >/dev/null && echo ok`
+6. Verify the resolved token identity with `GH_TOKEN` in env, not argv.
+7. If the rotation changes toolset scopes, update the PAT scope set
    below and the `X-MCP-Toolsets` header in `scripts/sync-mcp.sh` in
    lockstep, then rerun sync.
 

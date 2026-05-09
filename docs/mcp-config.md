@@ -3,8 +3,8 @@ title: MCP Configuration Framework
 category: reference
 component: mcp_config
 status: active
-version: 1.3.0
-last_updated: 2026-04-24
+version: 1.4.0
+last_updated: 2026-05-08
 tags: [mcp, chezmoi, sync-mcp, 1password, scopes, rate-limit]
 priority: high
 ---
@@ -73,7 +73,7 @@ Synced by `scripts/sync-mcp.sh` to all six hosts (with per-host variations where
 | `github` | remote HTTP (GitHub-hosted) | per-host — see `docs/github-mcp.md` | yes for Claude Code, Claude Desktop, Cursor, Codex |
 | `runpod` | npm stdio (`@runpod/mcp-server`) | `RUNPOD_API_KEY` via `op://Dev/runpod-api/api-key` | yes (`~/.local/bin/mcp-runpod-server`) |
 | `runpod-docs` | remote HTTP | none (public) | no |
-| `cloudflare` | remote HTTP (Codemode) via `mcp-remote` stdio relay | account-scoped token — see `docs/cloudflare-mcp.md` | yes (`~/.local/bin/mcp-cloudflare-server`) |
+| `cloudflare` | remote HTTP (Codemode) via `mcp-remote` stdio relay | identity + `jefahnierocks.com` read-only token — see `docs/cloudflare-mcp.md` | yes (`~/.local/bin/mcp-cloudflare-server`) |
 | `cloudflare-docs` | remote HTTP | none (public) | no |
 
 ## Secret handling
@@ -91,6 +91,19 @@ FIRECRAWL_API_KEY=op://Dev/firecrawl/api-key
 RUNPOD_API_KEY=op://Dev/runpod-api/api-key
 CLOUDFLARE_API_TOKEN=op://Dev/cloudflare-mcp-jefahnierocks/token
 ```
+
+The `op://` paths above are storage aliases, not complete authority names.
+Non-secret logical paths and ownership records live in
+[`docs/secret-records.md`](./secret-records.md). For example,
+`op://Dev/github-mcp/token` currently maps to
+`github/jefahnierocks/macpro-mcp`.
+
+As of the 2026-05-08 bearer-token argv incident, the GitHub and Cloudflare MCP
+wired aliases are cleared and blocked until the no-argv bridge is implemented.
+Replacement values should be staged only in
+`op://Dev/github-jefahnierocks-macpro-mcp/credential` and
+`op://Dev/cloudflare-jefahnierocks-mcp-readonly/credential`; those staging
+aliases are not runtime-wired.
 
 ### Launch pattern for CLI hosts
 

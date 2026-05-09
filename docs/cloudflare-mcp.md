@@ -3,8 +3,8 @@ title: Cloudflare MCP Integration
 category: reference
 component: cloudflare_mcp
 status: active
-version: 1.2.0
-last_updated: 2026-04-25
+version: 1.3.0
+last_updated: 2026-05-08
 tags: [cloudflare, mcp, codemode, api-token, bearer, mcp-remote, 1password, workers, dns, zero-trust, tunnel, rate-limit]
 priority: high
 ---
@@ -36,9 +36,9 @@ For the Access + Tunnel AUD coupling lesson from the runpod 403, see
 | Remote endpoint (docs) | `https://docs.mcp.cloudflare.com/mcp` (no auth) |
 | Local wrapper | `~/.local/bin/mcp-cloudflare-server` (stdio via `mcp-remote`) |
 | Chezmoi source | `home/dot_local/bin/executable_mcp-cloudflare-server.tmpl` |
-| Token op URI | `op://Dev/cloudflare-mcp-jefahnierocks/token` |
-| Token account | jefahnierocks (`13eb584192d9cefb730fde0cfd271328`) |
-| Token TTL (current build-out) | 2026-04-23 → 2026-05-23 (30 days) |
+| Token op URI | wired alias, currently cleared: `op://Dev/cloudflare-mcp-jefahnierocks/token`; replacement staging: `op://Dev/cloudflare-jefahnierocks-mcp-readonly/credential` |
+| Token account | current personal-custody Cloudflare account (`13eb584192d9cefb730fde0cfd271328`) |
+| Token TTL | replacement staging credential valid 2026-05-08 → 2026-11-04; old `cloudflare-mcp-jefahnierocks` token and prior replacement were deleted in Cloudflare UI |
 | Transport to Cloudflare | Streamable HTTP via `mcp-remote@0.1.38` stdio relay |
 | Tools exposed by the auth'd server | `search`, `execute` — see §Codemode |
 | Rate-limit surface | Cloudflare API rate limits apply cumulatively to the underlying token |
@@ -67,19 +67,45 @@ mutations and keep the other hosts read-only or closed.
 
 ## Token identity and scope
 
-The token at `op://Dev/cloudflare-mcp-jefahnierocks/token` is deliberately **account-scoped**, not zone-scoped. This is required by Cloudflare's MCP gateway: the gateway rejects zone-only tokens with "no user or account information" because Codemode needs a resolvable identity to route calls against.
+The replacement token target is not account-wide. It needs `User Details Read`
+so Cloudflare's MCP gateway can resolve a user identity, plus zone-scoped
+`Zone Read` and `DNS Read` for `jefahnierocks.com` only. Earlier zone-only
+tokens without user identity metadata were rejected with "no user or account
+information"; that is not a reason to grant account-wide read or write scope.
 
-**Resolvable identity checks:**
+2026-05-08 rotation staging: the currently wired alias
+`op://Dev/cloudflare-mcp-jefahnierocks/token` has been cleared and marked
+blocked. The replacement value is stored in the staging item
+`op://Dev/cloudflare-jefahnierocks-mcp-readonly/credential`, verified, and
+not runtime-wired. Do not wire any staging alias into the wrapper until the
+replacement bridge no longer passes bearer material through process argv.
+
+**Resolvable identity checks after human credential entry:**
 
 ```bash
-TOKEN="$(op read --account my.1password.com 'op://Dev/cloudflare-mcp-jefahnierocks/token')"
-curl -s -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/user | jq .result.email
-# → "jeffreyverlynjohnson@gmail.com"
-curl -s -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/accounts | jq '.result[] | {id, name}'
-# → {"id":"13eb584192d9cefb730fde0cfd271328","name":"Jeffreyverlynjohnson@gmail.com's Account"}
+TOKEN="$(op read --account my.1password.com 'op://Dev/cloudflare-jefahnierocks-mcp-readonly/credential')"
+curl -sS -K - https://api.cloudflare.com/client/v4/user <<EOF | jq .result.email
+header = "Authorization: Bearer $TOKEN"
+EOF
+unset TOKEN
 ```
 
-**Current (build-out) scope set** — intentionally broad for the first 30 days:
+**Replacement target scope** — read-only `jefahnierocks.com` inspection only:
+
+- User permissions: `User Details Read`
+- Zone resources: include the `jefahnierocks.com` zone only
+- Zone permissions: `Zone Read`, `DNS Read`
+
+This matches the Citadel Entry 7 split decision for
+`cloudflare/jefahnierocks/mcp-readonly`: MCP/tooling may inspect the
+Jefahnierocks zone, but it must not mutate Cloudflare and must not read across
+other entity zones. Do not grant account-wide reads or write/edit permissions
+to this token. If a Cloudflare mutation workflow is needed, create a separate
+mutation-broker credential with a narrower logical path, explicit stop rules,
+and provider-side evidence.
+
+**Historical build-out scope set** — this was intentionally broad during the
+initial 30-day build-out period and is not the replacement target:
 
 - Identity (required): `User Details: Read`, `Account Settings: Read`
 - Workers platform: `Workers Scripts: Edit`, `KV: Edit`, `R2: Edit`, `Tail: Read`, `Builds: Edit`, `Observability: Edit`, `D1: Edit`, `Queues: Edit`, `Vectorize: Edit`, `AI Gateway: Edit`, `AI Search: Edit`
@@ -96,7 +122,8 @@ curl -s -H "Authorization: Bearer $TOKEN" https://api.cloudflare.com/client/v4/a
 - `Memberships: Edit`
 - `Billing: Edit`
 
-**Pruning policy:** at the 2026-05-23 expiry, review actual MCP usage (via `cloudflare-audit-logs` if configured, or Cloudflare dashboard audit log) and issue a successor token with only the scopes observed in use. Do not issue a replacement with the same breadth unless rebuild-out is active.
+**Pruning policy:** do not issue a replacement with the historical breadth
+unless rebuild-out is active and separately approved.
 
 ## Codemode — how the `search` and `execute` tools actually work
 
@@ -344,7 +371,9 @@ These are organizational standards for how agents in this repo should use the Cl
 
 7. **Don't duplicate into project `.mcp.json` files.** Cloudflare MCP is user-level baseline; project-specific MCP configs should not redeclare it. Projects that need Cloudflare access inherit it from the user scope.
 
-8. **Token rotation: ask, don't self-serve.** If the token expires (2026-05-23) or you get `401 Unauthorized`, tell the user — do not attempt to regenerate or extend the token via any automated path.
+8. **Token rotation: ask, don't self-serve.** If the token expires, is revoked,
+or you get `401 Unauthorized`, tell the user — do not attempt to regenerate or
+extend the token via any automated path.
 
 9. **Single-broker for shared control planes.** During coordinated release
    work, the owner repo's agent is the only writer to Cloudflare. Others can
@@ -357,8 +386,8 @@ These are organizational standards for how agents in this repo should use the Cl
 
 | Symptom | Likely cause | How to diagnose |
 |---|---|---|
-| `InvalidTokenError: no user or account information` at connect | Token is zone-only, not account-scoped | `curl /accounts` with the token — if empty, token needs account scope |
-| `401 Unauthorized` on a specific call | Token expired, or caller's IP changed (if filtering was set — we don't) | `curl /user/tokens/verify` with the token to check status |
+| `InvalidTokenError: no user or account information` at connect | Token lacks usable user identity metadata | Verify `User Details Read` is granted; do not broaden to account-wide reads without a separate decision |
+| `401 Unauthorized` on a specific call | Token expired, revoked, or not yet pasted into the staging item | Verify token status from Cloudflare dashboard or with a non-argv curl config |
 | `403 Forbidden` on a specific call | Token lacks the specific permission | Inspect the permission in Cloudflare dashboard; if needed, escalate to user for scope expansion |
 | Client-facing 403 after GraphQL Access login success | Later validator rejected the request, commonly `cloudflared` `originRequest.access.audTag` missing a path-scoped app AUD | Check `cloudflared` logs for `AccessJWTValidator`, inspect tunnel `audTag`, then origin logs before Access policy mutations |
 | `429 Too Many Requests` | Token/account shared rate limit exhausted, often from multi-agent fan-out or repeated retries | Stop; run `scripts/mcp-cloudflare-diagnostics.sh`; record `last_cf_mcp_429`; wait 5 minutes or `Retry-After` |
@@ -407,11 +436,11 @@ This is not a config error; it's structural to `mcp-remote`'s `--header` flag. T
 
 | Concern | Rating | Notes |
 |---|---|---|
-| Token leaks via `ps` | **Medium** | Known exposure; bounded by 30-day TTL |
+| Token leaks via `ps` | **High if relaunched through `mcp-remote --header`** | Wired alias is cleared; do not relaunch authenticated Cloudflare MCP until the no-argv bridge exists |
 | Token leaks via host log files | Low | `--silent` + wrapper stdio; not observed |
 | Token leaks via `.mcp.json` / committed config | None | Never written to disk; not possible under current design |
-| Unauthorized account enumeration | N/A | Token is already account-scoped to jefahnierocks |
-| Zone-wide destructive action | Medium | Token has edit scope on DNS, zone settings, Workers. Agent conventions (read-before-write, confirm-before-destructive) mitigate |
+| Unauthorized account enumeration | Low | Replacement target has no account-wide read permission |
+| Zone-wide destructive action | None for replacement target | Replacement target is read-only for `jefahnierocks.com`; writes require a separate mutation-broker credential |
 | Account takeover via new token mint | None | `API Tokens: Edit` excluded |
 | Billing changes | None | `Billing: Edit` excluded |
 
@@ -465,15 +494,23 @@ unset TOKEN
 
 ## Lifecycle
 
-### Rotation at TTL expiry (planned: 2026-05-23)
+### Incident rotation
 
-1. In Cloudflare dashboard (`https://dash.cloudflare.com/profile/api-tokens`): create a successor token. Scope: whichever subset of the current scope set actually got exercised over the build-out period (check audit logs).
-2. Update the 1P item `cloudflare-mcp-jefahnierocks` in place:
-   - Rotate the `token` concealed field to the new value.
+1. In Cloudflare dashboard (`https://dash.cloudflare.com/profile/api-tokens`):
+   create a successor token named `cloudflare/jefahnierocks/mcp-readonly`.
+   Use the replacement target scope above: `User Details Read` plus
+   `Zone Read` and `DNS Read` on `jefahnierocks.com` only.
+2. During the current incident response, paste the new token into the staging
+   1P item `cloudflare-jefahnierocks-mcp-readonly`, built-in field
+   `credential`, from the 1Password GUI:
+   - Do not paste the value into the wired `cloudflare-mcp-jefahnierocks`
+     alias until the no-argv bridge is in place.
    - Update `valid-from` and `expires` dates.
-3. No wrapper or baseline changes required — the `op://` URI stays the same.
-4. Restart any long-lived MCP host (Claude Desktop) for the new token to take effect. Terminal clients pick up the new token on their next `op read` which happens at their next MCP child spawn.
-5. Delete the prior token from Cloudflare dashboard after confirming the new one works end-to-end.
+3. Revoke the provider token currently named `cloudflare-mcp-jefahnierocks`.
+   Parent-side notes say it was narrowed to read-only but kept the same value,
+   so narrowing did not close the argv-exposure incident.
+4. Do not relaunch the authenticated Cloudflare MCP wrapper until the no-argv
+   bridge is implemented and wired to the staging alias.
 
 ### Emergency revocation
 
