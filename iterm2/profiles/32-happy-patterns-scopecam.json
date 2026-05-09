@@ -1,0 +1,47 @@
+{
+  "Profiles": [
+    {
+      "Name": "Happy Patterns ScopeCam",
+      "Guid": "C337D4FB-2135-4359-9EE2-330659E08697",
+      "Dynamic Profile Parent GUID": "FA151EFD-6793-4E86-AF6E-C040AFF88914",
+      "Tags": ["workstation", "happy-patterns", "scopecam", "camera"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/happy-patterns/apps/scopecam",
+        "*:/Users/verlyn13/Organizations/happy-patterns/apps/scopecam/*"
+      ],
+
+      "Badge Text": "\u25CE SCOPECAM",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.34509803921568627,
+        "Green Component": 0.7176470588235294,
+        "Blue Component": 0.7019607843137254,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.34509803921568627,
+        "Green Component": 0.7176470588235294,
+        "Blue Component": 0.7019607843137254,
+        "Alpha Component": 0.52,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.34509803921568627,
+        "Green Component": 0.7176470588235294,
+        "Blue Component": 0.7019607843137254,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 14 Color": {
+        "Red Component": 0.34509803921568627,
+        "Green Component": 0.7176470588235294,
+        "Blue Component": 0.7019607843137254,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

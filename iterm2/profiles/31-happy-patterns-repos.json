@@ -1,0 +1,30 @@
+{
+  "Profiles": [
+    {
+      "Name": "Happy Patterns Repo",
+      "Guid": "88BCC209-B6A6-4FD2-98EF-00B3653D23B7",
+      "Dynamic Profile Parent GUID": "FA151EFD-6793-4E86-AF6E-C040AFF88914",
+      "Tags": ["workstation", "happy-patterns", "repo"],
+      "Rewritable": false,
+
+      "Bound Hosts": [],
+
+      "Badge Text": "\u25A3 HP REPO",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.4196078431372549,
+        "Green Component": 0.5568627450980392,
+        "Blue Component": 0.4196078431372549,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.4196078431372549,
+        "Green Component": 0.5568627450980392,
+        "Blue Component": 0.4196078431372549,
+        "Alpha Component": 0.52,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

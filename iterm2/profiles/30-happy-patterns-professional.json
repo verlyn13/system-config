@@ -1,0 +1,123 @@
+{
+  "Profiles": [
+    {
+      "Name": "Happy Patterns Professional",
+      "Guid": "FA151EFD-6793-4E86-AF6E-C040AFF88914",
+      "Dynamic Profile Parent GUID": "C4668B75-BF86-4207-B268-CA34ED11AAD8",
+      "Tags": ["workstation", "happy-patterns", "professional"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "/Users/verlyn13/Organizations/happy-patterns",
+        "/Users/verlyn13/Organizations/happy-patterns/*"
+      ],
+
+      "Badge Text": "\u25A3 HAPPY PATTERNS",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.7686274509803922,
+        "Green Component": 0.4196078431372549,
+        "Blue Component": 0.2901960784313726,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.7686274509803922,
+        "Green Component": 0.4196078431372549,
+        "Blue Component": 0.2901960784313726,
+        "Alpha Component": 0.52,
+        "Color Space": "sRGB"
+      },
+
+      "Normal Font": "SFMono-Regular 13",
+      "Use Bold Font": true,
+      "Use Bright Bold": false,
+
+      "Background Color": {
+        "Red Component": 0.11764705882352941,
+        "Green Component": 0.1411764705882353,
+        "Blue Component": 0.12549019607843137,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Foreground Color": {
+        "Red Component": 0.9568627450980393,
+        "Green Component": 0.9450980392156862,
+        "Blue Component": 0.9137254901960784,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.4196078431372549,
+        "Green Component": 0.5568627450980392,
+        "Blue Component": 0.4196078431372549,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Cursor Color": {
+        "Red Component": 0.7686274509803922,
+        "Green Component": 0.4196078431372549,
+        "Blue Component": 0.2901960784313726,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Cursor Text Color": {
+        "Red Component": 0.9568627450980393,
+        "Green Component": 0.9450980392156862,
+        "Blue Component": 0.9137254901960784,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Link Color": {
+        "Red Component": 0.7686274509803922,
+        "Green Component": 0.4196078431372549,
+        "Blue Component": 0.2901960784313726,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Selection Color": {
+        "Red Component": 0.4196078431372549,
+        "Green Component": 0.5568627450980392,
+        "Blue Component": 0.4196078431372549,
+        "Alpha Component": 0.3,
+        "Color Space": "sRGB"
+      },
+      "Selected Text Color": {
+        "Red Component": 0.9568627450980393,
+        "Green Component": 0.9450980392156862,
+        "Blue Component": 0.9137254901960784,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+
+      "Ansi 3 Color": {
+        "Red Component": 0.4196078431372549,
+        "Green Component": 0.5568627450980392,
+        "Blue Component": 0.4196078431372549,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 9 Color": {
+        "Red Component": 0.7686274509803922,
+        "Green Component": 0.4196078431372549,
+        "Blue Component": 0.2901960784313726,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 10 Color": {
+        "Red Component": 0.4196078431372549,
+        "Green Component": 0.5568627450980392,
+        "Blue Component": 0.4196078431372549,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 11 Color": {
+        "Red Component": 0.8470588235294118,
+        "Green Component": 0.6980392156862745,
+        "Blue Component": 0.43529411764705883,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

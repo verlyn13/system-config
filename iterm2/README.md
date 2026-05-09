@@ -15,11 +15,16 @@ iTerm2 is an adapter layer, not a system boundary. Shell/runtime policy lives in
 | `profiles/23-jefahnierocks-hcs.json` | `Jefahnierocks HCS` | Project-scoped Explorer variant for `host-capability-substrate`. |
 | `profiles/24-jefahnierocks-flux.json` | `Jefahnierocks Flux` | Project-scoped Explorer variant for `flux`. |
 | `profiles/25-jefahnierocks-flux-deploy.json` | `Jefahnierocks Flux Deploy` | Project-scoped Explorer variant for `flux-deploy`. |
+| `profiles/30-happy-patterns-professional.json` | `Happy Patterns Professional` | Path-scoped professional profile for `/Users/verlyn13/Organizations/happy-patterns`. |
+| `profiles/31-happy-patterns-repos.json` | `Happy Patterns Repo` | Manual/fallback professional variant for future nested repos. |
+| `profiles/32-happy-patterns-scopecam.json` | `Happy Patterns ScopeCam` | Project-scoped professional variant for `apps/scopecam`. |
+| `profiles/33-happy-patterns-site.json` | `Happy Patterns Site` | Project-scoped professional variant for `apps/happy-patterns-org.github.io`. |
+| `profiles/34-happy-patterns-records.json` | `Happy Patterns Records` | Project-scoped professional variant for `records`. |
 
 The Dev profile is set as iTerm2's Default Bookmark by `scripts/install-iterm2-profiles.sh`. The pre-existing static default profile (GUID `904E3177-…`) is **not** removed; we only redirect `Default Bookmark Guid` to the managed Dev profile.
 
 Current status: Phase B is partially landed. The Dev profile, Default Bookmark,
-and Nash/Jefahnierocks path-scoped visual profiles are managed. The
+and Nash/Jefahnierocks/Happy Patterns path-scoped visual profiles are managed. The
 `color-presets/tokyonight-moon.itermcolors` preset is validated by the
 installer. Color Preset import/application is still manual; the repo does not
 write iTerm2's `Custom Color Presets` preference yet.
@@ -33,6 +38,9 @@ customization rules.
 
 `docs/iterm2-jefahnierocks-profiles.md` records the repo-owned
 Jefahnierocks/Explorer customization rules.
+
+`docs/iterm2-happy-patterns-profiles.md` records the repo-owned Happy Patterns
+Professional customization rules.
 
 ## Directories
 

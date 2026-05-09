@@ -3,7 +3,7 @@ title: iTerm2 Profile Redesign (Hybrid)
 category: design
 component: iterm2
 status: active
-version: 0.5.0
+version: 0.6.0
 last_updated: 2026-05-09
 tags: [iterm2, dynamic-profiles, automatic-profile-switching, shell-integration, direnv]
 priority: medium
@@ -18,10 +18,10 @@ This doc is the authoritative reference for implementation. Schema claims here a
 Current implementation status (2026-05-09): Phase A is landed. Phase B has a
 managed Dev profile, deterministic Default Bookmark setter, fail-closed
 profile validation, Nash path-scoped profiles, Jefahnierocks org/project-scoped
-visual profiles, and a managed `tokyonight-moon.itermcolors` preset that the
-installer validates. Color Preset import remains manual until a known-good
-`Custom Color Presets` preference schema is captured. Phase C (`Bound Hosts`)
-for SSH safety has not started.
+profiles, Happy Patterns org/project-scoped profiles, and a managed
+`tokyonight-moon.itermcolors` preset that the installer validates. Color Preset
+import remains manual until a known-good `Custom Color Presets` preference
+schema is captured. Phase C (`Bound Hosts`) for SSH safety has not started.
 
 2026-05-08 consult pass: the high-level decisions below still stand, but three
 implementation details changed after deeper shell/direnv inspection:
@@ -467,6 +467,10 @@ with unique badges and tab/bold accents: `system-config`,
 `host-capability-substrate`, `flux`, and `flux-deploy`. The generic
 `Jefahnierocks Repo` profile remains as a manual/fallback template with no APS
 bindings to avoid profile-switching ties.
+B10. **Done.** Happy Patterns has a dedicated professional org profile plus
+project profiles for `apps/scopecam`, `apps/happy-patterns-org.github.io`, and
+`records`. The generic `Happy Patterns Repo` profile remains as a
+manual/fallback template with no APS bindings.
 
 **Acceptance remaining**: manually import/apply the Color Preset, verify the
 new-window visual state, verify org-specific APS switches, and verify badge
@@ -531,6 +535,7 @@ be updated, ask for that explicitly after the repo work lands.
 | Clipboard write (`Allow Clipboard Access From Terminal`) | `false` on Dev (and inherited by SSH variant in Phase C) | Closes OSC 52 / OSC 1337 SetClipboard injection vector. This workstation runs agentic tools (Claude Code, Codex, MCP) that pipe untrusted remote text through the terminal — any such text containing a clipboard-write escape would silently overwrite the system clipboard. Industry default for hardened multi-host setups. Read access (paste) unaffected. Escape hatch: edit the field to `true` in `iterm2/profiles/00-dev.json` and re-run `scripts/install-iterm2-profiles.sh`; iTerm2 reloads dynamically. Add a sibling "Dev (clipboard)" profile only if friction emerges in practice — do not pre-build. Decided 2026-05-08. |
 | Nash Guardian profiles | Path-scoped visual exception | The user explicitly wants Parent L0 and nested-repo visual separation for `~/Organizations/the-nash-group`; the exception is documented and does not set commands, env, working directories, or secrets. |
 | Jefahnierocks Explorer profiles | Path-scoped visual exception | The user explicitly wants personal Explorer and nested-repo visual separation for `~/Organizations/jefahnierocks`; the exception is documented and keeps clipboard/triggers/global preferences under existing policy. |
+| Happy Patterns Professional profiles | Path-scoped visual exception | The user explicitly wants professional org and nested-repo visual separation for `~/Organizations/happy-patterns`; the exception is documented and keeps clipboard/triggers/global preferences under existing policy. |
 
 ## Out of scope
 

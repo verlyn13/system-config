@@ -1,0 +1,47 @@
+{
+  "Profiles": [
+    {
+      "Name": "Happy Patterns Site",
+      "Guid": "F0B3045D-7CE6-4A5B-9F4A-0E667334AC43",
+      "Dynamic Profile Parent GUID": "FA151EFD-6793-4E86-AF6E-C040AFF88914",
+      "Tags": ["workstation", "happy-patterns", "site"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/happy-patterns/apps/happy-patterns-org.github.io",
+        "*:/Users/verlyn13/Organizations/happy-patterns/apps/happy-patterns-org.github.io/*"
+      ],
+
+      "Badge Text": "\u25A3 HP SITE",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.8666666666666667,
+        "Green Component": 0.7254901960784313,
+        "Blue Component": 0.403921568627451,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.8666666666666667,
+        "Green Component": 0.7254901960784313,
+        "Blue Component": 0.403921568627451,
+        "Alpha Component": 0.52,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.8666666666666667,
+        "Green Component": 0.7254901960784313,
+        "Blue Component": 0.403921568627451,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 11 Color": {
+        "Red Component": 0.8666666666666667,
+        "Green Component": 0.7254901960784313,
+        "Blue Component": 0.403921568627451,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

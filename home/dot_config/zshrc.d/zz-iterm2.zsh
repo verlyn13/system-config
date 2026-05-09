@@ -61,6 +61,31 @@ _iterm2_resolve_jefahnierocks_badge() {
   return 0
 }
 
+_iterm2_resolve_happy_patterns_badge() {
+  local root="$1"
+  [[ "$PWD" == "$root" || "$PWD" == "$root"/* ]] || return 1
+
+  local git_root repo badge
+  git_root="$(command git -C "$PWD" rev-parse --show-toplevel 2>/dev/null)" || git_root=""
+
+  if [[ "$git_root" == "$root" ]]; then
+    badge=$'\u25A3 HAPPY PATTERNS'
+  elif [[ "$git_root" == "$root"/* ]]; then
+    repo="${git_root#$root/}"
+    case "$repo" in
+      apps/scopecam) badge=$'\u25CE SCOPECAM' ;;
+      apps/happy-patterns-org.github.io) badge=$'\u25A3 HP SITE' ;;
+      records) badge=$'\u25A4 HP RECORDS' ;;
+      *) badge=$'\u25A3 HP REPO: '"${repo##*/}" ;;
+    esac
+  else
+    badge="HP WORKSPACE"
+  fi
+
+  _iterm2_resolved_badge_text="$badge"
+  return 0
+}
+
 _iterm2_resolve_badge_text() {
   _iterm2_resolved_badge_text=""
 
@@ -71,8 +96,10 @@ _iterm2_resolve_badge_text() {
 
   local nash_root="$HOME/Organizations/the-nash-group"
   local jefahnierocks_root="$HOME/Organizations/jefahnierocks"
+  local happy_patterns_root="$HOME/Organizations/happy-patterns"
   [[ "$PWD" == "$nash_root" || "$PWD" == "$nash_root"/* ||
-     "$PWD" == "$jefahnierocks_root" || "$PWD" == "$jefahnierocks_root"/* ]] || return 0
+     "$PWD" == "$jefahnierocks_root" || "$PWD" == "$jefahnierocks_root"/* ||
+     "$PWD" == "$happy_patterns_root" || "$PWD" == "$happy_patterns_root"/* ]] || return 0
 
   if [[ "${_ITERM2_LAST_BADGE_PWD-}" == "$PWD" ]]; then
     _iterm2_resolved_badge_text="${_ITERM2_LAST_RESOLVED_BADGE_TEXT-}"
@@ -84,7 +111,8 @@ _iterm2_resolve_badge_text() {
     $'\U1F6E1\ufe0f THE GUARDIAN L0' \
     "TNG REPO: " \
     "TNG WORKSPACE" ||
-    _iterm2_resolve_jefahnierocks_badge "$jefahnierocks_root"
+    _iterm2_resolve_jefahnierocks_badge "$jefahnierocks_root" ||
+    _iterm2_resolve_happy_patterns_badge "$happy_patterns_root"
 
   _ITERM2_LAST_BADGE_PWD="$PWD"
   _ITERM2_LAST_RESOLVED_BADGE_TEXT="$_iterm2_resolved_badge_text"
