@@ -221,13 +221,73 @@ Set the secret-bearing fields in the edited template, not in the shell:
 - `username`: `verlyn13-admin`
 - `password`: the existing Uptime Kuma admin password
 - `notesPlain`: `Access via ssh -L 3001:127.0.0.1:3001 tng-runner`
-- custom OTP field `one-time-password`: the Uptime Kuma `otpauth://totp/...`
-  URI
+- optional custom OTP field `one-time-password`: the Uptime Kuma
+  `otpauth://totp/...` URI. It is acceptable to add this later in the
+  1Password GUI after the Login item exists.
 
 Do not use `--generate-password` unless the password is also changed in the
 provider application. If the item is owned by another project, record the
 non-secret credential metadata in that owning project; add it to
 `docs/secret-records.md` only if `system-config` becomes a runtime consumer.
+
+Troubleshoot without revealing values:
+
+```bash
+op item list --account my.1password.com --vault Dev --format json |
+  jq -r '.[] | select((.title // "") | test("uptime|kuma|citadel-uptime"; "i")) |
+    [.id, .title, (.category // ""), (.createdAt // .created_at // ""),
+     (.updatedAt // .updated_at // ""), ((.tags // []) | join(","))] | @tsv'
+```
+
+Inspect only item shape and whether values are present:
+
+```bash
+ITEM_ID="<item-id-from-list>"
+
+op item get "$ITEM_ID" --account my.1password.com --vault Dev --format json |
+  jq '{
+    id,
+    title,
+    category,
+    tags,
+    urls,
+    notes_plain_present: (((.notesPlain // "") | length) > 0),
+    fields: [
+      .fields[]? |
+      {
+        id: (.id // ""),
+        label: (.label // ""),
+        type: (.type // ""),
+        purpose: (.purpose // ""),
+        has_value: (((.value // "") | length) > 0)
+      }
+    ]
+  }'
+```
+
+If the GUI item exists but values were not saved into it, prefer editing that
+existing item instead of creating a duplicate. GUI repair is acceptable for the
+password and later OTP enrollment. CLI repair must use an edited template file:
+
+```bash
+(
+  set -euo pipefail
+
+  ITEM_ID="<item-id-from-list>"
+  ITEM_JSON="$(mktemp -t op-login-item-edit.XXXXXX.json)"
+  chmod 600 "$ITEM_JSON"
+  trap 'rm -f "$ITEM_JSON"' EXIT
+
+  op item get "$ITEM_ID" --account my.1password.com --vault Dev --format json > "$ITEM_JSON"
+
+  ${EDITOR:-nano} "$ITEM_JSON"
+
+  op item edit "$ITEM_ID" \
+    --account my.1password.com \
+    --vault Dev \
+    --template "$ITEM_JSON" >/dev/null
+)
+```
 
 ## Project pattern
 
