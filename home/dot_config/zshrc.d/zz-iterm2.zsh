@@ -35,6 +35,32 @@ _iterm2_resolve_root_badge() {
   return 0
 }
 
+_iterm2_resolve_jefahnierocks_badge() {
+  local root="$1"
+  [[ "$PWD" == "$root" || "$PWD" == "$root"/* ]] || return 1
+
+  local git_root repo badge
+  git_root="$(command git -C "$PWD" rev-parse --show-toplevel 2>/dev/null)" || git_root=""
+
+  if [[ "$git_root" == "$root" ]]; then
+    badge=$'\U1F3A8 JEF AHNIE ROCKS \u2022 EXPLORER'
+  elif [[ "$git_root" == "$root"/* ]]; then
+    repo="${git_root##*/}"
+    case "$repo" in
+      system-config) badge=$'\u2699\ufe0f SYSTEM CONFIG' ;;
+      host-capability-substrate) badge=$'\u25C7 HCS SUBSTRATE' ;;
+      flux) badge=$'\u223F FLUX' ;;
+      flux-deploy) badge=$'\u21E7 FLUX DEPLOY' ;;
+      *) badge=$'\U1F3A8 JEF REPO: '"$repo" ;;
+    esac
+  else
+    badge="JEF WORKSPACE"
+  fi
+
+  _iterm2_resolved_badge_text="$badge"
+  return 0
+}
+
 _iterm2_resolve_badge_text() {
   _iterm2_resolved_badge_text=""
 
@@ -58,11 +84,7 @@ _iterm2_resolve_badge_text() {
     $'\U1F6E1\ufe0f THE GUARDIAN L0' \
     "TNG REPO: " \
     "TNG WORKSPACE" ||
-    _iterm2_resolve_root_badge \
-      "$jefahnierocks_root" \
-      $'\U1F3A8 JEF AHNIE ROCKS \u2022 EXPLORER' \
-      $'\U1F3A8 JEF REPO: ' \
-      "JEF WORKSPACE"
+    _iterm2_resolve_jefahnierocks_badge "$jefahnierocks_root"
 
   _ITERM2_LAST_BADGE_PWD="$PWD"
   _ITERM2_LAST_RESOLVED_BADGE_TEXT="$_iterm2_resolved_badge_text"

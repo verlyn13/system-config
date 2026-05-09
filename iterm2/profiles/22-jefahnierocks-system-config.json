@@ -1,0 +1,47 @@
+{
+  "Profiles": [
+    {
+      "Name": "Jefahnierocks System Config",
+      "Guid": "8E0E613A-A18B-4986-AEBB-437AE9B2CEC7",
+      "Dynamic Profile Parent GUID": "DCC27142-38A3-4A3C-991F-E8F668DCEBAC",
+      "Tags": ["workstation", "jefahnierocks", "system-config"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/jefahnierocks/system-config",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/system-config/*"
+      ],
+
+      "Badge Text": "\u2699\uFE0F SYSTEM CONFIG",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.25098039215686274,
+        "Green Component": 0.8627450980392157,
+        "Blue Component": 0.7137254901960784,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.25098039215686274,
+        "Green Component": 0.8627450980392157,
+        "Blue Component": 0.7137254901960784,
+        "Alpha Component": 0.52,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.25098039215686274,
+        "Green Component": 0.8627450980392157,
+        "Blue Component": 0.7137254901960784,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 10 Color": {
+        "Red Component": 0.25098039215686274,
+        "Green Component": 0.8627450980392157,
+        "Blue Component": 0.7137254901960784,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

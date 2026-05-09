@@ -1,0 +1,47 @@
+{
+  "Profiles": [
+    {
+      "Name": "Jefahnierocks Flux Deploy",
+      "Guid": "41B84C6F-79E5-4B41-A72E-BDC6CD1B74E1",
+      "Dynamic Profile Parent GUID": "DCC27142-38A3-4A3C-991F-E8F668DCEBAC",
+      "Tags": ["workstation", "jefahnierocks", "flux-deploy", "deploy"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux-deploy",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux-deploy/*"
+      ],
+
+      "Badge Text": "\u21E7 FLUX DEPLOY",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.6901960784313725,
+        "Blue Component": 0.24705882352941178,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.6901960784313725,
+        "Blue Component": 0.24705882352941178,
+        "Alpha Component": 0.56,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.6901960784313725,
+        "Blue Component": 0.24705882352941178,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 11 Color": {
+        "Red Component": 1.0,
+        "Green Component": 0.6901960784313725,
+        "Blue Component": 0.24705882352941178,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "Profiles": [
+    {
+      "Name": "Jefahnierocks Flux",
+      "Guid": "96F3CB85-2273-4233-9072-CBD0A2F4F683",
+      "Dynamic Profile Parent GUID": "DCC27142-38A3-4A3C-991F-E8F668DCEBAC",
+      "Tags": ["workstation", "jefahnierocks", "flux"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/flux/*"
+      ],
+
+      "Badge Text": "\u223F FLUX",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.9411764705882353,
+        "Green Component": 0.3568627450980392,
+        "Blue Component": 0.9176470588235294,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.9411764705882353,
+        "Green Component": 0.3568627450980392,
+        "Blue Component": 0.9176470588235294,
+        "Alpha Component": 0.52,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.9411764705882353,
+        "Green Component": 0.3568627450980392,
+        "Blue Component": 0.9176470588235294,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 13 Color": {
+        "Red Component": 0.9411764705882353,
+        "Green Component": 0.3568627450980392,
+        "Blue Component": 0.9176470588235294,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

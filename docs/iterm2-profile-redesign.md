@@ -3,7 +3,7 @@ title: iTerm2 Profile Redesign (Hybrid)
 category: design
 component: iterm2
 status: active
-version: 0.4.0
+version: 0.5.0
 last_updated: 2026-05-09
 tags: [iterm2, dynamic-profiles, automatic-profile-switching, shell-integration, direnv]
 priority: medium
@@ -17,11 +17,11 @@ This doc is the authoritative reference for implementation. Schema claims here a
 
 Current implementation status (2026-05-09): Phase A is landed. Phase B has a
 managed Dev profile, deterministic Default Bookmark setter, fail-closed
-profile validation, Nash and Jefahnierocks path-scoped visual profiles, and a
-managed `tokyonight-moon.itermcolors` preset that the installer validates.
-Color Preset import remains manual until a known-good `Custom Color Presets`
-preference schema is captured. Phase C (`Bound Hosts`) for SSH safety has not
-started.
+profile validation, Nash path-scoped profiles, Jefahnierocks org/project-scoped
+visual profiles, and a managed `tokyonight-moon.itermcolors` preset that the
+installer validates. Color Preset import remains manual until a known-good
+`Custom Color Presets` preference schema is captured. Phase C (`Bound Hosts`)
+for SSH safety has not started.
 
 2026-05-08 consult pass: the high-level decisions below still stand, but three
 implementation details changed after deeper shell/direnv inspection:
@@ -462,6 +462,11 @@ B8. **Done.** `Jefahnierocks Explorer` and `Jefahnierocks Repo` profiles add
 path-scoped visual signaling for `/Users/verlyn13/Organizations/jefahnierocks`.
 This follows the same exception model without adding commands, env blocks,
 triggers, or secrets. See `docs/iterm2-jefahnierocks-profiles.md`.
+B9. **Done.** Current nested Jefahnierocks repos have dedicated project profiles
+with unique badges and tab/bold accents: `system-config`,
+`host-capability-substrate`, `flux`, and `flux-deploy`. The generic
+`Jefahnierocks Repo` profile remains as a manual/fallback template with no APS
+bindings to avoid profile-switching ties.
 
 **Acceptance remaining**: manually import/apply the Color Preset, verify the
 new-window visual state, verify org-specific APS switches, and verify badge

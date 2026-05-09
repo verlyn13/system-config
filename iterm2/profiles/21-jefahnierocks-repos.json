@@ -7,16 +7,7 @@
       "Tags": ["workstation", "jefahnierocks", "repo"],
       "Rewritable": false,
 
-      "Bound Hosts": [
-        "*:/Users/verlyn13/Organizations/jefahnierocks/flux",
-        "*:/Users/verlyn13/Organizations/jefahnierocks/flux/*",
-        "*:/Users/verlyn13/Organizations/jefahnierocks/flux-deploy",
-        "*:/Users/verlyn13/Organizations/jefahnierocks/flux-deploy/*",
-        "*:/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate",
-        "*:/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate/*",
-        "*:/Users/verlyn13/Organizations/jefahnierocks/system-config",
-        "*:/Users/verlyn13/Organizations/jefahnierocks/system-config/*"
-      ],
+      "Bound Hosts": [],
 
       "Badge Text": "\uD83C\uDFA8 JEF REPO",
       "Use Tab Color": true,

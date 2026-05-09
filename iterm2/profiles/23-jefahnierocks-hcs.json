@@ -1,0 +1,47 @@
+{
+  "Profiles": [
+    {
+      "Name": "Jefahnierocks HCS",
+      "Guid": "41B7C891-93AB-4AA3-83BD-1BA1ADDE557A",
+      "Dynamic Profile Parent GUID": "DCC27142-38A3-4A3C-991F-E8F668DCEBAC",
+      "Tags": ["workstation", "jefahnierocks", "host-capability-substrate", "hcs"],
+      "Rewritable": false,
+
+      "Bound Hosts": [
+        "*:/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate",
+        "*:/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate/*"
+      ],
+
+      "Badge Text": "\u25C7 HCS SUBSTRATE",
+      "Use Tab Color": true,
+      "Tab Color": {
+        "Red Component": 0.5294117647058824,
+        "Green Component": 0.6,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Badge Color": {
+        "Red Component": 0.5294117647058824,
+        "Green Component": 0.6,
+        "Blue Component": 1.0,
+        "Alpha Component": 0.52,
+        "Color Space": "sRGB"
+      },
+      "Bold Color": {
+        "Red Component": 0.5294117647058824,
+        "Green Component": 0.6,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      },
+      "Ansi 12 Color": {
+        "Red Component": 0.5294117647058824,
+        "Green Component": 0.6,
+        "Blue Component": 1.0,
+        "Alpha Component": 1.0,
+        "Color Space": "sRGB"
+      }
+    }
+  ]
+}

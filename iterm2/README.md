@@ -10,7 +10,11 @@ iTerm2 is an adapter layer, not a system boundary. Shell/runtime policy lives in
 | `profiles/10-nash-guardian-l0.json` | `Guardian L0` | Path-scoped Parent L0 visual profile for `/Users/verlyn13/Organizations/the-nash-group`. |
 | `profiles/11-nash-repos.json` | `Nash Repo` | Distinct path-scoped visual profile for known nested repos under The Nash Group org directory. |
 | `profiles/20-jefahnierocks-explorer.json` | `Jefahnierocks Explorer` | Path-scoped personal Explorer profile for `/Users/verlyn13/Organizations/jefahnierocks`. |
-| `profiles/21-jefahnierocks-repos.json` | `Jefahnierocks Repo` | Repo-scoped Explorer variant for known nested repos under the Jefahnierocks org directory. |
+| `profiles/21-jefahnierocks-repos.json` | `Jefahnierocks Repo` | Manual/fallback Explorer variant for future nested repos. |
+| `profiles/22-jefahnierocks-system-config.json` | `Jefahnierocks System Config` | Project-scoped Explorer variant for `system-config`. |
+| `profiles/23-jefahnierocks-hcs.json` | `Jefahnierocks HCS` | Project-scoped Explorer variant for `host-capability-substrate`. |
+| `profiles/24-jefahnierocks-flux.json` | `Jefahnierocks Flux` | Project-scoped Explorer variant for `flux`. |
+| `profiles/25-jefahnierocks-flux-deploy.json` | `Jefahnierocks Flux Deploy` | Project-scoped Explorer variant for `flux-deploy`. |
 
 The Dev profile is set as iTerm2's Default Bookmark by `scripts/install-iterm2-profiles.sh`. The pre-existing static default profile (GUID `904E3177-…`) is **not** removed; we only redirect `Default Bookmark Guid` to the managed Dev profile.
 
