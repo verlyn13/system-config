@@ -21,6 +21,9 @@ policies/host-capability-substrate/tiers.yaml
 Activation requires HCS policy review and human approval. Until then, this file
 is a review packet for the Phase 2.5 policy lane.
 
+Review status: blocked pending human decisions and activation fixes recorded in
+`docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md`.
+
 ## Source Authority
 
 - HCS current truth: `jefahnierocks/host-capability-substrate` commit
@@ -145,8 +148,10 @@ cross_record_rules:
    remain `write-destructive` or trigger a tier vocabulary amendment.
 2. Human approval must explicitly convert this draft into live
    `policies/host-capability-substrate/tiers.yaml`.
-3. HCS must either land the `PolicyRule` Ring 0 entity or explicitly accept a
-   transitional YAML-only shape for Phase 2.5.
+3. Activation-grade YAML must add `schema_version`, structured provenance, and
+   evidence/source refs. `PolicyRule` is not a prerequisite for file-based
+   policy authority in system-config, but remains the future materialized Ring
+   0 policy-record entity.
 4. The future policy lint path must reject `approval_required` on `forbidden`
    entries and reject any non-escalable forbidden pattern with an approval path.
 
