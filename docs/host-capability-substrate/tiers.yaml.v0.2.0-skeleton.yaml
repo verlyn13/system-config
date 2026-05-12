@@ -1,26 +1,41 @@
 ---
-schema_version: null
-policy_version: null
+schema_version: "0.2.0"
+policy_version: "0.1.0"
 kind: host_capability_substrate.operation_tiers
-status: skeleton_draft_non_authoritative
+status: activation_candidate_non_authoritative
 last_updated: "2026-05-12"
 
 non_authority_notice:
   live_policy: false
   grants_execution_authority: false
   canonical_target_path: policies/host-capability-substrate/tiers.yaml
-  purpose: structural_activation_shape_only
+  purpose: populated_activation_candidate_for_review_only
   blocked_by:
     - docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md
+  activation_blockers_remaining:
+    - fix_4_reason_kind_path
+    - fix_7_policy_lint_placement
+
+classification_authority:
+  primary_classification_surface: typed_operation_class
+  primary_classification_enum_ref: "hcs:packages/schemas/src/entities/operation-shape.ts#operationShapeOperationClassSchema"
+  shell_regex_primary_classification_allowed: false
+  renderer_hook_lint_backstop_allowed: true
+  notes: >
+    Primary policy classification is the closed OperationShape.operation_class
+    enum. Regex patterns are defense-in-depth for renderers, hooks, and lint
+    only; they do not define primary operation intent.
 
 provenance:
   hcs_source_repo: jefahnierocks/host-capability-substrate
-  hcs_source_commit: null
+  hcs_source_commit: f8792b3
   system_config_source_repo: jefahnierocks/system-config
-  system_config_commit: null
+  system_config_commit: 4a0db12
+  authoring_commit: 4a0db12
+  accepted_human_decisions_at: "2026-05-12"
+  accepted_human_decisions_record: "docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12"
   policy_draft_path: docs/host-capability-substrate/2026-05-12-phase-2-5-operation-policy-draft.md
   reviewer_resolution_packet_path: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md
-  human_decision_record: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
   approved_by: null
   approved_at: null
 
@@ -32,68 +47,120 @@ snapshot_binding:
   hcs_snapshot_commit: null
   hcs_snapshot_path: policies/generated-snapshot/tiers.yaml
   hcs_snapshot_sha256: null
+  status: deferred_until_live_policy_activation_and_snapshot_vendoring
 
 schema_refs:
-  operation_shape_schema_version: null
-  decision_schema_version: null
-  approval_grant_schema_version: null
-  lease_schema_version: null
-  run_schema_version: null
-  principal_schema_version: null
-  session_schema_version: null
+  operation_shape_schema_version: "0.2.0"
+  decision_schema_version: "0.1.0"
+  approval_grant_schema_version: "0.1.0"
+  lease_schema_version: "0.1.0"
+  run_schema_version: "0.1.0"
+  principal_schema_version: "0.1.0"
+  session_schema_version: "0.1.0"
   policy_rule_schema_version: null
 
 evidence_refs:
   source_adr_refs:
-    - hcs:docs/host-capability-substrate/adr/0054-principal-ring-0-entity.md
-    - hcs:docs/host-capability-substrate/ontology-registry.md#self-approval-rejection-rule
-  reviewer_objection_refs: []
+    - "hcs:docs/host-capability-substrate/adr/0049-decision-ring-0-entity.md"
+    - "hcs:docs/host-capability-substrate/adr/0051-approval-grant-ring-0-entity.md"
+    - "hcs:docs/host-capability-substrate/adr/0052-lease-ring-0-entity.md"
+    - "hcs:docs/host-capability-substrate/adr/0053-run-ring-0-entity.md"
+    - "hcs:docs/host-capability-substrate/adr/0054-principal-ring-0-entity.md"
+  registry_refs:
+    - "hcs:docs/host-capability-substrate/ontology-registry.md#self-approval-rejection-rule"
+  reviewer_objection_refs:
+    - "docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#non-negotiable-activation-fixes"
   human_decision_refs:
-    - docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
+    - "docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12"
   lint_result_refs: []
   snapshot_binding_refs: []
 
 human_decisions:
   self_approval_canonicalization_location:
     resolution: cite_hcs_adr_0054_and_ontology_registry
-    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
+    source_ref: "docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12"
   agent_internal_state_boundary:
     resolution: session_local_execution_context_state_only_cross_session_or_host_backed_effects_reclassify
-    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
+    source_ref: "docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12"
   external_control_plane_tier_vocabulary:
     resolution: write_destructive_with_full_bind_set
-    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
+    source_ref: "docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12"
   write_host_posture:
     resolution: removed_from_v0_1_0_until_owned_operation_class_lands
-    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
+    source_ref: "docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12"
+
+remaining_authority_decisions:
+  fix_4_reason_kind_path:
+    status: pending_human_decision
+    unresolved_values:
+      - operation_class_unregistered
+      - audit_chain_corruption_detected
+    options:
+      A:
+        label: transitional_lint
+        effect: system_config_lint_allowlists_registry_canonical_reservations_until_hcs_schema_pr_lands
+      B:
+        label: source_defined
+        effect: hcs_adr_and_schema_pr_promote_values_into_decisionReasonKindSchema
+      C:
+        label: refactor
+        effect: remove_policy_references_to_non_zod_reason_kinds_where_practical
+  fix_7_policy_lint_placement:
+    status: pending_human_decision
+    options:
+      system_config_side:
+        effect: lint_lives_next_to_canonical_policy_file
+      hcs_side:
+        effect: lint_lives_next_to_schema_and_decision_boundary
+      split:
+        effect: system_config_lints_policy_authority_hcs_lints_generated_snapshot_and_schema_boundary
+
+policy_local_enums:
+  dashboard_visibility:
+    - not_required
+    - required_before_grant_consumption
+  approval_required_detail_status:
+    - not_required
+    - required
+
+valid_until_defaults:
+  unknown_mutating_class_default: "PT1H"
+  unknown_mutating_class_default_source_ref: policy_candidate_default_until_class_specific_adr_lands
+  worktree_lease_ceiling: "PT24H"
+  worktree_lease_ceiling_source_ref: "hcs:docs/host-capability-substrate/adr/0031-q-008-d-worktree-ownership-composition.md"
 
 tiers:
   read-safe:
-    status: pending_activation
-    valid_until_ceiling: null
-    valid_until_ceiling_source_ref: null
-    activation_notes: null
+    status: activation_candidate
+    approval_required: false
+    valid_until_ceiling: not_applicable
+    activation_notes: no_mutating_grant_path
   write-local:
-    status: pending_activation
-    valid_until_ceiling: null
-    valid_until_ceiling_source_ref: null
-    activation_notes: null
+    status: activation_candidate
+    approval_required: false
+    valid_until_ceiling: not_applicable
+    activation_notes: session_local_execution_context_state_only
   write-project:
-    status: pending_activation
-    valid_until_ceiling: null
-    valid_until_ceiling_source_ref: null
-    activation_notes: null
+    status: activation_candidate
+    approval_required_details_ref: operation_class_defaults.worktree_mutation.approval_required_details
+    valid_until_ceiling: "PT24H"
+    valid_until_ceiling_source_ref: "hcs:docs/host-capability-substrate/adr/0031-q-008-d-worktree-ownership-composition.md"
+    activation_notes: project_worktree_mutation_requires_lease_and_grant
   write-destructive:
-    status: pending_activation
-    valid_until_ceiling: null
-    valid_until_ceiling_source_ref: null
-    activation_notes: null
+    status: activation_candidate
+    approval_required_details_ref:
+      - operation_class_defaults.destructive_git.approval_required_details
+      - operation_class_defaults.merge_or_push.approval_required_details
+      - operation_class_defaults.external_control_plane_mutation.approval_required_details
+    valid_until_ceiling: "PT1H"
+    valid_until_ceiling_source_ref: policy_candidate_default_until_class_specific_adr_lands
+    activation_notes: hard_to_reverse_external_protected_or_destructive_mutation
   forbidden:
-    status: pending_activation
-    valid_until_ceiling: null
-    valid_until_ceiling_source_ref: null
+    status: activation_candidate
+    approval_required: false
+    valid_until_ceiling: not_applicable
     approval_path_allowed: false
-    activation_notes: null
+    activation_notes: non_escalable_no_grant_path
 
 removed_tiers:
   write-host:
@@ -102,8 +169,14 @@ removed_tiers:
     reintroduction_requirement: future_operation_class_with_explicit_approval_dashboard_gates
 
 operation_class_defaults:
+  read_only_diagnostic:
+    default_tier: read-safe
+    primary_classification: typed_operation_class
+    approval_required: false
+    notes: host_observation_only_gateway_may_reject_stale_sandbox_or_self_asserted_evidence
   agent_internal_state:
     default_tier: write-local
+    primary_classification: typed_operation_class
     approval_required: false
     boundary: session_local_execution_context_state_only
     reclassify_when:
@@ -111,70 +184,193 @@ operation_class_defaults:
       - hcs_runtime_state
       - host_backed_coordination_state
       - host_or_external_side_effects
+  workspace_verify:
+    default_tier: read-safe
+    primary_classification: typed_operation_class
+    approval_required: false
+    notes: verification_command_shape_only_no_host_mutation
+  cleanup_plan:
+    default_tier: read-safe
+    primary_classification: typed_operation_class
+    approval_required: false
+    notes: plan_construction_only_execution_remains_separate_and_gated
+  worktree_mutation:
+    default_tier: write-project
+    primary_classification: typed_operation_class
+    requires_active_lease: true
+    approval_required_details:
+      status: required
+      required_grant_kind: worktree_clean_acknowledgment
+      valid_until_ceiling: "PT24H"
+      valid_until_ceiling_source_ref: "hcs:docs/host-capability-substrate/adr/0031-q-008-d-worktree-ownership-composition.md"
+      producer_allowlist:
+        - mint_api
+        - kernel_broker
+      dashboard_visibility: required_before_grant_consumption
+      evidence_bound_scope: repository_id_workspace_context_id_worktree_path_and_acknowledged_dirty_state_evidence_ref
+      single_use: true
+      grant_kind_compatibility:
+        allowed_grant_kinds:
+          - worktree_clean_acknowledgment
+  destructive_git:
+    default_tier: write-destructive
+    primary_classification: typed_operation_class
+    requires_deletion_authority: true
+    approval_required_details:
+      status: required
+      required_grant_kind: gate_evidence_acknowledgment
+      valid_until_ceiling: "PT1H"
+      valid_until_ceiling_source_ref: policy_candidate_default_until_class_specific_adr_lands
+      producer_allowlist:
+        - mint_api
+        - kernel_broker
+      dashboard_visibility: required_before_grant_consumption
+      evidence_bound_scope: source_ref_target_ref_commit_sha_deletion_authority_and_required_gate_evidence
+      single_use: true
+      grant_kind_compatibility:
+        allowed_grant_kinds:
+          - gate_evidence_acknowledgment
+          - pr_absence_acknowledgment
+  merge_or_push:
+    default_tier: write-destructive
+    primary_classification: typed_operation_class
+    approval_required_details:
+      status: required
+      required_grant_kind: gate_evidence_acknowledgment
+      valid_until_ceiling: "PT1H"
+      valid_until_ceiling_source_ref: policy_candidate_default_until_class_specific_adr_lands
+      producer_allowlist:
+        - mint_api
+        - kernel_broker
+      dashboard_visibility: required_before_grant_consumption
+      evidence_bound_scope: source_ref_target_ref_commit_sha_remote_ref_and_required_gate_evidence
+      single_use: true
+      grant_kind_compatibility:
+        allowed_grant_kinds:
+          - gate_evidence_acknowledgment
   external_control_plane_mutation:
     default_tier: write-destructive
-    approval_required: true
-    evidence_required_ref: external_control_plane_requirements
-    approval_bind_set_ref: external_control_plane_requirements
-
-grant_defaults:
-  exact_operation_scope_required: null
-  max_uses: null
-  valid_until_ceiling_source: null
-  required_grant_kind_by_operation_class: {}
-  producer_restrictions: {}
-  dashboard_visibility_required: null
-  evidence_bound_scope_required: null
+    primary_classification: typed_operation_class
+    required_pre_execution_evidence:
+      invariant_ref: "hcs:docs/host-capability-substrate/implementation-charter.md#invariant-16"
+      typed_provider_evidence_required: true
+      approval_alone_sufficient: false
+      notes: invariant_16_typed_provider_evidence_required_before_any_executable_path
+    approval_required_details:
+      status: required
+      required_grant_kind: gate_evidence_acknowledgment
+      valid_until_ceiling: "PT1H"
+      valid_until_ceiling_source_ref: policy_candidate_default_until_class_specific_adr_lands
+      producer_allowlist:
+        - mint_api
+        - kernel_broker
+      dashboard_visibility: required_before_grant_consumption
+      evidence_bound_scope: provider_target_minimal_request_plan_fanout_quota_secret_refs_typed_receipts_and_required_gate_evidence
+      single_use: true
+      grant_kind_compatibility:
+        allowed_grant_kinds:
+          - gate_evidence_acknowledgment
 
 lease_kind_rules:
+  schema_ref: "hcs:packages/schemas/src/entities/lease.ts#leaseKindSchema"
   worktree:
-    sandbox_acquire_posture: null
-    sandbox_rule_source_ref: null
-    valid_until_ceiling: null
-    valid_until_ceiling_source_ref: null
-  future_lease_kinds_require_explicit_sandbox_posture: null
+    lease_kind_status: zod_defined_v0_1_0
+    sandbox_acquire: blocked_when_sandbox_not_none
+    sandbox_source_field: Session.ExecutionContext.sandbox
+    sandbox_rule_source_ref: "hcs:docs/host-capability-substrate/adr/0052-lease-ring-0-entity.md"
+    valid_until_ceiling: "PT24H"
+    valid_until_ceiling_source_ref: "hcs:docs/host-capability-substrate/adr/0031-q-008-d-worktree-ownership-composition.md"
+  reserved_registry_values:
+    credential_audience:
+      lease_kind_status: not_yet_defined
+      source_ref: "hcs:docs/host-capability-substrate/adr/0031-q-008-d-worktree-ownership-composition.md#out-of-scope"
+    external_target:
+      lease_kind_status: not_yet_defined
+      source_ref: "hcs:docs/host-capability-substrate/adr/0031-q-008-d-worktree-ownership-composition.md#out-of-scope"
+  future_lease_kinds_require_explicit_sandbox_posture: true
 
 cross_record_rules:
-  self_approval_rejection:
-    policy_shape: structured_declarative_predicate
-    left_field_ref: ApprovalGrant.grantor_principal_ref
-    operator: equals
-    right_field_ref: Session.principal_id
-    canonicalization_source_ref: hcs:docs/host-capability-substrate/adr/0054-principal-ring-0-entity.md
+  - rule_id: self_approval_rejection
+    left_field: ApprovalGrant.grantor_principal_ref
+    operator: must_not_equal_when_operation_class_in_set
+    right_field_or_constant: Session.principal_id
+    applies_to_operation_classes:
+      - destructive_git
+      - external_control_plane_mutation
+      - worktree_mutation
+      - merge_or_push
+      - cleanup_plan
+    source_ref: "hcs:docs/host-capability-substrate/ontology-registry.md#self-approval-rejection-rule"
+    canonicalization_source_ref: "hcs:docs/host-capability-substrate/adr/0054-principal-ring-0-entity.md"
     enforcement_layer_ref: ring_1_mint_api
-  producer_disjointness:
-    policy_shape: structured_declarative_predicate
-    walked_closure: null
-    walk_depth_limit: null
-    cycle_rejection_reason_kind: null
-    enforcement_layer_ref: null
-  force_break:
-    policy_shape: structured_declarative_predicate
-    current_posture: null
-    future_change_set_ref: null
+  - rule_id: producer_disjointness
+    left_field: upstream_record.producer_identity
+    operator: disjoint_from
+    right_field_or_constant: consuming_record.producer_identity
+    applies_to_links:
+      - decision_to_approval_grant
+      - lease_acquire_to_authorizing_decision
+      - run_record_to_authorizing_decision
+    walk_depth_limit: 64
+    cycle_rejection_reason_kind: audit_chain_corruption_detected
+    source_ref: "hcs:docs/host-capability-substrate/adr/0049-decision-ring-0-entity.md"
+    enforcement_layer_ref: ring_1_mint_api
+  - rule_id: force_break
+    left_field: Lease.force_break_grant_id
+    operator: unavailable_until
+    right_field_or_constant: kernel_dashboard_producer_adr
+    current_posture: blocked_until_kernel_dashboard_producer_adr
+    source_ref: "hcs:docs/host-capability-substrate/adr/0052-lease-ring-0-entity.md"
+    enforcement_layer_ref: ring_1_mint_api
 
 external_control_plane_requirements:
   tier_resolution: write-destructive
-  provider_evidence_required: true
-  minimal_request_plan_required: true
-  target_binding_required: true
-  fanout_quota_evidence_required: true
-  secret_reference_separation_required: true
-  typed_receipts_required: true
-  gateway_review_required: true
-  approval_grant_consumption_required: true
-  broker_fsm_required: true
-  dashboard_review_required: true
-  audit_required: true
-  lease_checks_required: applicable_when_operation_intersects_lease_scope
+  invariant_ref: "hcs:docs/host-capability-substrate/implementation-charter.md#invariant-16"
+  approval_alone_sufficient: false
+  required_pre_execution_evidence:
+    typed_provider_evidence_required: true
+    minimal_request_plan_required: true
+    target_binding_required: true
+    fanout_quota_evidence_required: true
+    secret_reference_separation_required: true
+    typed_receipts_required: true
+  required_controls:
+    gateway_review_required: true
+    approval_grant_consumption_required: true
+    broker_fsm_required: true
+    dashboard_review_required: true
+    audit_required: true
+    lease_checks_required: applicable_when_operation_intersects_lease_scope
 
 forbidden_policy:
   canonical_representation: typed_operation_or_capability_family
-  renderer_backstop_patterns: []
   approval_path_allowed: false
-  reason_kind_strategy: null
+  reason_kind_strategy: pending_fix_4_reason_kind_path_decision
+
+non_escalable_forbidden_patterns:
+  classification_role: renderer_hook_lint_defense_in_depth_only
+  primary_classification_allowed: false
+  reason: primary_classification_is_typed_operation_class_enum
+  patterns:
+    - pattern: "\\bsudo\\b"
+      reason_kind: operation_class_unregistered
+      reason_kind_status: pending_fix_4_reason_kind_path_decision
+      notes: no_hidden_sudo_retry_path
+    - pattern: "\\bspctl\\s+--master-disable\\b"
+      reason_kind: operation_class_unregistered
+      reason_kind_status: pending_fix_4_reason_kind_path_decision
+      notes: gatekeeper_disable_forbidden_not_approvable
+    - pattern: "\\bdefaults\\s+write\\b"
+      reason_kind: operation_class_unregistered
+      reason_kind_status: pending_fix_4_reason_kind_path_decision
+      notes: broad_defaults_mutation_stays_unregistered_until_typed_capability_exists
+    - pattern: "\\brm\\s+-[A-Za-z]*[rR][A-Za-z]*[fF]?\\s+/"
+      reason_kind: operation_class_unregistered
+      reason_kind_status: pending_fix_4_reason_kind_path_decision
+      notes: root_recursive_deletion_family_forbidden
 
 proposed_lint_fixtures:
+  placement_status: pending_fix_7_policy_lint_placement_decision
   forbidden_with_approval_path:
     proposed_path: tests/policies/host-capability-substrate/forbidden-with-approval-path.yaml
     status: not_created
