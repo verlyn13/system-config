@@ -13,7 +13,7 @@ jobs:
       - name: Install validation tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq ripgrep shellcheck
+          sudo apt-get install -y jq ripgrep ruby shellcheck
 
       - name: Validate JSON
         run: jq empty scripts/mcp-servers.json
@@ -23,6 +23,9 @@ jobs:
           shellcheck scripts/*.sh
           shellcheck scripts/system-update.d/*.sh
           shellcheck home/dot_local/bin/executable_mcp-*.tmpl
+
+      - name: Validate HCS policy drafts
+        run: scripts/policy-lint.sh
 
       - name: Validate repo contract
         run: |
