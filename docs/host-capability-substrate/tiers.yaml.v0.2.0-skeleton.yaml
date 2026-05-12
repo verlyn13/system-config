@@ -1,0 +1,189 @@
+---
+schema_version: null
+policy_version: null
+kind: host_capability_substrate.operation_tiers
+status: skeleton_draft_non_authoritative
+last_updated: null
+
+non_authority_notice:
+  live_policy: false
+  grants_execution_authority: false
+  canonical_target_path: policies/host-capability-substrate/tiers.yaml
+  purpose: structural_activation_shape_only
+  blocked_by:
+    - docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md
+
+provenance:
+  hcs_source_repo: jefahnierocks/host-capability-substrate
+  hcs_source_commit: null
+  system_config_source_repo: jefahnierocks/system-config
+  system_config_commit: null
+  policy_draft_path: docs/host-capability-substrate/2026-05-12-phase-2-5-operation-policy-draft.md
+  reviewer_resolution_packet_path: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md
+  human_decision_record: null
+  approved_by: null
+  approved_at: null
+
+snapshot_binding:
+  system_config_commit: null
+  source_policy_path: policies/host-capability-substrate/tiers.yaml
+  source_policy_sha256: null
+  hcs_snapshot_repo: jefahnierocks/host-capability-substrate
+  hcs_snapshot_commit: null
+  hcs_snapshot_path: policies/generated-snapshot/tiers.yaml
+  hcs_snapshot_sha256: null
+
+schema_refs:
+  operation_shape_schema_version: null
+  decision_schema_version: null
+  approval_grant_schema_version: null
+  lease_schema_version: null
+  run_schema_version: null
+  principal_schema_version: null
+  session_schema_version: null
+  policy_rule_schema_version: null
+
+evidence_refs:
+  source_adr_refs: []
+  reviewer_objection_refs: []
+  human_decision_refs: []
+  lint_result_refs: []
+  snapshot_binding_refs: []
+
+human_decisions:
+  self_approval_canonicalization_location:
+    resolution: null
+    source_ref: null
+  agent_internal_state_boundary:
+    resolution: null
+    source_ref: null
+  external_control_plane_tier_vocabulary:
+    resolution: null
+    source_ref: null
+  write_host_posture:
+    resolution: null
+    source_ref: null
+
+tiers:
+  read-safe:
+    status: pending_activation
+    valid_until_ceiling: null
+    valid_until_ceiling_source_ref: null
+    activation_notes: null
+  write-local:
+    status: pending_activation
+    valid_until_ceiling: null
+    valid_until_ceiling_source_ref: null
+    activation_notes: null
+  write-project:
+    status: pending_activation
+    valid_until_ceiling: null
+    valid_until_ceiling_source_ref: null
+    activation_notes: null
+  write-host:
+    status: pending_human_decision
+    valid_until_ceiling: null
+    valid_until_ceiling_source_ref: null
+    activation_notes: null
+  write-destructive:
+    status: pending_activation
+    valid_until_ceiling: null
+    valid_until_ceiling_source_ref: null
+    activation_notes: null
+  forbidden:
+    status: pending_activation
+    valid_until_ceiling: null
+    valid_until_ceiling_source_ref: null
+    approval_path_allowed: false
+    activation_notes: null
+
+operation_class_defaults: {}
+
+grant_defaults:
+  exact_operation_scope_required: null
+  max_uses: null
+  valid_until_ceiling_source: null
+  required_grant_kind_by_operation_class: {}
+  producer_restrictions: {}
+  dashboard_visibility_required: null
+  evidence_bound_scope_required: null
+
+lease_kind_rules:
+  worktree:
+    sandbox_acquire_posture: null
+    sandbox_rule_source_ref: null
+    valid_until_ceiling: null
+    valid_until_ceiling_source_ref: null
+  future_lease_kinds_require_explicit_sandbox_posture: null
+
+cross_record_rules:
+  self_approval_rejection:
+    policy_shape: structured_declarative_predicate
+    left_field_ref: null
+    operator: null
+    right_field_ref: null
+    canonicalization_source_ref: null
+    enforcement_layer_ref: null
+  producer_disjointness:
+    policy_shape: structured_declarative_predicate
+    walked_closure: null
+    walk_depth_limit: null
+    cycle_rejection_reason_kind: null
+    enforcement_layer_ref: null
+  force_break:
+    policy_shape: structured_declarative_predicate
+    current_posture: null
+    future_change_set_ref: null
+
+external_control_plane_requirements:
+  tier_resolution: null
+  provider_evidence_required: null
+  minimal_request_plan_required: null
+  target_binding_required: null
+  fanout_quota_evidence_required: null
+  secret_reference_separation_required: null
+  typed_receipts_required: null
+  gateway_review_required: null
+  approval_grant_consumption_required: null
+  broker_fsm_required: null
+  dashboard_review_required: null
+  audit_required: null
+  lease_checks_required: null
+
+forbidden_policy:
+  canonical_representation: typed_operation_or_capability_family
+  renderer_backstop_patterns: []
+  approval_path_allowed: false
+  reason_kind_strategy: null
+
+proposed_lint_fixtures:
+  forbidden_with_approval_path:
+    proposed_path: tests/policies/host-capability-substrate/forbidden-with-approval-path.yaml
+    status: not_created
+  broad_grant_scope:
+    proposed_path: tests/policies/host-capability-substrate/broad-grant-scope.yaml
+    status: not_created
+  grant_reuse:
+    proposed_path: tests/policies/host-capability-substrate/grant-reuse.yaml
+    status: not_created
+  external_mutation_missing_provider_evidence:
+    proposed_path: tests/policies/host-capability-substrate/external-mutation-missing-provider-evidence.yaml
+    status: not_created
+  sandboxed_worktree_lease_acquire:
+    proposed_path: tests/policies/host-capability-substrate/sandboxed-worktree-lease-acquire.yaml
+    status: not_created
+  invalid_reason_kind:
+    proposed_path: tests/policies/host-capability-substrate/invalid-reason-kind.yaml
+    status: not_created
+    cases:
+      - operation_class_unregistered
+      - audit_chain_corruption_detected
+  raw_secret_material:
+    proposed_path: tests/policies/host-capability-substrate/raw-secret-material.yaml
+    status: not_created
+  snapshot_binding_missing:
+    proposed_path: tests/policies/host-capability-substrate/snapshot-binding-missing.yaml
+    status: not_created
+  tier_valid_until_ceiling_exceeded:
+    proposed_path: tests/policies/host-capability-substrate/tier-valid-until-ceiling-exceeded.yaml
+    status: not_created

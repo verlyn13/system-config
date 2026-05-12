@@ -33,6 +33,13 @@ activation fixes below are resolved.
     7, 16, 17, and the live-policy boundary.
   - `hcs-security-reviewer`: activation as written risks invariants 2, 4, 6,
     7, 8, 13, and 16.
+  - `hcs-ontology-reviewer`: operation-class keys align with
+    `operationShapeOperationClassSchema`; `approvalGrantKindSchema` and
+    `leaseKindSchema` references show no drift; reason-kind drift includes
+    both `operation_class_unregistered` and `audit_chain_corruption_detected`.
+  - `hcs-architect`: tier vocabulary fits as policy authority vocabulary, not
+    architecture-ring vocabulary; live `cross_record_rules` must use structured
+    declarative predicates, not free-form expressions or kernel algorithms.
 
 ## Four Human Decisions
 
@@ -111,8 +118,10 @@ These are not optional human-preference decisions; they are reviewer blockers.
    lease acquire is blocked when the requesting Session's
    `ExecutionContext.sandbox != "none"`.
 4. Forbidden rejection reason kinds must be source-defined or explicitly
-   covered by transitional lint. `operation_class_unregistered` is not
-   currently Zod-defined in `decisionReasonKindSchema`.
+   covered by transitional lint. `operation_class_unregistered` and
+   `audit_chain_corruption_detected` are not currently Zod-defined in
+   `decisionReasonKindSchema`; the former appears in draft forbidden-pattern
+   entries and the latter appears as `cycle_rejection_reason_kind`.
 5. Activation-grade YAML needs `schema_version`, structured provenance, and
    evidence/source references. PolicyRule is not a prerequisite for file-based
    policy authority in system-config, but it remains the future materialized
@@ -123,6 +132,10 @@ These are not optional human-preference decisions; they are reviewer blockers.
    scopes, grant reuse, missing provider evidence for external mutation,
    sandboxed worktree lease acquire, invalid reason kinds, and any raw secret
    material in policy or rendered command surfaces.
+8. Live `cross_record_rules` must be structured declarative policy records:
+   field references, operator, constants, source refs, and enforcement-layer
+   refs. No free-form comparison expressions, graph-walk pseudocode, or kernel
+   implementation algorithm belongs in YAML.
 
 ## Ordering
 
@@ -134,3 +147,16 @@ These are not optional human-preference decisions; they are reviewer blockers.
 5. Vendor the reviewed snapshot into HCS `policies/generated-snapshot/`.
 6. Do not scope the first Ring 1 service ADR until the live policy and snapshot
    exist and are citable.
+
+## Skeleton Target
+
+The non-authoritative activation-shape skeleton lives at:
+
+```text
+docs/host-capability-substrate/tiers.yaml.v0.2.0-skeleton.yaml
+```
+
+It is a structure proposal only. It has `status:
+skeleton_draft_non_authoritative`, does not create live policy authority, and
+must not be copied to `policies/host-capability-substrate/tiers.yaml` without
+the ordering above.
