@@ -3,7 +3,7 @@ schema_version: null
 policy_version: null
 kind: host_capability_substrate.operation_tiers
 status: skeleton_draft_non_authoritative
-last_updated: null
+last_updated: "2026-05-12"
 
 non_authority_notice:
   live_policy: false
@@ -20,7 +20,7 @@ provenance:
   system_config_commit: null
   policy_draft_path: docs/host-capability-substrate/2026-05-12-phase-2-5-operation-policy-draft.md
   reviewer_resolution_packet_path: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md
-  human_decision_record: null
+  human_decision_record: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
   approved_by: null
   approved_at: null
 
@@ -44,25 +44,28 @@ schema_refs:
   policy_rule_schema_version: null
 
 evidence_refs:
-  source_adr_refs: []
+  source_adr_refs:
+    - hcs:docs/host-capability-substrate/adr/0054-principal-ring-0-entity.md
+    - hcs:docs/host-capability-substrate/ontology-registry.md#self-approval-rejection-rule
   reviewer_objection_refs: []
-  human_decision_refs: []
+  human_decision_refs:
+    - docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
   lint_result_refs: []
   snapshot_binding_refs: []
 
 human_decisions:
   self_approval_canonicalization_location:
-    resolution: null
-    source_ref: null
+    resolution: cite_hcs_adr_0054_and_ontology_registry
+    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
   agent_internal_state_boundary:
-    resolution: null
-    source_ref: null
+    resolution: session_local_execution_context_state_only_cross_session_or_host_backed_effects_reclassify
+    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
   external_control_plane_tier_vocabulary:
-    resolution: null
-    source_ref: null
+    resolution: write_destructive_with_full_bind_set
+    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
   write_host_posture:
-    resolution: null
-    source_ref: null
+    resolution: removed_from_v0_1_0_until_owned_operation_class_lands
+    source_ref: docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md#human-decisions-resolved-2026-05-12
 
 tiers:
   read-safe:
@@ -80,11 +83,6 @@ tiers:
     valid_until_ceiling: null
     valid_until_ceiling_source_ref: null
     activation_notes: null
-  write-host:
-    status: pending_human_decision
-    valid_until_ceiling: null
-    valid_until_ceiling_source_ref: null
-    activation_notes: null
   write-destructive:
     status: pending_activation
     valid_until_ceiling: null
@@ -97,7 +95,27 @@ tiers:
     approval_path_allowed: false
     activation_notes: null
 
-operation_class_defaults: {}
+removed_tiers:
+  write-host:
+    removed_for_policy_version: "0.1.0"
+    reason: no_v0_1_0_operation_class_owns_scoped_host_mutation
+    reintroduction_requirement: future_operation_class_with_explicit_approval_dashboard_gates
+
+operation_class_defaults:
+  agent_internal_state:
+    default_tier: write-local
+    approval_required: false
+    boundary: session_local_execution_context_state_only
+    reclassify_when:
+      - cross_session_shared_state
+      - hcs_runtime_state
+      - host_backed_coordination_state
+      - host_or_external_side_effects
+  external_control_plane_mutation:
+    default_tier: write-destructive
+    approval_required: true
+    evidence_required_ref: external_control_plane_requirements
+    approval_bind_set_ref: external_control_plane_requirements
 
 grant_defaults:
   exact_operation_scope_required: null
@@ -119,11 +137,11 @@ lease_kind_rules:
 cross_record_rules:
   self_approval_rejection:
     policy_shape: structured_declarative_predicate
-    left_field_ref: null
-    operator: null
-    right_field_ref: null
-    canonicalization_source_ref: null
-    enforcement_layer_ref: null
+    left_field_ref: ApprovalGrant.grantor_principal_ref
+    operator: equals
+    right_field_ref: Session.principal_id
+    canonicalization_source_ref: hcs:docs/host-capability-substrate/adr/0054-principal-ring-0-entity.md
+    enforcement_layer_ref: ring_1_mint_api
   producer_disjointness:
     policy_shape: structured_declarative_predicate
     walked_closure: null
@@ -136,19 +154,19 @@ cross_record_rules:
     future_change_set_ref: null
 
 external_control_plane_requirements:
-  tier_resolution: null
-  provider_evidence_required: null
-  minimal_request_plan_required: null
-  target_binding_required: null
-  fanout_quota_evidence_required: null
-  secret_reference_separation_required: null
-  typed_receipts_required: null
-  gateway_review_required: null
-  approval_grant_consumption_required: null
-  broker_fsm_required: null
-  dashboard_review_required: null
-  audit_required: null
-  lease_checks_required: null
+  tier_resolution: write-destructive
+  provider_evidence_required: true
+  minimal_request_plan_required: true
+  target_binding_required: true
+  fanout_quota_evidence_required: true
+  secret_reference_separation_required: true
+  typed_receipts_required: true
+  gateway_review_required: true
+  approval_grant_consumption_required: true
+  broker_fsm_required: true
+  dashboard_review_required: true
+  audit_required: true
+  lease_checks_required: applicable_when_operation_intersects_lease_scope
 
 forbidden_policy:
   canonical_representation: typed_operation_or_capability_family

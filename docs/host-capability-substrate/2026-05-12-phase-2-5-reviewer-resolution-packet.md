@@ -2,7 +2,7 @@
 title: HCS Phase 2.5 Reviewer Resolution Packet
 category: policy-review
 component: host_capability_substrate
-status: blocked-pending-human-decisions
+status: blocked-pending-activation-fixes
 version: 0.1.0
 last_updated: 2026-05-12
 tags: [hcs, policy, operation-shape, gateway, phase-2-5, review]
@@ -18,9 +18,10 @@ policy draft:
 docs/host-capability-substrate/2026-05-12-phase-2-5-operation-policy-draft.md
 ```
 
-Verdict: the draft is safe only while inert. Do not convert it to live
-`policies/host-capability-substrate/tiers.yaml` until the human decisions and
-activation fixes below are resolved.
+Verdict: the draft is safe only while inert. The four human decisions are now
+resolved below, but do not convert it to live
+`policies/host-capability-substrate/tiers.yaml` until the activation fixes
+below are resolved.
 
 ## Review Inputs
 
@@ -103,6 +104,28 @@ draft, the live policy must either:
 
 It must not become a fallback bucket for host mutation.
 
+## Human Decisions Resolved 2026-05-12
+
+Accepted human-authority resolutions:
+
+1. **Self-approval canonicalization location**: live policy cites ADR 0054 and
+   the HCS ontology registry as the source of truth. The policy YAML stays
+   compact; HCS owns the Principal mint canonicalization recipe and typed
+   Principal equality rule.
+2. **`agent_internal_state` boundary**: narrow to session-local
+   execution-context state only. Cross-session shared state, HCS runtime state,
+   host-backed coordination state, or anything with host/external side effects
+   must reject or reclassify; it does not inherit `approval_required: false`.
+3. **`external_control_plane_mutation` tier vocabulary**: keep at
+   `write-destructive` with the full evidence, approval, grant, lease,
+   dashboard, and audit bind set.
+4. **`write-host` posture**: remove from v0.1.0. Add it back only when an
+   operation class lands that owns scoped host mutation with explicit
+   approval/dashboard gates.
+
+These resolutions close Lane A only. The Non-Negotiable Activation Fixes below
+remain reviewer blockers and still gate any live `tiers.yaml` activation.
+
 ## Non-Negotiable Activation Fixes
 
 These are not optional human-preference decisions; they are reviewer blockers.
@@ -139,7 +162,7 @@ These are not optional human-preference decisions; they are reviewer blockers.
 
 ## Ordering
 
-1. Resolve the four human decisions above.
+1. Human decisions resolved on 2026-05-12; activation fixes remain blocking.
 2. Revise the draft into an activation-grade `tiers.yaml` candidate.
 3. Add policy lint fixtures for the reviewer-required cases.
 4. Only after human approval, convert the draft into live

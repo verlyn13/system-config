@@ -21,7 +21,8 @@ policies/host-capability-substrate/tiers.yaml
 Activation requires HCS policy review and human approval. Until then, this file
 is a review packet for the Phase 2.5 policy lane.
 
-Review status: blocked pending human decisions and activation fixes recorded in
+Review status: human decisions resolved on 2026-05-12; activation fixes remain
+blocking in
 `docs/host-capability-substrate/2026-05-12-phase-2-5-reviewer-resolution-packet.md`.
 
 ## Source Authority
@@ -32,7 +33,21 @@ Review status: blocked pending human decisions and activation fixes recorded in
 - Operation classes: ADR 0029, ADR 0036, ADR 0047
 - Foundational execute-lane schemas present: `Decision`, `ApprovalGrant`,
   `Lease`, `Run`, `Principal`, `Session`
+- Principal canonicalization authority: ADR 0054 / D-043 and the HCS ontology
+  registry §Self-approval rejection rule. Policy cites the HCS source of truth;
+  it does not restate the mint recipe.
 - Live policy boundary: `system-config/policies/host-capability-substrate/`
+
+## Human Decisions Reflected
+
+- Self-approval canonicalization: cite ADR 0054 and the HCS ontology registry;
+  compare typed Principal IDs after HCS mint canonicalization.
+- `agent_internal_state`: session-local execution-context state only;
+  cross-session or host-backed effects reject or reclassify.
+- `external_control_plane_mutation`: remains `write-destructive` with the full
+  evidence, approval, grant, lease, dashboard, and audit bind set.
+- `write-host`: removed from v0.1.0 until an operation class owns scoped host
+  mutation.
 
 ## Draft Policy Shape
 
@@ -54,7 +69,6 @@ tiers:
   read-safe: "No host/project mutation; no approval needed."
   write-local: "Writes local agent/session/workspace-adjacent state only."
   write-project: "Writes project worktree or project-scoped resources."
-  write-host: "Writes user-level host state."
   write-destructive: "Hard to reverse, external, protected, or destructive mutation; human approval required."
   forbidden: "Not exposed by HCS; no escalation path."
 
@@ -67,7 +81,7 @@ operation_class_defaults:
   agent_internal_state:
     default_tier: write-local
     approval_required: false
-    notes: "Agent/session bookkeeping; no host mutation. Cross-session or host-state effects require a narrower future policy rule."
+    notes: "Session-local execution-context bookkeeping only. Cross-session shared state, HCS runtime state, host-backed coordination state, or external side effects reject or reclassify and do not inherit approval_required: false."
 
   workspace_verify:
     default_tier: read-safe
@@ -100,7 +114,21 @@ operation_class_defaults:
   external_control_plane_mutation:
     default_tier: write-destructive
     approval_required: true
-    notes: "Provider/control-plane mutation. Mapped to write-destructive until policy vocabulary gains a distinct external-control-plane tier."
+    evidence_required:
+      - invariant_16_typed_provider_evidence
+      - minimal_request_plan
+      - target_binding
+      - fanout_quota_evidence
+      - secret_reference_separation
+      - typed_receipts
+    approval_bind_set:
+      - gateway_review
+      - approval_grant_consumption
+      - broker_fsm
+      - dashboard_review
+      - audit_record
+      - applicable_lease_checks
+    notes: "Human decision 2026-05-12 keeps provider/control-plane mutation at write-destructive for v0.1.0; no distinct external-control-plane tier is introduced."
 
 non_escalable_forbidden_patterns:
   - pattern: '\bsudo\b'
@@ -125,6 +153,7 @@ cross_record_rules:
       - merge_or_push
       - cleanup_plan
     comparison: "ApprovalGrant.grantor_principal_ref == consuming Session.principal_id"
+    canonicalization_authority: "HCS ADR 0054 / D-043 and ontology registry §Self-approval rejection rule; HCS owns Principal mint canonicalization and typed Principal equality."
     enforcement_layer: ring_1_mint_api
 
   producer_disjointness:
@@ -143,9 +172,8 @@ cross_record_rules:
 
 ## Review Blockers Before Activation
 
-1. `hcs-policy-reviewer` must check escalation holes, forbidden-operation leaks,
-   tier vocabulary fit, and whether `external_control_plane_mutation` should
-   remain `write-destructive` or trigger a tier vocabulary amendment.
+1. The eight Non-Negotiable Activation Fixes in the reviewer resolution packet
+   remain blocking. Human decisions did not lift them.
 2. Human approval must explicitly convert this draft into live
    `policies/host-capability-substrate/tiers.yaml`.
 3. Activation-grade YAML must add `schema_version`, structured provenance, and
