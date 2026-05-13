@@ -155,7 +155,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet is applied; privilege cleanup packet is applied (`wheel`/`docker` are now `verlyn13` only, `systemd-journal` empty, duplicate `wyn` sudoers grant removed, `50-mesh-ops` removed, SELinux contexts normalized); firewall/Infisical-Redis-retirement/service hardening remains pending. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet is applied; privilege cleanup packet is applied; Infisical/Redis retirement packet is prepared and approval-gated; firewall narrowing and Tailscale/WARP/Cloudflare/LUKS decisions remain pending. |
 
 ## Client Profiles
 
@@ -177,6 +177,7 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-next-agent-handoff-2026-05-13.md](./fedora-top-next-agent-handoff-2026-05-13.md) | Fedora-side pre-hardening detail pass and report directive; copied to `/home/verlyn13/device-admin-prep/` on `fedora-top`. |
 | Fedora 44 laptop | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | MacBook-side live SSH hardening packet with key cleanup, sshd drop-in, verification, and rollback commands; applied on 2026-05-13 with evidence in [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md). |
 | Fedora 44 laptop | [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md) | MacBook-side privilege cleanup packet: snapshot, group removals (`wheel`, `docker`, `systemd-journal`), `/etc/sudoers` duplicate cleanup, `/etc/sudoers.d/50-mesh-ops` decision (default: remove), `restorecon`, `visudo -c`, fresh-session validation, snapshot-backed rollback, and risks. Applied on 2026-05-13 along the default path; evidence in [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md). Retains `verlyn13 NOPASSWD: ALL` pending separate review. |
+| Fedora 44 laptop | [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md) | MacBook-side Infisical/Redis retirement packet for the `happy-secrets` compose project: forensic-only snapshot, `docker compose -p happy-secrets down --volumes --remove-orphans` (works without the compose file because the working dir is already absent on disk), optional removal of three project-only images (~1.95 GB), removal of three Infisical Cloudsmith DNF repo entries via deletion of `/etc/yum.repos.d/infisical-infisical-cli.repo`, `dnf clean metadata`, validation, and an explicit irreversibility note. Operator confirmed `happy-secrets` is retired and can be removed completely; no data export is required. Approval-gated; no live state changed while preparing. |
 | Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
@@ -322,8 +323,9 @@ Before any live change, collect or decide:
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
 - Treat Fedora LAN SSH as established and hardened, and privilege cleanup
-  as applied (default path). The remaining approval-gated packets are
-  Infisical/Redis retirement, firewalld narrowing, Tailscale/WARP/Cloudflare
+  as applied (default path). The Infisical/Redis retirement packet is
+  prepared (2026-05-13) and waiting for approval. The remaining
+  approval-gated packets are firewalld narrowing, Tailscale/WARP/Cloudflare
   decision, LUKS/power policy, and a future narrow review of
   `verlyn13 NOPASSWD: ALL`.
 - Fedora SSH hardening packet was applied on 2026-05-13; only the approved
