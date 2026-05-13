@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: infisical-redis-retirement-packet-prepared
-version: 0.11.0
+status: infisical-redis-retired
+version: 0.12.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege, docker, infisical]
 priority: high
@@ -15,13 +15,19 @@ This record captures non-secret administration posture for the Fedora 44
 laptop. MacBook-to-Fedora public-key SSH as `verlyn13` is verified, a stable
 HomeNetOps LAN identity is verified, the SSH hardening packet has been applied
 live (drop-in installed, `authorized_keys` cleaned to one approved key, `sshd`
-reloaded and verified), and the privilege cleanup packet has been applied live
+reloaded and verified), the privilege cleanup packet has been applied live
 (`wheel` and `docker` are now `verlyn13` only, `systemd-journal` is empty, the
 duplicate `wyn` sudoers grant is gone, `/etc/sudoers.d/50-mesh-ops` is
-removed, and all sudoers files carry policy-default SELinux user `system_u`).
-The device is not fully hardened or fully managed yet - Infisical/Redis
-retirement, firewall narrowing, Tailscale/WARP/Cloudflare decisions, LUKS/
-power posture, and a future review of `verlyn13 NOPASSWD: ALL` remain.
+removed, and all sudoers files carry policy-default SELinux user `system_u`),
+and the Infisical/Redis retirement packet has been applied live (the
+`happy-secrets` compose project is fully removed: three containers, two
+volumes, and one network gone; three project-only images removed; the three
+Infisical Cloudsmith DNF repo entries removed; no listeners remain on
+`18080`/`6379`/`5432`). The device is not fully hardened or fully managed
+yet - firewall narrowing, Tailscale/WARP/Cloudflare decisions, LUKS/power
+posture, a future review of `verlyn13 NOPASSWD: ALL`, and a general Docker
+hygiene pass over the remaining exited containers and unrelated images
+remain.
 
 ## Source Input
 
@@ -72,12 +78,16 @@ External evidence ingested from:
   diff, post-apply `sudo -l` per user, and the R10 `restorecon -F`
   deviation note.
 - [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md)
-  for the prepared Infisical/Redis retirement packet covering the
-  `happy-secrets` compose project (three containers, two volumes, one
-  network), the three Infisical Cloudsmith DNF repo entries, and optional
-  removal of the three project-only Docker images. The operator has
-  confirmed `happy-secrets` is retired and can be removed completely; no
-  data export from this laptop is required. Not yet approved or applied.
+  for the Infisical/Redis retirement packet covering the `happy-secrets`
+  compose project (three containers, two volumes, one network), the three
+  Infisical Cloudsmith DNF repo entries, and the three project-only Docker
+  images.
+- [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md)
+  for the live apply evidence including the forensic-only snapshot path,
+  the redacted env-key list per container, the compose down sequence, the
+  image-layer removal log, the DNF metadata cleanup report, and the
+  comprehensive boundary-sanity validation that confirmed SSH, sudoers,
+  firewalld, Tailscale, and unrelated Docker projects were untouched.
 
 Repo-safe current facts from these updates:
 
@@ -204,18 +214,33 @@ Repo-safe current facts from these updates:
   `/var/backups/jefahnierocks-priv-cleanup-20260513T212114Z`. Rollback was
   not used.
 - 2026-05-13 service-state read-only verification (via the hardened SSH
-  channel) confirms compose project `happy-secrets` has three running
+  channel) confirmed compose project `happy-secrets` had three running
   containers (`infisical-app`, `infisical-redis`, `infisical-postgres`)
   publishing `18080/tcp` and `6379/tcp` to all interfaces with restart
   policies `unless-stopped`/`always`; two named volumes
   (`happy-secrets_pg_data` ~74M, `happy-secrets_redis_data` ~353K); one
   bridge network (`happy-secrets_infisical`); and a compose label that
-  references `/home/verlyn13/Projects/happy-secrets/docker-compose.yml`
-  even though that directory and file no longer exist on disk (compose
-  commands still work via container labels). Three project-only images
-  total ~1.95 GB. Three Infisical Cloudsmith DNF repo entries remain
-  enabled. The Postgres DB password is visible in the running container's
-  env until removed.
+  referenced `/home/verlyn13/Projects/happy-secrets/docker-compose.yml`
+  even though that directory and file had already been removed (compose
+  commands worked against labels alone). Three project-only images
+  totaled ~1.95 GB. Three Infisical Cloudsmith DNF repo entries were
+  enabled. The Postgres DB password was visible in the running container's
+  env at that point.
+- Infisical/Redis retirement packet was applied live on
+  `2026-05-13T21:50:17Z` (see the apply record). Post-apply state: no
+  `happy-secrets`-labelled containers, volumes, or networks; no
+  `infisical-*` containers by name; no listeners on `18080`/`6379`/`5432`;
+  the three project-only images (`infisical/infisical:latest-postgres`,
+  `postgres:14-alpine`, `redis:7`) are gone (~1.95 GB reclaimed plus 221
+  MiB of DNF metadata cache); the file
+  `/etc/yum.repos.d/infisical-infisical-cli.repo` is gone and the three
+  Infisical Cloudsmith repos no longer appear in `dnf repolist
+  --enabled`; Tailscale stable repo intact; `sshd allowusers verlyn13`,
+  `visudo -c` clean, `firewalld` running with the same service set as
+  before, Docker engine `29.4.2` still active. Forensic-only snapshot kept
+  at `/var/backups/jefahnierocks-infisical-redis-retirement-20260513T214856Z`;
+  rollback was not used and is not applicable (volume destruction is
+  intentional and irreversible per the approved phrase).
 
 ## Identity
 
@@ -313,8 +338,8 @@ Next work should do the larger hardening remotely from the MacBook:
 - Privilege cleanup so `verlyn13` is the only mission-critical
   admin/service owner.
 - Retirement of laptop-hosted Infisical and rebinding/stopping broad Redis or
-  Docker-published admin surfaces. Packet prepared on 2026-05-13; see
-  [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md).
+  Docker-published admin surfaces. Applied on 2026-05-13; see
+  [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md).
 - `firewalld` narrowing for SSH and removal of broad workstation-zone
   exposure after SSH and service-retirement sequencing is clear.
 - Fedora update/GPG-key decisions.
@@ -329,7 +354,7 @@ Next work should do the larger hardening remotely from the MacBook:
 | SSH auth | Public-key auth confirmed before disabling password SSH. | Public-key login from MacBook succeeds. Effective config now has `PasswordAuthentication no`, `AuthenticationMethods publickey`, `AllowUsers verlyn13`; negative password-auth check confirms server refuses non-publickey login. |
 | Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Latest report confirms FedoraWorkstation zone allows broad high TCP/UDP ports plus `ssh`, `mdns`, `samba-client`, and `dhcpv6-client`; Docker zone target is `ACCEPT`. |
 | Updates | Fedora updates current or scheduled; repo GPG prompts resolved deliberately. | Latest report says DNF refresh found a pending VS Code update and signing-key failures for Infisical/Tailscale repos; prompts were not accepted. |
-| Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Latest report confirms Redis on all interfaces at `6379` and Infisical on all interfaces at `18080`; Postgres is container-internal. |
+| Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Applied: `happy-secrets` compose project fully removed (3 containers, 2 volumes, 1 network); three project-only images gone; three Infisical DNF repos retired; no listeners on `18080`/`6379`/`5432`. Other unrelated exited containers (`api`, `maat-framework`, `scanner`, `act-*`) remain pending a general Docker hygiene packet. |
 | Power/recovery | AC connected; no sleep/hibernate on AC; no remote reboot until LUKS strategy is proven. | Latest report says AC is online and battery is `80%`, `pending-charge`; prior suspend/resume is recorded, so AC/no-sleep policy still needs deliberate verification before relying on remote availability. |
 
 ## Approval-Gated Build Phases
@@ -363,9 +388,11 @@ Do not execute these without explicit approval:
 4. Retire Infisical from the laptop and stop or rebind Docker-published Redis
    and admin surfaces so they are not exposed on the LAN. Packet prepared in
    [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md);
-   operator confirmed `happy-secrets` is retired and may be removed
-   completely. Awaiting explicit guardian approval before any live Docker
-   resource or DNF repo change.
+   applied on 2026-05-13 with redacted evidence in
+   [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md).
+   `happy-secrets` compose project, the three project-only images, and the
+   three Infisical Cloudsmith DNF repos are gone. Forensic-only snapshot
+   retained at `/var/backups/jefahnierocks-infisical-redis-retirement-20260513T214856Z`.
 5. Tighten `firewalld` after SSH and service-retirement sequencing is clear.
 6. Decide whether to retain Tailscale as ACL-restricted break-glass, remove it,
    or leave it installed but logged out temporarily.
@@ -482,10 +509,12 @@ Useful non-secret proof sources once the human has access:
   delete), a future narrow review of `verlyn13 NOPASSWD: ALL`, and an
   account-shell decision for any exploratory account that should not retain
   interactive login.
-- Infisical/Redis retirement packet is prepared at
-  [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md);
-  apply it before relying on firewall narrowing as the only
-  service-exposure control.
+- Infisical/Redis retirement is applied; see
+  [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md).
+  `firewalld` narrowing is now safe to plan because no `happy-secrets`
+  listener remains; the `FedoraWorkstation` zone's broad
+  `1025-65535/tcp,udp` allowances now have nothing of ours bound on those
+  ports.
 - Prepare a narrow firewalld packet after SSH and service-retirement sequencing
   is clear.
 - Use Wi-Fi MAC `66:B5:8C:F5:45:74` and current IP `192.168.0.206` if
@@ -500,9 +529,9 @@ Useful non-secret proof sources once the human has access:
 - Confirm whether Tailscale should be retained as break-glass or removed.
 - Choose LUKS strategy before remote reboot is relied on.
 - Decide whether Cockpit is useful enough to enable behind Cloudflare Access.
-- Retire the laptop-hosted Infisical surface and stop/remove the broadly
-  exposed Redis via the prepared retirement packet (linked above); current
-  Infisical authority is the Hetzner server only.
+- Laptop-hosted Infisical surface and broadly exposed Redis are retired
+  (see retirement apply linked above); current Infisical authority is the
+  Hetzner server only.
 - Decide whether a static DHCP mapping or local DNS record should be requested
   through HomeNetOps only if future network identity changes are needed.
 - Connect AC power before relying on this device remotely.

@@ -2,8 +2,8 @@
 title: Fedora Top Infisical/Redis Retirement Packet - 2026-05-13
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
+status: applied
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, docker, infisical, redis, retirement]
 priority: high
@@ -11,15 +11,18 @@ priority: high
 
 # Fedora Top Infisical/Redis Retirement Packet - 2026-05-13
 
-This packet prepares the complete retirement of the laptop-hosted
-`happy-secrets` Docker compose project from `fedora-top`. The operator has
-confirmed `happy-secrets` is a retired project and can be removed completely;
-Infisical authority for current needs lives on the Hetzner server only. No
-data export from this laptop instance is required.
+This packet defines the complete retirement of the laptop-hosted
+`happy-secrets` Docker compose project from `fedora-top`. It was applied
+live on 2026-05-13 (including the optional image-removal step S4); redacted
+apply evidence is recorded in
+[fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md).
 
-No live state was changed while preparing this document. All commands in the
-"Apply" sections require explicit guardian approval and a fresh held-open
-SSH session.
+The operator confirmed `happy-secrets` is a retired project and can be
+removed completely; Infisical authority for current needs lives on the
+Hetzner server only. No data export from this laptop instance was required.
+
+The original text below is preserved for reuse and audit. No deviation from
+the packet was needed at apply time.
 
 ## Scope
 

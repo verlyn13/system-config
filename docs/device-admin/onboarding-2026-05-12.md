@@ -155,7 +155,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet is applied; privilege cleanup packet is applied; Infisical/Redis retirement packet is prepared and approval-gated; firewall narrowing and Tailscale/WARP/Cloudflare/LUKS decisions remain pending. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet applied; privilege cleanup packet applied; Infisical/Redis retirement packet applied (`happy-secrets` compose project + three project-only images + three Infisical DNF repos all removed); firewall narrowing and Tailscale/WARP/Cloudflare/LUKS decisions remain pending. |
 
 ## Client Profiles
 
@@ -177,7 +177,8 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-next-agent-handoff-2026-05-13.md](./fedora-top-next-agent-handoff-2026-05-13.md) | Fedora-side pre-hardening detail pass and report directive; copied to `/home/verlyn13/device-admin-prep/` on `fedora-top`. |
 | Fedora 44 laptop | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | MacBook-side live SSH hardening packet with key cleanup, sshd drop-in, verification, and rollback commands; applied on 2026-05-13 with evidence in [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md). |
 | Fedora 44 laptop | [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md) | MacBook-side privilege cleanup packet: snapshot, group removals (`wheel`, `docker`, `systemd-journal`), `/etc/sudoers` duplicate cleanup, `/etc/sudoers.d/50-mesh-ops` decision (default: remove), `restorecon`, `visudo -c`, fresh-session validation, snapshot-backed rollback, and risks. Applied on 2026-05-13 along the default path; evidence in [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md). Retains `verlyn13 NOPASSWD: ALL` pending separate review. |
-| Fedora 44 laptop | [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md) | MacBook-side Infisical/Redis retirement packet for the `happy-secrets` compose project: forensic-only snapshot, `docker compose -p happy-secrets down --volumes --remove-orphans` (works without the compose file because the working dir is already absent on disk), optional removal of three project-only images (~1.95 GB), removal of three Infisical Cloudsmith DNF repo entries via deletion of `/etc/yum.repos.d/infisical-infisical-cli.repo`, `dnf clean metadata`, validation, and an explicit irreversibility note. Operator confirmed `happy-secrets` is retired and can be removed completely; no data export is required. Approval-gated; no live state changed while preparing. |
+| Fedora 44 laptop | [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md) | MacBook-side Infisical/Redis retirement packet for the `happy-secrets` compose project: forensic-only snapshot, `docker compose -p happy-secrets down --volumes --remove-orphans`, project-image removal (~1.95 GB), Infisical DNF repo file removal, `dnf clean metadata`, validation, and an explicit irreversibility note. Applied on 2026-05-13 along the default path with S4 (image removal) approved; evidence in [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md). |
+| Fedora 44 laptop | [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md) | Live apply of the Infisical/Redis retirement packet on 2026-05-13: forensic snapshot to `/var/backups/jefahnierocks-infisical-redis-retirement-20260513T214856Z` (redacted env keys for KEY/SECRET/PASSWORD/TOKEN/JWT/AUTH/CONNECTION_URI patterns); `docker compose -p happy-secrets down --volumes --remove-orphans` reported all three containers + two volumes + one network removed; remnant verification empty by label and by name; listeners on `18080`/`6379`/`5432` gone; three project-only images and 33 layer sha256s deleted (~1.95 GB reclaimed); `/etc/yum.repos.d/infisical-infisical-cli.repo` deleted; `dnf clean metadata` reported 221 MiB cleaned; `dnf repolist` shows no infisical; SSH `allowusers verlyn13` unchanged; `visudo -c` clean; `firewalld` unchanged. Rollback not applicable (intentional irreversible destruction). |
 | Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
@@ -322,12 +323,14 @@ Before any live change, collect or decide:
   and where its credential record belongs in 1Password.
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
-- Treat Fedora LAN SSH as established and hardened, and privilege cleanup
-  as applied (default path). The Infisical/Redis retirement packet is
-  prepared (2026-05-13) and waiting for approval. The remaining
-  approval-gated packets are firewalld narrowing, Tailscale/WARP/Cloudflare
-  decision, LUKS/power policy, and a future narrow review of
-  `verlyn13 NOPASSWD: ALL`.
+- Treat Fedora LAN SSH as established and hardened, privilege cleanup
+  as applied (default path), and the Infisical/Redis retirement as
+  applied (default path with image removal). The remaining
+  approval-gated packets are firewalld narrowing (now safe to plan
+  because no `happy-secrets` listener remains), Tailscale/WARP/Cloudflare
+  decision, LUKS/power policy, a future narrow review of
+  `verlyn13 NOPASSWD: ALL`, and a general Docker hygiene pass over
+  unrelated exited containers and reclaimable images/volumes/build cache.
 - Fedora SSH hardening packet was applied on 2026-05-13; only the approved
   MacBook key remains in `authorized_keys`, and the WSL key plus both
   duplicate `ansible@hetzner.hq` entries were removed. Evidence in
