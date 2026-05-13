@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: infisical-redis-retired
-version: 0.12.0
+status: firewalld-narrowing-packet-prepared
+version: 0.13.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege, docker, infisical]
 priority: high
@@ -88,6 +88,13 @@ External evidence ingested from:
   image-layer removal log, the DNF metadata cleanup report, and the
   comprehensive boundary-sanity validation that confirmed SSH, sudoers,
   firewalld, Tailscale, and unrelated Docker projects were untouched.
+- [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md)
+  for the prepared `firewalld` narrowing packet that removes the
+  `FedoraWorkstation` zone's broad `1025-65535/tcp,udp` allowances while
+  keeping `ssh`, `mdns`, `samba-client`, and `dhcpv6-client` services
+  intact, plus snapshot-backed rollback. Documents the impact on `wsdd`
+  WS-Discovery and the Tailscale incoming-UDP path. Docker zone is
+  intentionally out of scope. Not yet approved or applied.
 
 Repo-safe current facts from these updates:
 
@@ -241,6 +248,20 @@ Repo-safe current facts from these updates:
   at `/var/backups/jefahnierocks-infisical-redis-retirement-20260513T214856Z`;
   rollback was not used and is not applicable (volume destruction is
   intentional and irreversible per the approved phrase).
+- 2026-05-13 firewalld read-only verification (via the hardened SSH
+  channel) confirms firewalld `2.4.0` is active and enabled, nftables
+  backend, default zone `FedoraWorkstation`, runtime and permanent
+  configurations identical in content, no rich rules / direct rules /
+  passthroughs on `FedoraWorkstation`, NetworkManager `connection.zone`
+  unset on all active connections (so the Wi-Fi attaches to the default
+  zone automatically). `FedoraWorkstation` still permits
+  `1025-65535/tcp,udp` plus services `dhcpv6-client mdns samba-client
+  ssh`. The `docker` zone retains its upstream `target: ACCEPT` with all
+  Docker bridges attached at runtime; this is documented but out of
+  scope for the narrowing packet. The broad port range currently allows
+  `wsdd` (Windows file-sharing discovery on UDP `3702` plus high
+  ephemerals) and `tailscaled` (random WireGuard UDP port; Tailscale
+  itself is still logged out) inbound from the LAN.
 
 ## Identity
 
@@ -394,6 +415,13 @@ Do not execute these without explicit approval:
    three Infisical Cloudsmith DNF repos are gone. Forensic-only snapshot
    retained at `/var/backups/jefahnierocks-infisical-redis-retirement-20260513T214856Z`.
 5. Tighten `firewalld` after SSH and service-retirement sequencing is clear.
+   Packet prepared in
+   [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md);
+   awaiting explicit guardian approval before any live `firewall-cmd`
+   change. Default path removes the `1025-65535/tcp,udp` port ranges
+   from `FedoraWorkstation` while preserving the `ssh`, `mdns`,
+   `samba-client`, and `dhcpv6-client` services. Docker zone remains
+   untouched.
 6. Decide whether to retain Tailscale as ACL-restricted break-glass, remove it,
    or leave it installed but logged out temporarily.
 7. Install/enroll Cloudflare WARP and install/configure `cloudflared` only
@@ -515,8 +543,11 @@ Useful non-secret proof sources once the human has access:
   listener remains; the `FedoraWorkstation` zone's broad
   `1025-65535/tcp,udp` allowances now have nothing of ours bound on those
   ports.
-- Prepare a narrow firewalld packet after SSH and service-retirement sequencing
-  is clear.
+- firewalld narrowing packet is prepared at
+  [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md);
+  apply removes the broad `1025-65535/tcp,udp` port ranges from
+  `FedoraWorkstation` and preserves all current services. Held-open SSH
+  session + snapshot-backed rollback per the standard pattern.
 - Use Wi-Fi MAC `66:B5:8C:F5:45:74` and current IP `192.168.0.206` if
   HomeNetOps static DHCP/local DNS planning is requested.
 - Live read-only review of users, groups, sudoers, lingering user services,
