@@ -152,16 +152,19 @@ Selected key fingerprint:
 SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8
 ```
 
-The raw public key line should be provided to the Fedora-side agent through the
-operator handoff, not committed to this repo.
+The raw public key line is included in the dedicated relay handoff
+[`fedora-top-authorized-key-install-2026-05-13.md`](./fedora-top-authorized-key-install-2026-05-13.md)
+because the operator requested a file that can be handed to the Fedora-side
+agent. This is a public key, not private key material.
 
 Do not use a human workstation key for unattended automation. This key is for
 human interactive administration only.
 
 ## Next Safe Step
 
-Have the Fedora-side agent add the selected approved MacBook public key for
-`verlyn13`, then rerun:
+Have the Fedora-side agent follow
+[`fedora-top-authorized-key-install-2026-05-13.md`](./fedora-top-authorized-key-install-2026-05-13.md),
+then rerun:
 
 ```bash
 nc -vz -G 3 192.168.0.206 22
