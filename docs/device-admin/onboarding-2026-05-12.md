@@ -76,6 +76,7 @@ ingested as external evidence references:
 | `/home/verlyn13/device-admin-prep/fedora-top-prehardening-report-2026-05-13.md` plus [fedora-top-prehardening-ingest-2026-05-13.md](./fedora-top-prehardening-ingest-2026-05-13.md) | `fedora-top` | Fedora-side pre-hardening detail report confirms SSH is reachable but permissive, three `authorized_keys` entries exist with only one approved for this slice, firewall and Docker zones are broad, sudoers has mode/duplicate/NOPASSWD issues, Infisical and Redis are LAN-published, Tailscale is logged out, WARP/cloudflared are absent, AC is online, and LUKS2/TPM2/dual-boot facts are verified. |
 | HomeNetOps hand-back plus [fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md) | `fedora-top` | HomeNetOps confirms static DHCP via OPNsense ISC DHCPv4 for Wi-Fi MAC `66:b5:8c:f5:45:74`, retained IP `192.168.0.206`, local DNS `fedora-top.home.arpa`, Unbound UUID `ce8c9be1-7b03-4965-8f40-d3adc8a079ac`, FQDN resolution, SSH TCP `22` reachability, and no WAN/public DNS/Cloudflare/WARP/Tailscale/firewall/WoL changes. |
 | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | `fedora-top` | Prepared SSH hardening packet confirms live SSH is still permissive, direct FQDN SSH needs host-key trust reconciliation, `authorized_keys` currently has four active lines with one approved key and a duplicated `ansible@hetzner.hq` key, and records exact cleanup, drop-in, validation, and rollback commands. No live SSH change was made while preparing the packet. |
+| [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md) | `fedora-top` | Live apply of the SSH hardening packet on 2026-05-13: `authorized_keys` cleaned to the approved MacBook fingerprint only, drop-in `/etc/ssh/sshd_config.d/20-jefahnierocks-admin.conf` installed (`root:root`, `0600`), `sshd -t` passed, `systemctl reload sshd` succeeded, the nine target effective settings verified from a fresh SSH process, negative password-auth check refused as expected, rollback unused. One minimal cleanup-script deviation recorded for kernel `fs.protected_regular` hardening on Fedora 44. |
 
 The BIOS checklist artifact in the same directory is a useful operator runbook,
 but the result artifact is the state evidence that should drive this record.
@@ -152,7 +153,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet is prepared but not applied; firewall/privilege/service hardening remains pending and approval-gated. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet is applied (drop-in installed, `authorized_keys` cleaned, sshd reloaded and verified); firewall/privilege/service hardening remains pending and approval-gated. |
 
 ## Client Profiles
 
@@ -172,7 +173,7 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-complete-instructions.md](./fedora-top-complete-instructions.md) | Active Fedora-side SSH foothold, MacBook smoke test, remote baseline, and approval-gated hardening instructions for `fedora-top`. |
 | Fedora 44 laptop | [fedora-top-authorized-key-install-2026-05-13.md](./fedora-top-authorized-key-install-2026-05-13.md) | Narrow Fedora-side handoff to install the approved MacBook public key for `verlyn13` and return repo-safe evidence. |
 | Fedora 44 laptop | [fedora-top-next-agent-handoff-2026-05-13.md](./fedora-top-next-agent-handoff-2026-05-13.md) | Fedora-side pre-hardening detail pass and report directive; copied to `/home/verlyn13/device-admin-prep/` on `fedora-top`. |
-| Fedora 44 laptop | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | MacBook-side live SSH hardening packet with key cleanup, sshd drop-in, verification, and rollback commands; prepared only, not applied. |
+| Fedora 44 laptop | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | MacBook-side live SSH hardening packet with key cleanup, sshd drop-in, verification, and rollback commands; applied on 2026-05-13 with evidence in [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md). |
 | Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
@@ -317,12 +318,17 @@ Before any live change, collect or decide:
   and where its credential record belongs in 1Password.
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
-- Treat Fedora LAN SSH as established. Prepare the next approval-gated packets:
-  SSH hardening apply, privilege cleanup, Infisical/Redis retirement, firewalld
-  narrowing, Tailscale/WARP/Cloudflare decision, and LUKS/power policy.
-- Apply the prepared Fedora SSH hardening packet after explicit approval. The
-  recommended key disposition is to retain only the approved MacBook key and
-  remove the WSL key plus both duplicate `ansible@hetzner.hq` entries.
+- Treat Fedora LAN SSH as established and hardened. Prepare the next
+  approval-gated packets: privilege cleanup, Infisical/Redis retirement,
+  firewalld narrowing, Tailscale/WARP/Cloudflare decision, and LUKS/power
+  policy.
+- Fedora SSH hardening packet was applied on 2026-05-13; only the approved
+  MacBook key remains in `authorized_keys`, and the WSL key plus both
+  duplicate `ansible@hetzner.hq` entries were removed. Evidence in
+  [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md).
+- Reconcile MacBook `known_hosts` for `fedora-top.home.arpa` so the
+  `HostKeyAlias=192.168.0.206` workaround is no longer needed for routine
+  SSH.
 - Decide whether `mesh-ops` remains required after Infisical is retired from
   the laptop.
 - Decide whether to remove retired Infisical DNF repos and whether to repair

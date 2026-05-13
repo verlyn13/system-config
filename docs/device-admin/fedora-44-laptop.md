@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: ssh-hardening-packet-prepared
-version: 0.7.0
+status: ssh-hardening-applied
+version: 0.8.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password]
 priority: high
@@ -12,9 +12,12 @@ priority: high
 # Fedora 44 Laptop Device Administration Record
 
 This record captures non-secret administration posture for the Fedora 44
-laptop. MacBook-to-Fedora public-key SSH as `verlyn13` is verified, and a
-stable HomeNetOps LAN identity is verified. The device is not fully hardened or
-fully managed yet.
+laptop. MacBook-to-Fedora public-key SSH as `verlyn13` is verified, a stable
+HomeNetOps LAN identity is verified, and the SSH hardening packet has been
+applied live (drop-in installed, `authorized_keys` cleaned to one approved key,
+`sshd` reloaded and verified). The device is not fully hardened or fully
+managed yet - privilege cleanup, Infisical/Redis retirement, firewall
+narrowing, Tailscale/WARP/Cloudflare decisions, and LUKS/power posture remain.
 
 ## Source Input
 
@@ -53,6 +56,9 @@ External evidence ingested from:
 - [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md)
   for the prepared SSH hardening commands, rollback, and live read-only
   verification.
+- [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md)
+  for the live apply evidence, including the kernel `fs.protected_regular`
+  deviation note for the tempfile handling in the cleanup script.
 
 Repo-safe current facts from these updates:
 
@@ -140,6 +146,20 @@ Repo-safe current facts from these updates:
   `SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w`.
 - Live key check now shows four active `authorized_keys` lines: the approved
   MacBook key, the WSL key, and two duplicate `ansible@hetzner.hq` entries.
+- SSH hardening packet was applied live on `2026-05-13T20:58:27Z` (see the
+  apply record). `authorized_keys` now contains exactly one key, the approved
+  MacBook fingerprint. The drop-in
+  `/etc/ssh/sshd_config.d/20-jefahnierocks-admin.conf` is in place
+  (`root:root`, `0600`), `sshd -t` passed, `systemctl reload sshd` succeeded,
+  the second-session verification returned the nine target effective settings,
+  and a negative password-auth check confirmed the server refuses
+  non-publickey authentication. Rollback was not used.
+- The cleanup script's early `chown verlyn13:verlyn13 "$TMP"` line was
+  dropped at apply time because the Fedora 44 kernel's `fs.protected_regular`
+  protection refuses writes from a different fsuid into a sticky/world-writable
+  directory like `/tmp`, even for root. The final
+  `install -m 600 -o verlyn13 -g verlyn13` still sets destination ownership,
+  so on-disk outcome is unchanged from the prepared packet.
 
 ## Identity
 
@@ -173,8 +193,8 @@ Repo-safe current facts from these updates:
 | 1Password local admin item | `jefahnierocks-device-fedora-top-local-admin` | Planned; secret value not created here. |
 | Recovery key item | `jefahnierocks-device-fedora-top-recovery-key` | Planned for LUKS recovery material. |
 | Administrative SSH | Use verified `verlyn13` SSH from the MacBook over trusted LAN; finish hardening remotely from `system-config` in small approval-gated packets. | Verified from MacBook to `192.168.0.206` using the selected 1Password-backed human interactive key. |
-| SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Selected human interactive key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is installed for `verlyn13`; three non-approved active key lines should be removed in the SSH hardening packet. |
-| Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Effective config still says `passwordauthentication yes`; hardening not yet applied. |
+| SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Applied: `authorized_keys` contains exactly one key, the approved MacBook fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8`. WSL and duplicate `ansible@hetzner.hq` lines were removed. Pre-apply backup retained on host. |
+| Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Applied: `PasswordAuthentication no`, `KbdInteractiveAuthentication no`, `AuthenticationMethods publickey`, `AllowUsers verlyn13`. Negative password-auth check confirms the server refuses non-publickey login. |
 | Mission-critical service owner | `verlyn13` is the only account that should own or run mission-critical services. | Current service ownership needs live review before cleanup. |
 | Exploratory users | `wyn`, `axel`, `ila`, and other human exploratory accounts may remain usable, but should not have `wheel`, sudo, Docker, or service-management authority by default. | Latest report says `wyn`, `axel`, `ila`, and `mesh-ops` retain elevated memberships or grants; critical hardening target. |
 
@@ -199,9 +219,13 @@ Current state:
   `192.168.0.206:22` is verified.
 - MacBook public-key SSH as `verlyn13` is verified.
 - `verlyn13` currently has non-interactive sudo capability.
-- Pre-hardening detail report verifies password authentication, agent
-  forwarding, TCP forwarding, and X11 forwarding are still enabled; no
-  `AllowUsers` rule is active.
+- Pre-hardening detail report observed password authentication, agent
+  forwarding, TCP forwarding, and X11 forwarding still enabled with no
+  `AllowUsers` rule active. After the 2026-05-13 apply, effective settings
+  are now `PermitRootLogin no`, `PubkeyAuthentication yes`,
+  `PasswordAuthentication no`, `KbdInteractiveAuthentication no`,
+  `AuthenticationMethods publickey`, `AllowUsers verlyn13`, and all three
+  forwarding directives are `no`.
 - Pre-hardening detail report verifies WARP and `cloudflared` are absent and
   Tailscale is installed but logged out.
 - Do not claim this Fedora laptop is fully managed until SSH hardening,
@@ -227,7 +251,9 @@ Phase 1 current result:
 Next work should do the larger hardening remotely from the MacBook:
 
 - SSH drop-in hardening and password-SSH disablement after a rollback path is
-  ready and the two non-approved public keys have a disposition.
+  ready and the two non-approved public keys have a disposition. Completed on
+  2026-05-13; see
+  [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md).
 - Privilege cleanup so `verlyn13` is the only mission-critical
   admin/service owner.
 - Retirement of laptop-hosted Infisical and rebinding/stopping broad Redis or
@@ -242,8 +268,8 @@ Next work should do the larger hardening remotely from the MacBook:
 | Area | Target | Current status |
 |---|---|---|
 | Disk encryption | LUKS/FDE status verified; recovery material stored in 1Password only if applicable. | Source report says root/home volume is LUKS2. Remote reboot is blocked unless TPM2/FIDO2/initramfs/local unlock strategy is chosen. |
-| SSH daemon | Enabled only with key-only admin access and private routing constraints. | Enabled, active, all-interface listen. Effective config is verified and not hardened yet. |
-| SSH auth | Public-key auth confirmed before disabling password SSH. | Public-key login from MacBook succeeds. Effective config still has `passwordauthentication yes`; do not leave this as final posture. |
+| SSH daemon | Enabled only with key-only admin access and private routing constraints. | Enabled, active, all-interface listen. Effective config is hardened by `20-jefahnierocks-admin.conf` (drop-in `root:root`, `0600`); SSH remains LAN-only and is not exposed on WAN. |
+| SSH auth | Public-key auth confirmed before disabling password SSH. | Public-key login from MacBook succeeds. Effective config now has `PasswordAuthentication no`, `AuthenticationMethods publickey`, `AllowUsers verlyn13`; negative password-auth check confirms server refuses non-publickey login. |
 | Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Latest report confirms FedoraWorkstation zone allows broad high TCP/UDP ports plus `ssh`, `mdns`, `samba-client`, and `dhcpv6-client`; Docker zone target is `ACCEPT`. |
 | Updates | Fedora updates current or scheduled; repo GPG prompts resolved deliberately. | Latest report says DNF refresh found a pending VS Code update and signing-key failures for Infisical/Tailscale repos; prompts were not accepted. |
 | Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Latest report confirms Redis on all interfaces at `6379` and Infisical on all interfaces at `18080`; Postgres is container-internal. |
@@ -262,7 +288,12 @@ Do not execute these without explicit approval:
 2. Confirm the disposition for the two non-approved public keys in
    `authorized_keys`, then harden `sshd` with a drop-in and rollback path.
    Packet prepared in
-   [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md).
+   [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md);
+   applied on 2026-05-13 with redacted evidence in
+   [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md).
+   `authorized_keys` now retains only the approved MacBook key; drop-in
+   `/etc/ssh/sshd_config.d/20-jefahnierocks-admin.conf` is in place;
+   second-session verification and negative password-auth check both passed.
 3. Remove non-`verlyn13` accounts from `wheel`, sudoers, Docker, and
    service-management paths unless an account has a documented administrative
    purpose.
@@ -291,6 +322,8 @@ HomeNetOps static DHCP/local DNS is summarized in
 [fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md).
 The prepared SSH hardening packet is recorded in
 [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md).
+The live apply on 2026-05-13 is recorded in
+[fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md).
 
 Future entries should use this shape:
 
@@ -360,16 +393,22 @@ Useful non-secret proof sources once the human has access:
   IPv4/IPv6 interfaces.
 - Pre-hardening report confirms Tailscale/Infisical repo signing-key failures
   were observed and no keys were accepted.
+- 2026-05-13 apply record confirms `authorized_keys` now contains exactly
+  one key (approved MacBook fingerprint), the drop-in
+  `/etc/ssh/sshd_config.d/20-jefahnierocks-admin.conf` is in place
+  (`root:root`, `0600`), `sshd -t` passed, `systemctl reload sshd` succeeded,
+  and the nine target effective settings are active. Negative password-auth
+  check refused login as expected.
 
 ### Safe Next Manual Step
 
-- Treat the SSH foothold as verified. Do not perform broad hardening in one
-  batch.
+- Treat the SSH foothold and SSH hardening as verified. Do not perform broad
+  hardening in one batch.
 - Use `fedora-top.home.arpa` as the stable LAN administration target.
-- Decide whether to retain, rotate, or remove the two non-approved public keys
-  before SSH hardening.
-- Apply the prepared SSH hardening packet after explicit approval, with a
-  rollback path and held-open session.
+- Reconcile the MacBook `known_hosts` entry for `fedora-top.home.arpa` so
+  the `HostKeyAlias=192.168.0.206` workaround is no longer needed.
+- Prepare a narrow privilege cleanup packet for `wheel`, `docker`, sudoers,
+  and service ownership.
 - Prepare a narrow privilege cleanup packet for `wheel`, `docker`, sudoers,
   and service ownership.
 - Prepare Infisical/Redis retirement before relying on firewall narrowing as
@@ -398,11 +437,8 @@ Useful non-secret proof sources once the human has access:
 ### Blocked Pending Human/Device Access
 
 - Live re-verification of current users/groups/sudoers before privilege edits.
-- Approval for SSH hardening implementation.
 - Approval for firewall narrowing implementation.
 - Approval for privilege cleanup implementation.
-- Decision on retaining, rotating, or removing the two non-approved SSH public
-  keys.
 - Decision on whether `mesh-ops` remains required after Infisical retirement.
 - Decision on whether to remove or repair Infisical and Tailscale DNF repo
   trust paths.

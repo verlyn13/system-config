@@ -2,8 +2,8 @@
 title: Fedora Top SSH Hardening Packet - 2026-05-13
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
+status: applied
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, hardening, authorized-keys]
 priority: high
@@ -11,11 +11,13 @@ priority: high
 
 # Fedora Top SSH Hardening Packet - 2026-05-13
 
-This packet prepares the live SSH hardening change for `fedora-top`.
+This packet defines the SSH hardening change for `fedora-top`. It was applied
+live on 2026-05-13; redacted apply evidence is recorded in
+[fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md).
 
-No SSH daemon reload, SSH configuration change, or `authorized_keys` edit was
-performed while preparing this document. This is the approval-ready packet for
-the next live step.
+The original text below is preserved for reuse and audit. One minimal
+adjustment to the cleanup script was made at apply time on a hardened Fedora
+kernel - see "Apply-Time Deviation" near the top of the script section.
 
 ## Scope
 
@@ -176,6 +178,22 @@ Apply only after explicit approval.
 
 This command keeps the approved fingerprint only, writes a timestamped backup
 beside the original file, and fails closed if it does not keep exactly one key.
+
+### Apply-Time Deviation (Fedora 44, kernel `7.0.4-200.fc44.x86_64`)
+
+The cleanup script as originally written below `chown verlyn13:verlyn13` the
+tempfile in `/tmp` while still running as root, then appends to that tempfile.
+Modern Linux kernels with `fs.protected_regular` enabled (Fedora default)
+refuse `O_CREAT` opens of regular files whose owner differs from both the
+sticky-directory owner and the calling fsuid - even for root. Because `/tmp`
+is sticky and world-writable (`1777`), the append redirect fails with
+`Permission denied`.
+
+The 2026-05-13 apply dropped the early `chown verlyn13:verlyn13 "$TMP"` line.
+The final `install -m 600 -o verlyn13 -g verlyn13 "$TMP" "$AUTHORIZED_KEYS"`
+already sets destination ownership, so the on-disk outcome is identical to
+the original packet. For future reuse on hardened Fedora/RHEL kernels, omit
+that early chown.
 
 ```bash
 sudo -n bash <<'EOF'
