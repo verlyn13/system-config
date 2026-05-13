@@ -97,6 +97,12 @@ External evidence ingested from:
   for the live apply evidence including snapshot path, the empty
   post-apply `ports` listing in both runtime and permanent, and the
   positive fresh-session SSH check.
+- [current-status.yaml](./current-status.yaml) plus
+  [handback-format.md](./handback-format.md) for the machine-readable
+  per-device current state and the agent handback template. Update
+  `current-status.yaml` in the same commit that lands any new
+  `*-packet-*.md` or `*-apply-*.md` so the YAML stays the
+  authoritative summary.
 
 Repo-safe current facts from these updates:
 

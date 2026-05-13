@@ -1,0 +1,170 @@
+# system-config device-admin current status
+#
+# Machine-readable per-device state. Non-secret only.
+# Format and packet-state vocabulary: ./handback-format.md
+#
+# Schema:
+#   schema_version            integer, bump on breaking changes
+#   last_updated              ISO-8601 UTC timestamp of last write
+#   devices[]                 one block per device
+#     device                  short identifier (matches doc filenames)
+#     owner                   entity that owns the device for admin purposes
+#     hostname                local hostname
+#     fqdn                    fully-qualified domain name on the admin path
+#     ip                      current LAN/private IP on the admin path
+#     remote_admin_paths[]    each block has: kind, target, notes
+#     current_management_status
+#                             short phrase: which packets are applied so far
+#     applied_packets[]       name, packet_doc, apply_record, packet_commit,
+#                             apply_commit, applied_at
+#     prepared_packets[]      name, packet_doc, packet_commit, prepared_at,
+#                             approval_phrase_excerpt
+#                             (state may be: prepared | approval-required)
+#     blocked_items[]         what is blocked and on whose decision
+#     approval_required[]     specific live actions the human must approve next
+#     next_recommended_action description of the natural next packet, and
+#                             the exact approval phrase required
+#     last_verified           ISO-8601 UTC timestamp of last live read-only
+#                             verification or apply validation
+#     latest_system_config_commit
+#                             commit short SHA that records the most recent
+#                             change for this device's posture
+
+schema_version: 1
+last_updated: 2026-05-13T23:03:01Z
+
+devices:
+  - device: fedora-top
+    owner: Jefahnierocks
+    hostname: fedora-top
+    fqdn: fedora-top.home.arpa
+    ip: 192.168.0.206
+
+    remote_admin_paths:
+      - kind: ssh
+        target: verlyn13@fedora-top.home.arpa
+        notes: >-
+          LAN-only. publickey-only via 1Password SSH agent on MacBook.
+          `allowusers verlyn13`. Until the MacBook `known_hosts` entry
+          for `fedora-top.home.arpa` is reconciled, all SSH commands
+          must include `-o HostKeyAlias=192.168.0.206`.
+      - kind: ssh
+        target: verlyn13@192.168.0.206
+        notes: >-
+          Same SSH target reached by IP. Stable for `HostKeyAlias` use.
+
+    current_management_status: >-
+      remote-admin-ready over LAN SSH only; not fully managed.
+      SSH hardened, privileges cleaned, Infisical/Redis retired,
+      firewalld narrowed. Tailscale / WARP / cloudflared / LUKS /
+      power / 1Password device-admin items and a future review of
+      verlyn13 NOPASSWD: ALL remain pending.
+
+    applied_packets:
+      - name: ssh-hardening
+        packet_doc: docs/device-admin/fedora-top-ssh-hardening-packet-2026-05-13.md
+        apply_record: docs/device-admin/fedora-top-ssh-hardening-apply-2026-05-13.md
+        packet_commit: 1a270dc
+        apply_commit: a59911d
+        applied_at: 2026-05-13T20:58:27Z
+
+      - name: privilege-cleanup
+        packet_doc: docs/device-admin/fedora-top-privilege-cleanup-packet-2026-05-13.md
+        apply_record: docs/device-admin/fedora-top-privilege-cleanup-apply-2026-05-13.md
+        packet_commit: 3ecc139
+        apply_commit: 9885313
+        applied_at: 2026-05-13T21:22:44Z
+
+      - name: infisical-redis-retirement
+        packet_doc: docs/device-admin/fedora-top-infisical-redis-retirement-packet-2026-05-13.md
+        apply_record: docs/device-admin/fedora-top-infisical-redis-retirement-apply-2026-05-13.md
+        packet_commit: 9786ea6
+        apply_commit: d93bd12
+        applied_at: 2026-05-13T21:50:17Z
+
+      - name: firewalld-narrowing
+        packet_doc: docs/device-admin/fedora-top-firewalld-narrowing-packet-2026-05-13.md
+        apply_record: docs/device-admin/fedora-top-firewalld-narrowing-apply-2026-05-13.md
+        packet_commit: dfa46d4
+        apply_commit: d3e44b8
+        applied_at: 2026-05-13T23:03:01Z
+
+    prepared_packets: []
+
+    blocked_items:
+      - item: tailscale-retain-or-remove
+        owner: human
+        notes: >-
+          tailscaled is installed and active but logged out; the
+          tailscale-stable DNF repo is still enabled. Decide retain
+          (as ACL-restricted break-glass) vs remove. Affects the
+          off-LAN access design and whether the firewall needs a
+          stable WireGuard UDP rule.
+      - item: warp-and-cloudflared-design
+        owner: human
+        notes: >-
+          Off-LAN access via Cloudflare WARP and `cloudflared` needs a
+          design packet (token scope, device enrollment, Access policy)
+          before any client install.
+      - item: luks-remote-reboot-strategy
+        owner: human
+        notes: >-
+          Root/home are LUKS2 with TPM2 present, Secure Boot disabled.
+          Need explicit choice: no-remote-reboot, TPM2 auto-unlock,
+          FIDO2, or initramfs SSH unlock. Affects AC/no-sleep policy.
+      - item: 1password-device-admin-items
+        owner: human
+        notes: >-
+          1Password items `jefahnierocks-device-fedora-top-local-admin`
+          and `jefahnierocks-device-fedora-top-recovery-key` are
+          planned but not created. Required before any non-LAN
+          break-glass story.
+      - item: macbook-known-hosts-reconciliation
+        owner: human
+        notes: >-
+          Reconcile the MacBook `known_hosts` entry for
+          `fedora-top.home.arpa` so the `HostKeyAlias=192.168.0.206`
+          workaround can be retired from routine SSH commands.
+
+    approval_required:
+      - action: tailscale-retain-or-remove-packet
+        state: planned
+        approval_phrase: >-
+          The Tailscale retain/remove decision packet has not been
+          authored yet; an approval phrase will be supplied with that
+          packet when it is prepared.
+      - action: docker-hygiene-packet
+        state: planned
+        approval_phrase: >-
+          Docker hygiene (docker zone target ACCEPT review, exited
+          containers, reclaimable images and build cache) packet has
+          not been authored yet; an approval phrase will be supplied
+          with that packet.
+      - action: verlyn13-nopasswd-review-packet
+        state: planned
+        approval_phrase: >-
+          A future narrow review of verlyn13 NOPASSWD ALL requires a
+          working non-NOPASSWD admin path first (for example a narrow
+          sudoers grant for the specific remote-apply commands).
+          Packet to be drafted separately.
+
+    next_recommended_action:
+      summary: >-
+        Move the remote-admin operating readiness forward. The natural
+        next packet is the Tailscale retain/remove decision packet
+        (because it gates the off-LAN access design and may reopen one
+        firewalld UDP port). Alternative parallel packets that do not
+        require Tailscale: docker hygiene cleanup, LUKS remote-reboot
+        strategy design, and the verlyn13 NOPASSWD review (gated on a
+        replacement admin path).
+      preferred_packet: tailscale-retain-or-remove
+      preferred_packet_status: planned
+      preferred_packet_blockers:
+        - slug: operator-decision-required
+          note: >-
+            Keep Tailscale as ACL-restricted break-glass or remove it
+            entirely.
+      handback_to_human: true
+
+    last_verified: 2026-05-13T23:03:01Z
+    latest_system_config_commit: d3e44b8
