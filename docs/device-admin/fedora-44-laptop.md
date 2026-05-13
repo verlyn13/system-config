@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: lan-identity-verified
-version: 0.6.0
+status: ssh-hardening-packet-prepared
+version: 0.7.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password]
 priority: high
@@ -50,6 +50,9 @@ External evidence ingested from:
 - HomeNetOps hand-back from 2026-05-13
 - [fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md)
   for the repo-safe static DHCP/local DNS ingest.
+- [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md)
+  for the prepared SSH hardening commands, rollback, and live read-only
+  verification.
 
 Repo-safe current facts from these updates:
 
@@ -127,6 +130,16 @@ Repo-safe current facts from these updates:
   `192.168.0.206` and `nc -vz -G 3 fedora-top.home.arpa 22` succeeds.
 - HomeNetOps hand-back confirms no WAN, public DNS, Cloudflare, WARP,
   Tailscale, firewall, or Wi-Fi WoL changes were made.
+- SSH hardening packet live read-only check on `2026-05-13T12:00:37-08:00`
+  confirms `sshd` is active/enabled, `sshd -t` passes, and sudo
+  non-interactive access is available for `verlyn13`.
+- Direct SSH to `fedora-top.home.arpa` from the MacBook failed host-key
+  verification because the FQDN is not yet in local `known_hosts`; read-only
+  verification used `HostKeyAlias=192.168.0.206` without changing local trust
+  files. The known IP host-key fingerprint is
+  `SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w`.
+- Live key check now shows four active `authorized_keys` lines: the approved
+  MacBook key, the WSL key, and two duplicate `ansible@hetzner.hq` entries.
 
 ## Identity
 
@@ -160,7 +173,7 @@ Repo-safe current facts from these updates:
 | 1Password local admin item | `jefahnierocks-device-fedora-top-local-admin` | Planned; secret value not created here. |
 | Recovery key item | `jefahnierocks-device-fedora-top-recovery-key` | Planned for LUKS recovery material. |
 | Administrative SSH | Use verified `verlyn13` SSH from the MacBook over trusted LAN; finish hardening remotely from `system-config` in small approval-gated packets. | Verified from MacBook to `192.168.0.206` using the selected 1Password-backed human interactive key. |
-| SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Selected human interactive key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is installed for `verlyn13`. |
+| SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Selected human interactive key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is installed for `verlyn13`; three non-approved active key lines should be removed in the SSH hardening packet. |
 | Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Effective config still says `passwordauthentication yes`; hardening not yet applied. |
 | Mission-critical service owner | `verlyn13` is the only account that should own or run mission-critical services. | Current service ownership needs live review before cleanup. |
 | Exploratory users | `wyn`, `axel`, `ila`, and other human exploratory accounts may remain usable, but should not have `wheel`, sudo, Docker, or service-management authority by default. | Latest report says `wyn`, `axel`, `ila`, and `mesh-ops` retain elevated memberships or grants; critical hardening target. |
@@ -248,6 +261,8 @@ Do not execute these without explicit approval:
    `192.168.0.206` and SSH on TCP `22` is reachable through the FQDN.
 2. Confirm the disposition for the two non-approved public keys in
    `authorized_keys`, then harden `sshd` with a drop-in and rollback path.
+   Packet prepared in
+   [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md).
 3. Remove non-`verlyn13` accounts from `wheel`, sudoers, Docker, and
    service-management paths unless an account has a documented administrative
    purpose.
@@ -274,6 +289,8 @@ The Fedora-side pre-hardening detail report is summarized in
 [fedora-top-prehardening-ingest-2026-05-13.md](./fedora-top-prehardening-ingest-2026-05-13.md).
 HomeNetOps static DHCP/local DNS is summarized in
 [fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md).
+The prepared SSH hardening packet is recorded in
+[fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md).
 
 Future entries should use this shape:
 
@@ -329,6 +346,11 @@ Useful non-secret proof sources once the human has access:
   Docker group membership.
 - Pre-hardening report confirms three public keys are present for `verlyn13`;
   only the MacBook key is approved for this slice.
+- Live SSH packet preparation check now shows four active `authorized_keys`
+  lines because the `ansible@hetzner.hq` key is duplicated.
+- Live SSH packet preparation check confirms `/etc/ssh/sshd_config` includes
+  `/etc/ssh/sshd_config.d/*.conf` at line 15; the prepared drop-in uses
+  `20-jefahnierocks-admin.conf` so it wins before `50-redhat.conf`.
 - Pre-hardening report confirms broad `firewalld` workstation-zone exposure and
   Docker zone target `ACCEPT`.
 - Pre-hardening report confirms sudoers issues that need cleanup:
@@ -346,8 +368,8 @@ Useful non-secret proof sources once the human has access:
 - Use `fedora-top.home.arpa` as the stable LAN administration target.
 - Decide whether to retain, rotate, or remove the two non-approved public keys
   before SSH hardening.
-- Prepare a narrow SSH hardening packet, with rollback and a held-open session,
-  for explicit approval.
+- Apply the prepared SSH hardening packet after explicit approval, with a
+  rollback path and held-open session.
 - Prepare a narrow privilege cleanup packet for `wheel`, `docker`, sudoers,
   and service ownership.
 - Prepare Infisical/Redis retirement before relying on firewall narrowing as

@@ -2,8 +2,8 @@
 title: Fedora Top Complete Administration Instructions
 category: operations
 component: device_admin
-status: lan-identity-verified
-version: 0.5.0
+status: ssh-hardening-packet-prepared
+version: 0.6.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, hardening, handoff]
 priority: high
@@ -75,7 +75,8 @@ Exception for this first slice:
 
 This state includes the Phase 1 Fedora-side report, MacBook-side smoke test,
 remote baseline, Fedora-side pre-hardening detail report, and HomeNetOps LAN
-identity hand-back from 2026-05-13:
+identity hand-back from 2026-05-13. A MacBook-side SSH hardening packet is
+prepared but not applied.
 
 | Item | Current known state |
 |---|---|
@@ -92,7 +93,7 @@ identity hand-back from 2026-05-13:
 | MacBook SSH login | Verified as `verlyn13` using the selected 1Password-backed key |
 | `verlyn13` sudo | `sudo -n true` succeeded during smoke test |
 | Effective SSH policy | `PasswordAuthentication yes`, `AllowAgentForwarding yes`, `AllowTcpForwarding yes`, `X11Forwarding yes`, no `AllowUsers`; hardening pending |
-| Authorized keys | Three ED25519 public keys present; only the MacBook key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is approved for this slice |
+| Authorized keys | Four active key lines present; only the MacBook key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is approved for this slice; `ansible@hetzner.hq` is duplicated |
 | Firewall | `FedoraWorkstation` zone permits broad high TCP/UDP ports plus `ssh`, `mdns`, `samba-client`, and `dhcpv6-client`; Docker zone target is `ACCEPT` |
 | WARP | Absent |
 | `cloudflared` | Absent |
@@ -118,6 +119,8 @@ Phase status:
   `/home/verlyn13/device-admin-prep/fedora-top-prehardening-report-2026-05-13.md`.
 - HomeNetOps static DHCP/local DNS is complete; use
   `fedora-top.home.arpa` as the stable LAN target.
+- SSH hardening packet is prepared at
+  [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md).
 
 ## Latest Pre-Hardening Findings
 
@@ -351,6 +354,11 @@ Each step below should be done as a separate change with a rollback path and
 evidence. Do not combine everything into one remote shell session.
 
 ### 4.1 SSH Hardening
+
+Use
+[fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md)
+for the current apply, verification, and rollback commands. The block below is
+kept as the general target shape.
 
 Preconditions:
 
