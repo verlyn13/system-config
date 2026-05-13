@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: tailscale-retain-or-remove-packet-prepared
-version: 0.15.0
+status: tailscale-retained-logged-out
+version: 0.16.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege, docker, infisical, tailscale]
 priority: high
@@ -104,12 +104,14 @@ External evidence ingested from:
   `*-packet-*.md` or `*-apply-*.md` so the YAML stays the
   authoritative summary.
 - [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md)
-  for the prepared Tailscale decision packet. Two options with their
-  own approval phrases; recommended default is Option A (Remove). Live
-  state today: `tailscale-1.96.4-1` installed, `tailscaled` active and
-  enabled, logged out, UDP/41641 listener bound but blocked by the
-  post-2026-05-13 firewall narrowing, DNF repo healthy, GPG key
-  imported. Not yet approved or applied.
+  for the Tailscale decision packet (two options with their own
+  approval phrases).
+- [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md)
+  for the decision record. Guardian chose **Option B - Retain
+  logged-out**; documentation-only apply, no live host change.
+  Tailscale package, daemon, repo, GPG key, listener posture all
+  unchanged. Further Tailscale operating work is blocked on the
+  remote-admin routing design packet.
 
 Repo-safe current facts from these updates:
 
@@ -297,6 +299,15 @@ Repo-safe current facts from these updates:
   node-bound enrollment URL is emitted by `tailscale status` while
   the host is logged out; treat that URL as a sensitive artifact
   and do not record it in this repo.
+- 2026-05-13 Tailscale retain-or-remove decision was recorded as
+  documentation-only (Option B from the prepared packet). The
+  guardian chose to keep Tailscale installed and logged out as
+  transitional / break-glass design space, explicitly prohibiting
+  login, enrollment, auth-key creation, firewalld passage, package
+  upgrade, and any daemon restart in this packet's scope. The
+  current Tailscale posture is unchanged from the verification above.
+  Further Tailscale operating work is blocked on the remote-admin
+  routing design packet.
 
 ## Identity
 
@@ -460,8 +471,11 @@ Do not execute these without explicit approval:
 6. Decide whether to retain Tailscale as ACL-restricted break-glass, remove it,
    or leave it installed but logged out temporarily. Packet prepared in
    [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md);
-   awaiting explicit guardian approval. Recommended default is Option A
-   (Remove); Option B (Retain logged-out) is documented.
+   guardian chose Option B (Retain logged-out) on 2026-05-13 as
+   transitional / break-glass design space (see
+   [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md)).
+   Documentation-only; live state unchanged. Further Tailscale work is
+   blocked on the remote-admin routing design packet.
 7. Install/enroll Cloudflare WARP and install/configure `cloudflared` only
    after the Cloudflare design packet is approved.
 8. Create Cloudflare Access/private routing for SSH and optional Cockpit only

@@ -155,7 +155,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet applied; privilege cleanup packet applied; Infisical/Redis retirement packet applied; firewalld narrowing packet applied; Tailscale retain-or-remove packet prepared and approval-gated (Option A Remove recommended); WARP/Cloudflare/LUKS decisions remain pending. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet applied; privilege cleanup packet applied; Infisical/Redis retirement packet applied; firewalld narrowing packet applied; Tailscale retain-or-remove decided (Option B Retain logged-out, documentation-only); remote-admin routing design packet pending; WARP/Cloudflare/LUKS decisions remain pending. |
 
 ## Client Profiles
 
@@ -183,7 +183,8 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md) | Live apply of the firewalld narrowing packet on 2026-05-13: snapshot to `/var/backups/jefahnierocks-firewalld-narrowing-20260513T230224Z` (state, default zone, active zones, runtime + permanent zone listings, direct rules, listeners, full pre-apply zone XML, sha256 manifest); `firewall-cmd --permanent --remove-port=1025-65535/tcp,udp` and `--reload` succeeded; runtime + permanent `ports` empty post-apply; services `dhcpv6-client mdns samba-client ssh` unchanged; active zones unchanged; rich rules empty; docker zone unchanged; sshd `allowusers verlyn13` unchanged; positive SSH check from a fresh MacBook session succeeded. Rollback unused. |
 | All devices (index) | [current-status.yaml](./current-status.yaml) | Machine-readable per-device current state. Tracks applied/prepared/blocked packets, latest commits, remote-admin paths, and the next recommended action. Read this first when picking up a device-admin directive. |
 | All devices (format) | [handback-format.md](./handback-format.md) | Schema for `current-status.yaml`, the packet-state vocabulary (`applied`, `prepared`, `approval-required`, `blocked`, `planned`), the agent handback template, and rules for when to update the YAML. |
-| Fedora 44 laptop | [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md) | MacBook-side Tailscale retain-or-remove packet. Two options with their own approval phrases. Option A (Remove, recommended): forensic snapshot, `systemctl disable --now tailscaled`, `dnf remove tailscale`, remove `/var/lib/tailscale` and `/run/tailscale`, remove `/etc/yum.repos.d/tailscale.repo`, remove the Tailscale GPG key, `dnf clean metadata`. Option B (Retain logged-out): no live state change; defer login design to a future `tailscale-login-with-acl` packet. Includes a security note on the auth-URL exposure surface; recommends rotating the URL by restarting `tailscaled` if it may have been shared. Approval-gated; no live state changed while preparing. |
+| Fedora 44 laptop | [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md) | MacBook-side Tailscale retain-or-remove packet. Two options with their own approval phrases. Guardian chose Option B (Retain logged-out) on 2026-05-13 - see [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md). Documentation-only; live state unchanged. Auth-URL exposure note carried forward; no daemon restart performed. |
+| Fedora 44 laptop | [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md) | Decision record for Option B (Retain logged-out). No live host change. Tailscale package, daemon, repo, GPG key, and listener posture unchanged from the 2026-05-13T23:18:14Z verification. Operator stop rules attached: no login, no enrollment, no auth-key creation, no firewalld passage, no upgrade, no daemon restart, no auth-URL recording in repo. Further Tailscale work is blocked on the remote-admin routing design packet. |
 | Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
@@ -330,14 +331,16 @@ Before any live change, collect or decide:
   `desktop-2jj3187.home.arpa` as the target.
 - Treat Fedora LAN SSH as established and hardened, privilege cleanup
   as applied (default path), the Infisical/Redis retirement as applied
-  (default path with image removal), and the firewalld narrowing as
-  applied (default path). The Tailscale retain-or-remove packet is
-  prepared (2026-05-13) and waiting for approval (Option A Remove
-  recommended). The remaining approval-gated items are the WARP /
-  Cloudflare off-LAN design packet, LUKS/power policy, a future
-  narrow review of `verlyn13 NOPASSWD: ALL`, and a general Docker
-  hygiene pass over the `docker` zone target, unrelated exited
-  containers, and reclaimable images/volumes/build cache.
+  (default path with image removal), the firewalld narrowing as
+  applied (default path), and the Tailscale retain-or-remove decision
+  as recorded (Option B Retain logged-out, documentation-only). The
+  next-priority packet is the remote-admin routing design (LAN /
+  Tailscale / WARP+cloudflared comparison; design only). The
+  remaining approval-gated items are the WARP / Cloudflare off-LAN
+  cutover, LUKS/power policy, a future narrow review of
+  `verlyn13 NOPASSWD: ALL`, and a general Docker hygiene pass over
+  the `docker` zone target, unrelated exited containers, and
+  reclaimable images/volumes/build cache.
 - Fedora SSH hardening packet was applied on 2026-05-13; only the approved
   MacBook key remains in `authorized_keys`, and the WSL key plus both
   duplicate `ansible@hetzner.hq` entries were removed. Evidence in

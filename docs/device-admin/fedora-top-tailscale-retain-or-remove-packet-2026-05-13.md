@@ -2,8 +2,8 @@
 title: Fedora Top Tailscale Retain-or-Remove Packet - 2026-05-13
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
+status: applied
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, tailscale, off-lan, retire]
 priority: high
@@ -11,12 +11,19 @@ priority: high
 
 # Fedora Top Tailscale Retain-or-Remove Packet - 2026-05-13
 
-This packet prepares a binary decision: retain Tailscale on `fedora-top`
-in its current logged-out posture, or remove it cleanly. The remote-admin
-operating-readiness path is moving toward Cloudflare WARP and
-`cloudflared` for off-LAN access; this packet does not propose that
-design, only the Tailscale outcome. No Tailscale state was changed while
-preparing this document.
+This packet defined a binary decision: retain Tailscale on `fedora-top`
+in its current logged-out posture, or remove it cleanly. The guardian
+chose **Option B - Retain (logged-out)** as transitional / break-glass
+design space. The decision record is in
+[fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md).
+
+No live Tailscale state was changed - Option B is documentation-only.
+The remote-admin operating-readiness path continues to evolve under the
+separate
+[fedora-top-remote-admin-routing-design-2026-05-13.md](./fedora-top-remote-admin-routing-design-2026-05-13.md)
+packet.
+
+The original packet text below is preserved for reuse and audit.
 
 ## Scope
 

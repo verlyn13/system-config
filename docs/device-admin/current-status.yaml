@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-13T23:18:14Z
+last_updated: 2026-05-13T23:30:00Z
 
 devices:
   - device: fedora-top
@@ -89,30 +89,42 @@ devices:
         apply_commit: d3e44b8
         applied_at: 2026-05-13T23:03:01Z
 
-    prepared_packets:
       - name: tailscale-retain-or-remove
         packet_doc: docs/device-admin/fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md
-        prepared_at: 2026-05-13T23:18:14Z
-        state: approval-required
-        approval_phrase_excerpt: >-
-          Two phrases provided. Recommended default is Option A
-          (Remove): "I approve applying the Fedora Tailscale Remove
-          option live now: ... systemctl disable --now tailscaled;
-          dnf -y remove tailscale; ..." (see packet doc for full
-          text). Option B (Retain logged-out) is documented as the
-          alternative.
+        apply_record: docs/device-admin/fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md
+        packet_commit: 2134aaf
+        apply_commit: pending     # filled by Lane 1 commit
+        applied_at: 2026-05-13T23:30:00Z
+        outcome: retained-logged-out
+        notes: >-
+          Documentation-only apply of Option B. No live host change.
+          Tailscale package, daemon, repo, GPG key, and listener
+          posture all unchanged. Operator stop rules attached:
+          no login, no enrollment, no auth key creation, no
+          firewalld passage, no upgrade, no daemon restart, no
+          auth URL recording in repo.
+
+    prepared_packets: []
 
     blocked_items:
-      - item: tailscale-retain-or-remove-decision
+      - item: remote-admin-routing-design-pending
         owner: human
         notes: >-
-          Packet prepared 2026-05-13; awaiting guardian choice between
-          Option A (Remove, recommended) and Option B (Retain
-          logged-out). Live state today: tailscale-1.96.4-1
-          installed, tailscaled active+enabled, logged out, listener
-          on udp/41641 bound but blocked by post-narrowing firewall.
-          DNF repo healthy, GPG key imported, 1.98.1 upgrade pending
-          but not applied.
+          Tailscale retain decision recorded 2026-05-13; next gate
+          is the remote-admin routing design packet that compares
+          LAN-only SSH, Tailscale, and Cloudflare WARP/cloudflared,
+          categorizes each as current/transition/break-glass/target/
+          rejected, and enumerates evidence needed from
+          cloudflare-dns and HomeNetOps. No further Tailscale
+          operating work is authorized until that packet lands.
+      - item: tailscale-login-with-acl-pending
+        owner: human
+        notes: >-
+          If the routing design selects Tailscale as a break-glass
+          overlay, a future tailscale-login-with-acl packet must
+          design ACL scope, identity provider, auth-key lifecycle,
+          and any required firewalld passage before any tailnet
+          enrollment.
       - item: warp-and-cloudflared-design
         owner: human
         notes: >-
@@ -140,12 +152,15 @@ devices:
           workaround can be retired from routine SSH commands.
 
     approval_required:
-      - action: tailscale-retain-or-remove
-        state: approval-required
+      - action: remote-admin-routing-design
+        state: planned
         approval_phrase: >-
-          See docs/device-admin/fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md.
-          Two phrases provided (Option A Remove is the recommended
-          default; Option B Retain logged-out is the alternative).
+          A design/prep packet at
+          docs/device-admin/fedora-top-remote-admin-routing-design-2026-05-13.md
+          is being authored next. Design output is repo-only; any
+          subsequent live cutover (Tailscale enrollment, WARP
+          install, cloudflared install, firewalld passage) will
+          require its own approval phrase quoted in that packet.
       - action: docker-hygiene-packet
         state: planned
         approval_phrase: >-
@@ -163,22 +178,21 @@ devices:
 
     next_recommended_action:
       summary: >-
-        Apply the prepared Tailscale retain-or-remove packet. The
-        recommended default is Option A (Remove) because Tailscale
-        currently provides no functional value on this device
-        (logged out, listener firewall-blocked, no peer state) and
-        the Jefahnierocks off-LAN remote-admin path is moving toward
-        Cloudflare WARP + cloudflared. Option B (Retain logged-out)
-        is the alternative if a Tailscale-based break-glass overlay
-        is desired alongside the WARP path.
-      preferred_packet: tailscale-retain-or-remove
-      preferred_packet_status: approval-required
+        Author the remote-admin routing design packet. It must
+        compare LAN-only SSH (current), Tailscale (retained
+        logged-out), and Cloudflare WARP / cloudflared (target);
+        categorize each path; preserve repo boundaries between
+        system-config, HomeNetOps, and cloudflare-dns; enumerate
+        evidence needed from cloudflare-dns and HomeNetOps; and
+        list approval phrases for any future live cutover.
+      preferred_packet: remote-admin-routing-design
+      preferred_packet_status: planned
       preferred_packet_blockers:
-        - slug: guardian-approval-required
+        - slug: doc-authoring
           note: >-
-            Pick Option A (Remove, recommended) or Option B (Retain
-            logged-out). Approval phrases for both are in the packet.
+            Authoring follows the Tailscale retain decision in the
+            same change set; no external blocker.
       handback_to_human: true
 
     last_verified: 2026-05-13T23:18:14Z
-    latest_system_config_commit: d3e44b8
+    latest_system_config_commit: pending     # filled by Lane 1 commit
