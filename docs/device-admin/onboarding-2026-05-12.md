@@ -173,6 +173,7 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-authorized-key-install-2026-05-13.md](./fedora-top-authorized-key-install-2026-05-13.md) | Narrow Fedora-side handoff to install the approved MacBook public key for `verlyn13` and return repo-safe evidence. |
 | Fedora 44 laptop | [fedora-top-next-agent-handoff-2026-05-13.md](./fedora-top-next-agent-handoff-2026-05-13.md) | Fedora-side pre-hardening detail pass and report directive; copied to `/home/verlyn13/device-admin-prep/` on `fedora-top`. |
 | Fedora 44 laptop | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | MacBook-side live SSH hardening packet with key cleanup, sshd drop-in, verification, and rollback commands; prepared only, not applied. |
+| Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
 decide the administration architecture locally.
