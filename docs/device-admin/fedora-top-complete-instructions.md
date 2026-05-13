@@ -2,8 +2,8 @@
 title: Fedora Top Complete Administration Instructions
 category: operations
 component: device_admin
-status: active
-version: 0.3.0
+status: prehardening-report-ingested
+version: 0.4.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, hardening, handoff]
 priority: high
@@ -14,10 +14,9 @@ priority: high
 These instructions are for the Fedora 44 laptop currently identified as
 `fedora-top`.
 
-The immediate goal is not full local hardening. The immediate goal is to prove
-that the primary MacBook can SSH into the Fedora laptop as `verlyn13` over the
-trusted home LAN. Once that works, the remaining administration should be done
-remotely from `system-config`.
+The primary MacBook can now SSH into the Fedora laptop as `verlyn13` over the
+trusted home LAN. The next work is packetized remote hardening from
+`system-config`, not a broad local one-shot change.
 
 ## Authority
 
@@ -73,8 +72,8 @@ Exception for this first slice:
 
 ## Current Known State
 
-This state includes the Phase 1 Fedora-side report and the MacBook-side smoke
-test from 2026-05-13:
+This state includes the Phase 1 Fedora-side report, MacBook-side smoke test,
+remote baseline, and Fedora-side pre-hardening detail report from 2026-05-13:
 
 | Item | Current known state |
 |---|---|
@@ -88,14 +87,17 @@ test from 2026-05-13:
 | MacBook TCP reachability | TCP `22` reachable from MacBook |
 | MacBook SSH login | Verified as `verlyn13` using the selected 1Password-backed key |
 | `verlyn13` sudo | `sudo -n true` succeeded during smoke test |
-| Password SSH | Effective config still says `passwordauthentication yes`; hardening pending |
-| Firewall | `FedoraWorkstation` zone, broad workstation posture |
+| Effective SSH policy | `PasswordAuthentication yes`, `AllowAgentForwarding yes`, `AllowTcpForwarding yes`, `X11Forwarding yes`, no `AllowUsers`; hardening pending |
+| Authorized keys | Three ED25519 public keys present; only the MacBook key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is approved for this slice |
+| Firewall | `FedoraWorkstation` zone permits broad high TCP/UDP ports plus `ssh`, `mdns`, `samba-client`, and `dhcpv6-client`; Docker zone target is `ACCEPT` |
 | WARP | Absent |
 | `cloudflared` | Absent |
 | Tailscale | Installed and active but logged out |
 | Disk encryption | LUKS2 root/home; no remote reboot until unlock strategy is chosen |
 | Power | AC connected in Phase 1; battery `80%`, `pending-charge` |
-| Containers | Redis and Infisical were exposed on all interfaces |
+| Containers | Docker project `happy-secrets` exposes Infisical on `18080` and Redis on `6379` on all IPv4/IPv6 interfaces |
+| Sudoers | `50-mesh-ops` wrong mode, duplicate `wyn` grant, `verlyn13` `NOPASSWD: ALL`, and broad `mesh-ops` `NOPASSWD` wildcards |
+| DNF repo trust | Tailscale and Infisical repo signing-key failures observed; no keys accepted |
 
 Phase status:
 
@@ -107,6 +109,27 @@ Phase status:
 - MacBook-side SSH public-key login succeeds.
 - Remote baseline confirms SSH, firewall, user privileges, and container
   exposure still need hardening.
+- Fedora-side pre-hardening detail report is complete at
+  `/home/verlyn13/device-admin-prep/fedora-top-prehardening-report-2026-05-13.md`.
+
+## Latest Pre-Hardening Findings
+
+The latest report confirms SSH is administrable but still permissive. Do not
+disable password SSH, reload `sshd`, alter firewall policy, remove keys, edit
+sudoers, stop containers, import DNF signing keys, enroll Tailscale, or change
+power/LUKS settings without an explicit packet approval.
+
+Decisions needed before implementation:
+
+- Retain, rotate, or remove the `ansible@hetzner.hq` and
+  `verlyn13@wsl-fedora42-to-thinkpad-t440s` public keys from
+  `verlyn13` `authorized_keys`.
+- Decide whether `mesh-ops` remains required after Infisical is retired from
+  the laptop.
+- Decide whether Tailscale should become ACL-restricted break-glass, be
+  removed, or stay installed but logged out for now.
+- Decide whether to remove Infisical repos with the service retirement and
+  whether to repair Tailscale repo trust only if Tailscale remains in scope.
 
 ## Phase 1 - Fedora-Side SSH Foothold
 
@@ -326,6 +349,7 @@ Preconditions:
 - A public-key SSH login from the MacBook to `verlyn13` works.
 - A second SSH session can be opened before closing the first.
 - The human has a local console fallback.
+- The two non-approved existing public keys have an explicit disposition.
 
 Recommended target drop-in:
 
@@ -423,6 +447,8 @@ Goal:
 - `verlyn13` remains the only mission-critical admin/service owner.
 - Exploratory users remain usable but lose sudo, Docker, and service-control
   authority unless explicitly justified.
+- `mesh-ops` is retained only if it has a current documented purpose after
+  Infisical is retired from this laptop.
 
 Read-only precheck:
 

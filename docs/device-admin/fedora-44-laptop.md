@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: ssh-foothold-verified
-version: 0.4.0
+status: prehardening-report-ingested
+version: 0.5.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password]
 priority: high
@@ -13,8 +13,8 @@ priority: high
 
 This record captures non-secret administration posture for the Fedora 44
 laptop. MacBook-to-Fedora public-key SSH as `verlyn13` is verified, and a
-remote read-only baseline has been collected. The device is not fully hardened
-or fully managed yet.
+remote pre-hardening detail baseline has been collected. The device is not
+fully hardened or fully managed yet.
 
 ## Source Input
 
@@ -43,6 +43,10 @@ External evidence ingested from:
 - [fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md)
   for the repo-safe key-install result, successful MacBook SSH test, and
   remote read-only baseline.
+- `/home/verlyn13/device-admin-prep/fedora-top-prehardening-report-2026-05-13.md`
+  on `fedora-top`
+- [fedora-top-prehardening-ingest-2026-05-13.md](./fedora-top-prehardening-ingest-2026-05-13.md)
+  for the repo-safe pre-hardening detail ingest.
 
 Repo-safe current facts from these updates:
 
@@ -86,6 +90,31 @@ Repo-safe current facts from these updates:
 - Remote baseline confirms effective SSH still has `PasswordAuthentication
   yes`, `X11Forwarding yes`, `AllowTcpForwarding yes`, and
   `AllowAgentForwarding yes`; SSH is usable but not hardened.
+- Pre-hardening detail report confirms `/home/verlyn13/.ssh/authorized_keys`
+  contains three ED25519 public keys. Only the MacBook key fingerprint
+  `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is approved for this
+  slice; the `ansible@hetzner.hq` and
+  `verlyn13@wsl-fedora42-to-thinkpad-t440s` keys need a retain/rotate/remove
+  decision before SSH hardening.
+- Pre-hardening detail report verifies `FedoraWorkstation` permits
+  `1025-65535/tcp`, `1025-65535/udp`, `ssh`, `mdns`, `samba-client`, and
+  `dhcpv6-client`; the Docker zone is active with target `ACCEPT`.
+- Pre-hardening detail report verifies `verlyn13`, `wyn`, `axel`, `ila`, and
+  `mesh-ops` remain in `wheel`; `verlyn13`, `ila`, and `mesh-ops` remain in
+  `docker`.
+- Pre-hardening detail report flags sudoers issues: wrong mode on
+  `/etc/sudoers.d/50-mesh-ops`, duplicate explicit `wyn ALL=(ALL) ALL`,
+  `verlyn13` `NOPASSWD: ALL`, and broad `mesh-ops` `NOPASSWD` wildcards.
+- Pre-hardening detail report verifies Docker project `happy-secrets` still
+  publishes Infisical on `18080` and Redis on `6379` on all IPv4/IPv6
+  interfaces.
+- Pre-hardening detail report verifies DNF signing-key failures for Tailscale
+  and Infisical repos; no signing keys were accepted.
+- Pre-hardening detail report verifies Tailscale is installed and `tailscaled`
+  is active but logged out; WARP and `cloudflared` are absent; Cockpit socket
+  is disabled.
+- Pre-hardening detail report verifies AC online, Btrfs on LUKS2, TPM2
+  support, Secure Boot disabled, and dual boot with Windows Boot Manager.
 
 ## Identity
 
@@ -142,8 +171,11 @@ Current state:
 - MacBook TCP reachability to `192.168.0.206:22` is verified.
 - MacBook public-key SSH as `verlyn13` is verified.
 - `verlyn13` currently has non-interactive sudo capability.
-- Prior source report says password authentication is enabled,
-  WARP/cloudflared are absent, and Tailscale is installed but logged out.
+- Pre-hardening detail report verifies password authentication, agent
+  forwarding, TCP forwarding, and X11 forwarding are still enabled; no
+  `AllowUsers` rule is active.
+- Pre-hardening detail report verifies WARP and `cloudflared` are absent and
+  Tailscale is installed but logged out.
 - Do not claim this Fedora laptop is fully managed until SSH hardening,
   firewall narrowing, privilege cleanup, service exposure cleanup, and
   recovery/power posture are completed and verified.
@@ -161,20 +193,23 @@ Phase 1 current result:
 - TCP `22` is reachable from the MacBook.
 - Public-key SSH from the MacBook succeeds as `verlyn13`.
 - Remote read-only baseline has been collected.
+- Fedora-side pre-hardening detail report has been collected.
 
 Next work should do the larger hardening remotely from the MacBook:
 
+- HomeNetOps static DHCP/local DNS request using Wi-Fi MAC
+  `66:B5:8C:F5:45:74`, current IP `192.168.0.206`, and hostname
+  `fedora-top`.
 - SSH drop-in hardening and password-SSH disablement after a rollback path is
-  ready.
-- `firewalld` narrowing for SSH and removal of broad workstation-zone
-  exposure.
+  ready and the two non-approved public keys have a disposition.
 - Privilege cleanup so `verlyn13` is the only mission-critical
   admin/service owner.
 - Retirement of laptop-hosted Infisical and rebinding/stopping broad Redis or
   Docker-published admin surfaces.
+- `firewalld` narrowing for SSH and removal of broad workstation-zone
+  exposure after SSH and service-retirement sequencing is clear.
 - Fedora update/GPG-key decisions.
 - LUKS/reboot strategy and AC/no-sleep policy.
-- HomeNetOps static DHCP/local DNS after Wi-Fi MAC is confirmed.
 
 ## Security Posture
 
@@ -183,10 +218,10 @@ Next work should do the larger hardening remotely from the MacBook:
 | Disk encryption | LUKS/FDE status verified; recovery material stored in 1Password only if applicable. | Source report says root/home volume is LUKS2. Remote reboot is blocked unless TPM2/FIDO2/initramfs/local unlock strategy is chosen. |
 | SSH daemon | Enabled only with key-only admin access and private routing constraints. | Enabled, active, all-interface listen. Effective config is verified and not hardened yet. |
 | SSH auth | Public-key auth confirmed before disabling password SSH. | Public-key login from MacBook succeeds. Effective config still has `passwordauthentication yes`; do not leave this as final posture. |
-| Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Latest report confirms FedoraWorkstation zone allows broad high ports plus `ssh`, `mdns`, and `samba-client` on Wi-Fi. |
-| Updates | Fedora updates current or scheduled; repo GPG prompts resolved deliberately. | Latest report says DNF refresh prompted for Infisical/Tailscale signing-key imports; prompts were not accepted. |
-| Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Latest report confirms Redis on all interfaces at `6379` and Infisical on all interfaces at `18080`. |
-| Power/recovery | AC connected; no sleep/hibernate on AC; no remote reboot until LUKS strategy is proven. | Phase 1 report says AC is now connected and battery is `80%`, `pending-charge`; prior readiness report showed recent suspend, so AC/no-sleep policy still needs deliberate verification before relying on remote availability. |
+| Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Latest report confirms FedoraWorkstation zone allows broad high TCP/UDP ports plus `ssh`, `mdns`, `samba-client`, and `dhcpv6-client`; Docker zone target is `ACCEPT`. |
+| Updates | Fedora updates current or scheduled; repo GPG prompts resolved deliberately. | Latest report says DNF refresh found a pending VS Code update and signing-key failures for Infisical/Tailscale repos; prompts were not accepted. |
+| Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Latest report confirms Redis on all interfaces at `6379` and Infisical on all interfaces at `18080`; Postgres is container-internal. |
+| Power/recovery | AC connected; no sleep/hibernate on AC; no remote reboot until LUKS strategy is proven. | Latest report says AC is online and battery is `80%`, `pending-charge`; prior suspend/resume is recorded, so AC/no-sleep policy still needs deliberate verification before relying on remote availability. |
 
 ## Approval-Gated Build Phases
 
@@ -194,20 +229,25 @@ Do not execute these without explicit approval:
 
 0. Establish the LAN SSH foothold for `verlyn13` from the MacBook.
    Completed on 2026-05-13; remote management can now continue from here.
-1. Remove non-`verlyn13` accounts from `wheel`, sudoers, Docker, and
+1. Request HomeNetOps static DHCP/local DNS using the verified Wi-Fi MAC,
+   current IP, and hostname.
+2. Confirm the disposition for the two non-approved public keys in
+   `authorized_keys`, then harden `sshd` with a drop-in and rollback path.
+3. Remove non-`verlyn13` accounts from `wheel`, sudoers, Docker, and
    service-management paths unless an account has a documented administrative
    purpose.
-2. Confirm `verlyn13` key access, then harden `sshd` with a drop-in.
-3. Install/enroll Cloudflare WARP and install/configure `cloudflared`.
-4. Create Cloudflare Access/private routing for SSH and optional Cockpit.
-5. Tighten `firewalld` after Cloudflare access is proven.
-6. Retire Infisical from the laptop and stop or rebind Docker-published Redis
+4. Retire Infisical from the laptop and stop or rebind Docker-published Redis
    and admin surfaces so they are not exposed on the LAN.
-7. Configure AC/no-sleep/no-hibernate policy for the summer period.
-8. Choose and test the LUKS remote-reboot strategy.
-9. Decide whether to enroll Tailscale as ACL-restricted break-glass or remove
-   it.
-10. Optionally investigate AMT/vPro in BIOS, but do not assume it is live.
+5. Tighten `firewalld` after SSH and service-retirement sequencing is clear.
+6. Decide whether to retain Tailscale as ACL-restricted break-glass, remove it,
+   or leave it installed but logged out temporarily.
+7. Install/enroll Cloudflare WARP and install/configure `cloudflared` only
+   after the Cloudflare design packet is approved.
+8. Create Cloudflare Access/private routing for SSH and optional Cockpit only
+   after WARP/Cloudflare policy is approved.
+9. Configure AC/no-sleep/no-hibernate policy for the summer period.
+10. Choose and test the LUKS remote-reboot strategy.
+11. Optionally investigate AMT/vPro in BIOS, but do not assume it is live.
 
 ## Evidence
 
@@ -215,6 +255,8 @@ Source evidence has been ingested from the downloaded Fedora reports.
 MacBook-side TCP and SSH checks plus the remote read-only baseline were run
 from this repo session and recorded in
 [fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md).
+The Fedora-side pre-hardening detail report is summarized in
+[fedora-top-prehardening-ingest-2026-05-13.md](./fedora-top-prehardening-ingest-2026-05-13.md).
 
 Future entries should use this shape:
 
@@ -249,7 +291,9 @@ Useful non-secret proof sources once the human has access:
 - Latest readiness report freshly verifies `wyn` has admin rights through
   `wheel` and duplicate `(ALL) ALL` sudo grants.
 - Latest readiness report confirms SSH is enabled with broad listen scope.
-  Effective SSH auth settings still need sudo-backed verification.
+  Pre-hardening report verifies effective SSH settings are permissive:
+  password auth, agent forwarding, TCP forwarding, and X11 forwarding are
+  enabled, and no `AllowUsers` constraint is active.
 - Latest readiness report confirms WARP and `cloudflared` are absent; Tailscale
   is installed but logged out.
 - Latest readiness report confirms AC/power readiness is not met and Docker
@@ -262,6 +306,17 @@ Useful non-secret proof sources once the human has access:
 - MacBook-side check confirms public-key SSH login as `verlyn13` succeeds.
 - Remote baseline confirms `verlyn13` currently has non-interactive sudo and
   Docker group membership.
+- Pre-hardening report confirms three public keys are present for `verlyn13`;
+  only the MacBook key is approved for this slice.
+- Pre-hardening report confirms broad `firewalld` workstation-zone exposure and
+  Docker zone target `ACCEPT`.
+- Pre-hardening report confirms sudoers issues that need cleanup:
+  `50-mesh-ops` mode, duplicate `wyn` grant, `verlyn13` `NOPASSWD: ALL`, and
+  broad `mesh-ops` wildcards.
+- Pre-hardening report confirms Infisical and Redis remain published on all
+  IPv4/IPv6 interfaces.
+- Pre-hardening report confirms Tailscale/Infisical repo signing-key failures
+  were observed and no keys were accepted.
 
 ### Safe Next Manual Step
 
@@ -269,10 +324,16 @@ Useful non-secret proof sources once the human has access:
   batch.
 - Prepare HomeNetOps static DHCP/local DNS handoff using Wi-Fi MAC
   `66:B5:8C:F5:45:74`, current IP `192.168.0.206`, hostname `fedora-top`.
-- Prepare a narrow SSH hardening packet, with rollback, for explicit approval.
-- Prepare a narrow firewalld packet after SSH hardening is ready.
+- Decide whether to retain, rotate, or remove the two non-approved public keys
+  before SSH hardening.
+- Prepare a narrow SSH hardening packet, with rollback and a held-open session,
+  for explicit approval.
 - Prepare a narrow privilege cleanup packet for `wheel`, `docker`, sudoers,
   and service ownership.
+- Prepare Infisical/Redis retirement before relying on firewall narrowing as
+  the only service-exposure control.
+- Prepare a narrow firewalld packet after SSH and service-retirement sequencing
+  is clear.
 - Use Wi-Fi MAC `66:B5:8C:F5:45:74` and current IP `192.168.0.206` if
   HomeNetOps static DHCP/local DNS planning is requested.
 - After SSH is verified, remotely live-review users, groups, sudoers,
@@ -298,6 +359,11 @@ Useful non-secret proof sources once the human has access:
 - Approval for SSH hardening implementation.
 - Approval for firewall narrowing implementation.
 - Approval for privilege cleanup implementation.
+- Decision on retaining, rotating, or removing the two non-approved SSH public
+  keys.
+- Decision on whether `mesh-ops` remains required after Infisical retirement.
+- Decision on whether to remove or repair Infisical and Tailscale DNF repo
+  trust paths.
 - Cloudflare package repo setup and WARP/cloudflared installation.
 - Firewall changes after an alternate admin path is proven.
 - 1Password recovery/admin credential item creation or update.
