@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: prehardening-report-ingested
-version: 0.5.0
+status: lan-identity-verified
+version: 0.6.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password]
 priority: high
@@ -13,8 +13,8 @@ priority: high
 
 This record captures non-secret administration posture for the Fedora 44
 laptop. MacBook-to-Fedora public-key SSH as `verlyn13` is verified, and a
-remote pre-hardening detail baseline has been collected. The device is not
-fully hardened or fully managed yet.
+stable HomeNetOps LAN identity is verified. The device is not fully hardened or
+fully managed yet.
 
 ## Source Input
 
@@ -47,6 +47,9 @@ External evidence ingested from:
   on `fedora-top`
 - [fedora-top-prehardening-ingest-2026-05-13.md](./fedora-top-prehardening-ingest-2026-05-13.md)
   for the repo-safe pre-hardening detail ingest.
+- HomeNetOps hand-back from 2026-05-13
+- [fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md)
+  for the repo-safe static DHCP/local DNS ingest.
 
 Repo-safe current facts from these updates:
 
@@ -115,6 +118,15 @@ Repo-safe current facts from these updates:
   is disabled.
 - Pre-hardening detail report verifies AC online, Btrfs on LUKS2, TPM2
   support, Secure Boot disabled, and dual boot with Windows Boot Manager.
+- HomeNetOps hand-back confirms static DHCP already in place for Wi-Fi MAC
+  `66:b5:8c:f5:45:74`, retaining `192.168.0.206`.
+- HomeNetOps hand-back confirms Unbound local DNS
+  `fedora-top.home.arpa -> 192.168.0.206`, UUID
+  `ce8c9be1-7b03-4965-8f40-d3adc8a079ac`.
+- HomeNetOps hand-back verifies `dig fedora-top.home.arpa +short` resolves to
+  `192.168.0.206` and `nc -vz -G 3 fedora-top.home.arpa 22` succeeds.
+- HomeNetOps hand-back confirms no WAN, public DNS, Cloudflare, WARP,
+  Tailscale, firewall, or Wi-Fi WoL changes were made.
 
 ## Identity
 
@@ -133,10 +145,12 @@ Repo-safe current facts from these updates:
 |---|---|
 | Wired MAC | Pending device access |
 | Wi-Fi MAC | `66:B5:8C:F5:45:74`, verified in Phase 1 report |
-| Current LAN IP | `192.168.0.206/24` on Wi-Fi from Phase 1 report; no static IP is assigned yet |
+| Current LAN IP | `192.168.0.206/24` on Wi-Fi; static via OPNsense ISC DHCPv4 reservation |
 | Tailscale identity | Tailscale installed and service active but logged out; no Tailscale IP in source report |
 | WARP identity | WARP not installed in source report |
-| DNS / hostname record | Planned only; no DNS change approved |
+| DNS / hostname record | `fedora-top.home.arpa -> 192.168.0.206`, verified by HomeNetOps |
+| HomeNetOps DNS UUID | `ce8c9be1-7b03-4965-8f40-d3adc8a079ac` |
+| WoL | Not configured; Wi-Fi laptop and no HomeNetOps policy for this device class |
 
 ## Administration Model
 
@@ -168,7 +182,8 @@ Current state:
 
 - Phase 1 confirms OpenSSH server is enabled, active, and listening on all
   IPv4/IPv6 interfaces.
-- MacBook TCP reachability to `192.168.0.206:22` is verified.
+- MacBook TCP reachability to `fedora-top.home.arpa:22` and
+  `192.168.0.206:22` is verified.
 - MacBook public-key SSH as `verlyn13` is verified.
 - `verlyn13` currently has non-interactive sudo capability.
 - Pre-hardening detail report verifies password authentication, agent
@@ -190,16 +205,14 @@ Phase 1 current result:
 
 - Fedora-side checks are complete.
 - AC power is connected.
-- TCP `22` is reachable from the MacBook.
+- TCP `22` is reachable from the MacBook by stable FQDN and IP.
 - Public-key SSH from the MacBook succeeds as `verlyn13`.
 - Remote read-only baseline has been collected.
 - Fedora-side pre-hardening detail report has been collected.
+- HomeNetOps static DHCP/local DNS is complete.
 
 Next work should do the larger hardening remotely from the MacBook:
 
-- HomeNetOps static DHCP/local DNS request using Wi-Fi MAC
-  `66:B5:8C:F5:45:74`, current IP `192.168.0.206`, and hostname
-  `fedora-top`.
 - SSH drop-in hardening and password-SSH disablement after a rollback path is
   ready and the two non-approved public keys have a disposition.
 - Privilege cleanup so `verlyn13` is the only mission-critical
@@ -231,6 +244,8 @@ Do not execute these without explicit approval:
    Completed on 2026-05-13; remote management can now continue from here.
 1. Request HomeNetOps static DHCP/local DNS using the verified Wi-Fi MAC,
    current IP, and hostname.
+   Completed on 2026-05-13; `fedora-top.home.arpa` resolves to
+   `192.168.0.206` and SSH on TCP `22` is reachable through the FQDN.
 2. Confirm the disposition for the two non-approved public keys in
    `authorized_keys`, then harden `sshd` with a drop-in and rollback path.
 3. Remove non-`verlyn13` accounts from `wheel`, sudoers, Docker, and
@@ -257,6 +272,8 @@ from this repo session and recorded in
 [fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md).
 The Fedora-side pre-hardening detail report is summarized in
 [fedora-top-prehardening-ingest-2026-05-13.md](./fedora-top-prehardening-ingest-2026-05-13.md).
+HomeNetOps static DHCP/local DNS is summarized in
+[fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md).
 
 Future entries should use this shape:
 
@@ -301,6 +318,10 @@ Useful non-secret proof sources once the human has access:
 - Phase 1 Fedora-side report confirms AC is now connected, Wi-Fi MAC is
   `66:B5:8C:F5:45:74`, TCP `22` is listening, and
   `/home/verlyn13/.ssh/authorized_keys` permissions are correct.
+- HomeNetOps hand-back confirms static DHCP for Wi-Fi MAC
+  `66:b5:8c:f5:45:74`, IP `192.168.0.206`, and local FQDN
+  `fedora-top.home.arpa`.
+- HomeNetOps hand-back verifies FQDN resolution and TCP `22` reachability.
 - Authorized-key install report confirms the selected MacBook public key is
   present with correct ownership, permissions, and SELinux context.
 - MacBook-side check confirms public-key SSH login as `verlyn13` succeeds.
@@ -322,8 +343,7 @@ Useful non-secret proof sources once the human has access:
 
 - Treat the SSH foothold as verified. Do not perform broad hardening in one
   batch.
-- Prepare HomeNetOps static DHCP/local DNS handoff using Wi-Fi MAC
-  `66:B5:8C:F5:45:74`, current IP `192.168.0.206`, hostname `fedora-top`.
+- Use `fedora-top.home.arpa` as the stable LAN administration target.
 - Decide whether to retain, rotate, or remove the two non-approved public keys
   before SSH hardening.
 - Prepare a narrow SSH hardening packet, with rollback and a held-open session,
@@ -350,7 +370,7 @@ Useful non-secret proof sources once the human has access:
 - Stop or rebind Redis and any remaining Docker-published admin surfaces so
   they are not exposed on the LAN.
 - Decide whether a static DHCP mapping or local DNS record should be requested
-  through HomeNetOps.
+  through HomeNetOps only if future network identity changes are needed.
 - Connect AC power before relying on this device remotely.
 
 ### Blocked Pending Human/Device Access

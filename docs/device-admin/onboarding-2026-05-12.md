@@ -59,8 +59,8 @@ repo.
 
 ## Returned Device Updates
 
-The following device-side prep outputs were received from
-`/Users/verlyn13/Documents/temp` and ingested as external evidence references:
+The following device-side, HomeNetOps, and operator hand-back outputs were
+ingested as external evidence references:
 
 | Source document | Device | Repo-safe facts captured here |
 |---|---|---|
@@ -74,6 +74,7 @@ The following device-side prep outputs were received from
 | `/Users/verlyn13/Downloads/fedora-top-phase-1-ssh-foothold-report-2026-05-13.md` plus [fedora-top-phase-1-ssh-foothold-2026-05-13.md](./fedora-top-phase-1-ssh-foothold-2026-05-13.md) | `fedora-top` | Phase 1 Fedora-side checks confirm AC connected, Wi-Fi MAC `66:B5:8C:F5:45:74`, current IP `192.168.0.206/24`, `sshd` enabled/active/listening on TCP `22`, and `authorized_keys` permissions correct. MacBook-side TCP `22` reachability succeeded, but public-key SSH login failed because the approved MacBook key is not yet installed/selected. |
 | `/Users/verlyn13/Downloads/fedora-top-authorized-key-install-report-2026-05-13.md` plus [fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md) | `fedora-top` | Authorized-key install succeeded for approved key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8`; MacBook public-key SSH as `verlyn13` now succeeds. Remote baseline confirms SSH is usable but not hardened, `PasswordAuthentication yes` remains, FedoraWorkstation firewall is broad, elevated group memberships remain, and Infisical/Redis are still LAN-exposed. |
 | `/home/verlyn13/device-admin-prep/fedora-top-prehardening-report-2026-05-13.md` plus [fedora-top-prehardening-ingest-2026-05-13.md](./fedora-top-prehardening-ingest-2026-05-13.md) | `fedora-top` | Fedora-side pre-hardening detail report confirms SSH is reachable but permissive, three `authorized_keys` entries exist with only one approved for this slice, firewall and Docker zones are broad, sudoers has mode/duplicate/NOPASSWD issues, Infisical and Redis are LAN-published, Tailscale is logged out, WARP/cloudflared are absent, AC is online, and LUKS2/TPM2/dual-boot facts are verified. |
+| HomeNetOps hand-back plus [fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md) | `fedora-top` | HomeNetOps confirms static DHCP via OPNsense ISC DHCPv4 for Wi-Fi MAC `66:b5:8c:f5:45:74`, retained IP `192.168.0.206`, local DNS `fedora-top.home.arpa`, Unbound UUID `ce8c9be1-7b03-4965-8f40-d3adc8a079ac`, FQDN resolution, SSH TCP `22` reachability, and no WAN/public DNS/Cloudflare/WARP/Tailscale/firewall/WoL changes. |
 
 The BIOS checklist artifact in the same directory is a useful operator runbook,
 but the result artifact is the state evidence that should drive this record.
@@ -90,8 +91,10 @@ slice:
   creation.
 - Both devices will live on the same home LAN context as
   `nas.jefahnierocks.com` and `opnsense.jefahnierocks.com`.
-- Neither device currently has a static IP address. Static DHCP, DNS, or
-  hostname records remain HomeNetOps/OPNsense approval-gated work.
+- At the start of this slice, neither device had a static IP address.
+  HomeNetOps has since completed static DHCP/local DNS for
+  `desktop-2jj3187` and `fedora-top`. Future DHCP, DNS, or hostname changes
+  remain HomeNetOps/OPNsense approval-gated work.
 - Windows BitLocker is not part of the target state for this slice. Do not
   create a BitLocker recovery item unless a later explicit decision enables
   BitLocker.
@@ -148,7 +151,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13` is verified and pre-hardening detail report is ingested; SSH/firewall/privilege/service hardening remains pending and approval-gated. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH/firewall/privilege/service hardening remains pending and approval-gated. |
 
 ## Client Profiles
 
@@ -286,10 +289,10 @@ operator-controlled path such as:
 | OS version/build | Windows 11 Pro 24H2, build 26100, from source report | Fedora Linux 44 Workstation, kernel `7.0.4-200.fc44.x86_64`, from source report |
 | Intended user/owner | Jefahnierocks-owned shared family workstation; `jeffr` current admin and kid standard users from source report | Jefahnierocks-owned Wyn summer-use laptop; `verlyn13` is the sole mission-critical admin/service owner |
 | Physical/admin context | Home LAN behind OPNsense, same LAN context as `nas.jefahnierocks.com` and `opnsense.jefahnierocks.com`; Ethernet now connected after operator action; BIOS power/WoL prep completed | Home LAN behind OPNsense, same LAN context as `nas.jefahnierocks.com` and `opnsense.jefahnierocks.com`; laptop on Wi-Fi; AC connected in Phase 1; no unattended reboot until LUKS strategy is chosen |
-| MAC / LAN IP / overlay identity | Ethernet MAC `18:C0:4D:39:7F:49`; static IP `192.168.0.217`; FQDN `desktop-2jj3187.home.arpa`; Wi-Fi MAC `CC:D9:AC:1F:92:7B` intentionally not mapped; WARP absent | Wi-Fi MAC `66:B5:8C:F5:45:74`; current IP `192.168.0.206/24`; Tailscale installed but logged out; WARP absent |
+| MAC / LAN IP / overlay identity | Ethernet MAC `18:C0:4D:39:7F:49`; static IP `192.168.0.217`; FQDN `desktop-2jj3187.home.arpa`; Wi-Fi MAC `CC:D9:AC:1F:92:7B` intentionally not mapped; WARP absent | Wi-Fi MAC `66:B5:8C:F5:45:74`; static IP `192.168.0.206`; FQDN `fedora-top.home.arpa`; Tailscale installed but logged out; WARP absent |
 | Local admin credential item | Planned; not created | Planned; not created |
 | Recovery key item | No BitLocker recovery item needed; BitLocker is not in target state for this slice | Planned; not created; LUKS2 present in source report |
-| Remote access enabled | Partial: LAN RDP enabled, firewall-scoped to `192.168.0.0/24`, TCP `3389` reachable from MacBook using `desktop-2jj3187.home.arpa`, interactive GUI management verified, and WoL verified. OpenSSH/WARP absent and duplicate stopped `cloudflared` services remain | Partial: LAN SSH as `verlyn13` from the MacBook is verified. SSH still allows password auth and broad forwarding, has no `AllowUsers`, and contains two non-approved existing public keys that need disposition before hardening. |
+| Remote access enabled | Partial: LAN RDP enabled, firewall-scoped to `192.168.0.0/24`, TCP `3389` reachable from MacBook using `desktop-2jj3187.home.arpa`, interactive GUI management verified, and WoL verified. OpenSSH/WARP absent and duplicate stopped `cloudflared` services remain | Partial: LAN SSH as `verlyn13` from the MacBook is verified using `fedora-top.home.arpa` or `192.168.0.206`. SSH still allows password auth and broad forwarding, has no `AllowUsers`, and contains two non-approved existing public keys that need disposition before hardening. |
 | Disk encryption verified | BitLocker off by operator attestation; agent-side elevated check still pending | LUKS2 root/home encryption reported; remote reboot blocked unless unlock strategy is solved |
 | Firewall verified | Ethernet profile now `Private`; custom `Jefahnierocks RDP LAN TCP/UDP 3389` rules scoped to `192.168.0.0/24`; built-in RDP rules disabled | `firewalld` active; FedoraWorkstation allows broad high TCP/UDP ports plus `ssh`, `mdns`, `samba-client`, and `dhcpv6-client`; Docker zone target is `ACCEPT` |
 | Patch/update posture verified | Windows Update and NVIDIA driver current by operator report; BIOS/UEFI posture improved; RDP/power LAN apply complete; HomeNetOps static DHCP/DNS/WoL complete; `cloudflared` status still pending Cloudflare truth refresh | Firmware current at prior capture; DNF refresh hit signing-key failures for Tailscale and Infisical repos, and no keys were accepted |
@@ -312,17 +315,16 @@ Before any live change, collect or decide:
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
 - Treat Fedora LAN SSH as established. Prepare the next approval-gated packets:
-  HomeNetOps static DHCP/local DNS, SSH key-disposition and hardening,
-  privilege cleanup, Infisical/Redis retirement, firewalld narrowing,
-  Tailscale/WARP/Cloudflare decision, and LUKS/power policy.
+  SSH key-disposition and hardening, privilege cleanup, Infisical/Redis
+  retirement, firewalld narrowing, Tailscale/WARP/Cloudflare decision, and
+  LUKS/power policy.
 - Decide whether to retain, rotate, or remove the two non-approved existing
   public keys in `verlyn13` `authorized_keys`.
 - Decide whether `mesh-ops` remains required after Infisical is retired from
   the laptop.
 - Decide whether to remove retired Infisical DNF repos and whether to repair
   Tailscale repo trust only if Tailscale remains part of the target state.
-- Decide whether the Fedora laptop should get a HomeNetOps-managed static DHCP
-  mapping or local DNS record using Wi-Fi MAC `66:B5:8C:F5:45:74`.
+- Use `fedora-top.home.arpa` as the stable Fedora LAN SSH target.
 - Decide whether Fedora keeps Tailscale as break-glass or removes it.
 - Decide Fedora LUKS strategy: no unattended reboot, TPM2 auto-unlock, FIDO2,
   or initramfs SSH unlock.
