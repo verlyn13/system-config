@@ -3,7 +3,7 @@ title: Device Agent Handoff - fedora-top
 category: operations
 component: device_admin
 status: draft
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, handoff, fedora, ssh, luks, cloudflare, warp]
 priority: high
@@ -16,8 +16,10 @@ This is the handoff for an agent running locally on the Fedora laptop
 
 ## Mission
 
-Prepare a fresh, repo-safe readiness report for Jefahnierocks device
-administration. This is a prep pass, not an implementation pass.
+Prepare a minimal SSH foothold for Jefahnierocks device administration, then
+return a repo-safe readiness report. This is not the full hardening pass.
+Once the MacBook can SSH in as `verlyn13`, the remaining management should be
+done remotely from `system-config`.
 
 The local Fedora report contains useful facts, but it is not authoritative.
 Jefahnierocks owns device administration from `system-config`, with
@@ -53,8 +55,7 @@ Stop and ask before any of these:
   credentials, OAuth credentials, shell history, or sensitive environment
   variables.
 - Changing users, groups, sudoers, passwords, or PAM.
-- Reloading or changing SSH configuration.
-- Disabling password SSH.
+- Changing SSH daemon configuration or disabling password SSH.
 - Installing, removing, enabling, or enrolling WARP, `cloudflared`, Tailscale,
   Cockpit, or other management agents.
 - Changing Cloudflare Tunnel, Access, Gateway, WARP, DNS, or device profile
@@ -76,6 +77,67 @@ need to save a local artifact, use a user-local path such as:
 
 Do not include raw logs that contain secrets. Prefer short command summaries
 and redacted outputs.
+
+## Allowed SSH Foothold Work
+
+Do this only when the human explicitly says this is the SSH foothold phase.
+
+Goal: prove MacBook-to-Fedora SSH as `verlyn13` over the trusted LAN. Do not
+try to finish all hardening locally.
+
+Allowed changes:
+
+- Create `/home/verlyn13/.ssh/` if it is missing.
+- Install one human-approved public key for `verlyn13` in
+  `/home/verlyn13/.ssh/authorized_keys`.
+- Correct ownership and permissions on `/home/verlyn13/.ssh` and
+  `authorized_keys`.
+- Run `restorecon` on `/home/verlyn13/.ssh` if SELinux tooling is available.
+- Start `sshd` only if it is installed but not running and the human approves
+  that start in the local session.
+
+Still not allowed in this foothold phase:
+
+- Do not disable password SSH yet.
+- Do not remove `wyn`, `axel`, `ila`, or `mesh-ops` from groups yet.
+- Do not edit `/etc/ssh/sshd_config` or files under `/etc/ssh/sshd_config.d/`.
+- Do not change `firewalld` unless SSH is blocked and the human approves a
+  LAN-only temporary allow rule.
+- Do not install WARP, `cloudflared`, Cockpit, Tailscale enrollment, or any
+  management agent.
+- Do not stop Infisical, Redis, Docker, or user services yet.
+
+Safe key install pattern, using only a public key, if the local session is
+already running as `verlyn13`:
+
+```bash
+APPROVED_PUBLIC_KEY='<paste one approved public key line here>'
+
+install -d -m 700 "$HOME/.ssh"
+touch "$HOME/.ssh/authorized_keys"
+chmod 600 "$HOME/.ssh/authorized_keys"
+grep -qxF "$APPROVED_PUBLIC_KEY" "$HOME/.ssh/authorized_keys" ||
+  printf '%s\n' "$APPROVED_PUBLIC_KEY" >> "$HOME/.ssh/authorized_keys"
+command -v restorecon >/dev/null 2>&1 &&
+  restorecon -Rv "$HOME/.ssh"
+```
+
+If the local session is not `verlyn13`, ask the human before using `sudo`, then
+write only to `/home/verlyn13/.ssh/authorized_keys` and set owner
+`verlyn13:verlyn13`, directory mode `700`, file mode `600`.
+
+Do not paste a private key. If the approved public key is not available,
+report that as blocked instead of generating or guessing one.
+
+MacBook-side smoke test to request from the operator:
+
+```bash
+nc -vz -G 3 <fedora-lan-ip> 22
+ssh verlyn13@<fedora-lan-ip> 'hostname; whoami; id; sudo -n true || echo sudo-needs-human'
+```
+
+Keep password SSH enabled until this test succeeds with public-key auth and a
+local fallback path is still available.
 
 ## Read-Only Checks
 
@@ -224,6 +286,10 @@ Redacted evidence:
 
 Ask the Jefahnierocks operator to decide:
 
+- Whether the MacBook-side SSH smoke test succeeded as `verlyn13`.
+- Whether to request a HomeNetOps static DHCP/local DNS record now that the
+  Wi-Fi MAC and LAN IP are known.
+- Whether to proceed with the remote hardening phase from `system-config`.
 - Whether Tailscale should be retained as ACL-restricted break-glass or
   removed.
 - Which LUKS strategy to use before any unattended reboot is attempted.

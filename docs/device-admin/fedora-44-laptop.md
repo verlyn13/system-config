@@ -3,7 +3,7 @@ title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
 status: draft
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password]
 priority: high
@@ -92,7 +92,7 @@ Repo-safe current facts from that update:
 | Local admin credential | Unique per-device admin credential stored in 1Password only. Device-specific management account may be created if the implementation needs it. | Planned; item/account not created. |
 | 1Password local admin item | `jefahnierocks-device-fedora-top-local-admin` | Planned; secret value not created here. |
 | Recovery key item | `jefahnierocks-device-fedora-top-recovery-key` | Planned for LUKS recovery material. |
-| Administrative SSH | Public-key SSH over Cloudflare private routing or Access-protected hostname only. | Source report says SSH is enabled on all interfaces and needs hardening. |
+| Administrative SSH | First establish verified `verlyn13` SSH from the MacBook over trusted LAN; then finish management remotely from `system-config`. | Source report says SSH is enabled on all interfaces and needs hardening. |
 | SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Pending design. |
 | Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Source report says `PasswordAuthentication yes`. |
 | Mission-critical service owner | `verlyn13` is the only account that should own or run mission-critical services. | Current service ownership needs live review before cleanup. |
@@ -102,8 +102,10 @@ Repo-safe current facts from that update:
 
 Preferred path:
 
-- SSH over private overlay/VPN or trusted LAN only.
-- Public-key authentication first.
+- SSH over trusted LAN first, then Cloudflare private routing or
+  Access-protected hostname later if needed.
+- Public-key authentication first; keep password SSH temporarily until
+  MacBook-to-Fedora public-key access is verified.
 - Do not expose SSH on public WAN.
 - Do not use the human workstation SSH identity as unattended automation.
 - Follow the existing `system-config` 1Password SSH-agent posture for human
@@ -114,7 +116,46 @@ Current state:
 - Source report says OpenSSH server is active and listening on all IPv4/IPv6
   interfaces, password authentication is enabled, WARP/cloudflared are absent,
   and Tailscale is installed but logged out.
-- Do not claim this Fedora laptop is remotely administered yet.
+- Do not claim this Fedora laptop is remotely administered until a
+  MacBook-side SSH login to `verlyn13@fedora-top` or the current LAN IP has
+  been verified.
+
+## SSH Foothold Phase
+
+The next Fedora slice should be intentionally small. Once `verlyn13` can SSH
+from the MacBook, most remaining administration can be done from here.
+
+Device-side minimum:
+
+- Connect AC power.
+- Confirm the current LAN IP and Wi-Fi MAC.
+- Confirm `sshd` is active and TCP `22` is reachable on the trusted LAN.
+- Install or verify one approved `verlyn13` public key in
+  `/home/verlyn13/.ssh/authorized_keys`.
+- Preserve password SSH until public-key login from the MacBook succeeds.
+- Return only redacted evidence: hostname, IP/MAC, SSH listener status,
+  firewalld zone summary, and whether key login was verified.
+
+MacBook-side verification:
+
+```bash
+nc -vz -G 3 <fedora-lan-ip> 22
+ssh verlyn13@<fedora-lan-ip> 'hostname; whoami; id; sudo -n true || echo sudo-needs-human'
+```
+
+After this succeeds, do the larger hardening remotely from the MacBook:
+
+- SSH drop-in hardening and password-SSH disablement after a rollback path is
+  ready.
+- `firewalld` narrowing for SSH and removal of broad workstation-zone
+  exposure.
+- Privilege cleanup so `verlyn13` is the only mission-critical
+  admin/service owner.
+- Retirement of laptop-hosted Infisical and rebinding/stopping broad Redis or
+  Docker-published admin surfaces.
+- Fedora update/GPG-key decisions.
+- LUKS/reboot strategy and AC/no-sleep policy.
+- HomeNetOps static DHCP/local DNS after Wi-Fi MAC is confirmed.
 
 ## Security Posture
 
@@ -132,6 +173,9 @@ Current state:
 
 Do not execute these without explicit approval:
 
+0. Establish the LAN SSH foothold for `verlyn13` from the MacBook. This is
+   the only device-side implementation slice needed before remote management
+   can continue from here.
 1. Remove non-`verlyn13` accounts from `wheel`, sudoers, Docker, and
    service-management paths unless an account has a documented administrative
    purpose.
@@ -193,9 +237,14 @@ Useful non-secret proof sources once the human has access:
 
 ### Safe Next Manual Step
 
-- Live-review users, groups, sudoers, lingering user services, and Docker
-  access, then prepare a privilege cleanup that leaves `verlyn13` as the only
-  mission-critical admin/service owner.
+- Establish and verify MacBook-to-Fedora SSH as `verlyn13` over trusted LAN.
+  Do not perform broader hardening on the local device agent before this
+  foothold is proven.
+- Capture the current Wi-Fi MAC and LAN IP for HomeNetOps static DHCP/local DNS
+  planning.
+- After SSH is verified, remotely live-review users, groups, sudoers,
+  lingering user services, and Docker access, then prepare a privilege cleanup
+  that leaves `verlyn13` as the only mission-critical admin/service owner.
 - Keep exploratory accounts, including `wyn`, usable as standard accounts
   without sudo, Docker, broad service control, or ownership of critical
   services.
@@ -214,6 +263,7 @@ Useful non-secret proof sources once the human has access:
 
 - Live re-verification of current users/groups/sudoers before privilege edits.
 - Confirmed admin SSH public key and authorized_keys state.
+- Successful MacBook-side SSH login as `verlyn13`.
 - Sudo-backed effective SSH configuration check.
 - Cloudflare package repo setup and WARP/cloudflared installation.
 - Firewall changes after an alternate admin path is proven.

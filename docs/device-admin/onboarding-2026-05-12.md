@@ -245,7 +245,7 @@ Remote administration is a target state, not current truth.
 | Device | Preferred path | Current status |
 |---|---|---|
 | Windows PC | RDP for GUI administration; Windows OpenSSH is the preferred future shell path after approval; WinRM/PowerShell Remoting remains off unless a concrete need is approved. No public inbound ports. | LAN RDP is enabled, TCP `3389` is reachable from the MacBook at `desktop-2jj3187.home.arpa`, interactive Windows App GUI management is verified, and HomeNetOps static DHCP/DNS plus WoL are verified. Cloudflare/WARP remains pending. |
-| Fedora 44 laptop | SSH over Cloudflare private routing or Access-protected hostname; optional Cockpit only through Cloudflare Access; Tailscale only as ACL-restricted break-glass. | Source report says SSH is active on all interfaces with password auth enabled, WARP/cloudflared absent, and Tailscale installed but logged out. |
+| Fedora 44 laptop | First prove `verlyn13` SSH from the MacBook over trusted LAN; then complete hardening remotely from `system-config`. Later off-LAN access should use Cloudflare private routing or an Access-protected path; optional Cockpit only through Cloudflare Access; Tailscale only as ACL-restricted break-glass. | Source report says SSH is active on all interfaces with password auth enabled, WARP/cloudflared absent, and Tailscale installed but logged out. |
 
 ## Evidence Model
 
@@ -304,8 +304,10 @@ Before any live change, collect or decide:
   and where its credential record belongs in 1Password.
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
+- Establish MacBook-to-Fedora SSH as `verlyn13`; once that works, treat the
+  Fedora device as remotely manageable from `system-config`.
 - Decide whether the Fedora laptop should get a HomeNetOps-managed static DHCP
-  mapping or local DNS record.
+  mapping or local DNS record after Wi-Fi MAC is confirmed.
 - Decide whether Fedora keeps Tailscale as break-glass or removes it.
 - Decide Fedora LUKS strategy: no unattended reboot, TPM2 auto-unlock, FIDO2,
   or initramfs SSH unlock.
