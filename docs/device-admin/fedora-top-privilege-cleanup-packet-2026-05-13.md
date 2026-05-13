@@ -2,8 +2,8 @@
 title: Fedora Top Privilege Cleanup Packet - 2026-05-13
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
+status: applied
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, privilege, sudoers, wheel, docker]
 priority: high
@@ -11,16 +11,20 @@ priority: high
 
 # Fedora Top Privilege Cleanup Packet - 2026-05-13
 
-This packet prepares a narrow privilege cleanup on `fedora-top`. The target
-posture is: `verlyn13` is the only mission-critical admin/service owner;
-`wyn`, `axel`, and `ila` remain usable as standard accounts without `wheel`,
-sudo, Docker, or service-management authority; `mesh-ops` is treated as
-suspect/possibly obsolete because Jefahnierocks Infisical is moving to the
+This packet defines the narrow privilege cleanup on `fedora-top`. It was
+applied live on 2026-05-13 along the default path; redacted apply evidence is
+recorded in
+[fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md).
+
+The target posture is: `verlyn13` is the only mission-critical admin/service
+owner; `wyn`, `axel`, and `ila` remain usable as standard accounts without
+`wheel`, sudo, Docker, or service-management authority; `mesh-ops` is treated
+as suspect/possibly obsolete because Jefahnierocks Infisical is moving to the
 Hetzner server only.
 
-No live state was changed while preparing this document. All commands in the
-"Apply" sections require explicit guardian approval and a fresh held-open
-SSH session, mirroring the SSH hardening packet pattern.
+The original text below is preserved for reuse and audit. One minor command-
+flag adjustment to R10 (`restorecon`) was needed at apply time - see
+"Apply-Time Deviation" near the R10 section.
 
 ## Scope
 
@@ -354,6 +358,18 @@ R10 - restore SELinux contexts:
 ```bash
 sudo -n restorecon -Rv /etc/sudoers /etc/sudoers.d
 ```
+
+### Apply-Time Deviation (R10 flag)
+
+The 2026-05-13 apply found that `restorecon -Rv` (no `-F`) only resets
+SELinux type, not SELinux user. The `unconfined_u` SELinux user on the
+existing `ansible-automation` drop-in stayed unchanged. A follow-up
+`restorecon -RFv /etc/sudoers /etc/sudoers.d` (force) reset the user to
+the policy-default `system_u`. Functional SELinux behavior is governed by
+type (`etc_t`) and is correct either way; the `-F` pass is cosmetic and
+matches the "expected post-apply" stat lines in the validation section.
+For future reuse on similar hosts, run R10 as
+`restorecon -RFv /etc/sudoers /etc/sudoers.d` directly.
 
 ## Validation
 

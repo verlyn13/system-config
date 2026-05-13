@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: privilege-cleanup-packet-prepared
-version: 0.9.0
+status: privilege-cleanup-applied
+version: 0.10.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege]
 priority: high
@@ -13,11 +13,15 @@ priority: high
 
 This record captures non-secret administration posture for the Fedora 44
 laptop. MacBook-to-Fedora public-key SSH as `verlyn13` is verified, a stable
-HomeNetOps LAN identity is verified, and the SSH hardening packet has been
-applied live (drop-in installed, `authorized_keys` cleaned to one approved key,
-`sshd` reloaded and verified). The device is not fully hardened or fully
-managed yet - privilege cleanup, Infisical/Redis retirement, firewall
-narrowing, Tailscale/WARP/Cloudflare decisions, and LUKS/power posture remain.
+HomeNetOps LAN identity is verified, the SSH hardening packet has been applied
+live (drop-in installed, `authorized_keys` cleaned to one approved key, `sshd`
+reloaded and verified), and the privilege cleanup packet has been applied live
+(`wheel` and `docker` are now `verlyn13` only, `systemd-journal` is empty, the
+duplicate `wyn` sudoers grant is gone, `/etc/sudoers.d/50-mesh-ops` is
+removed, and all sudoers files carry policy-default SELinux user `system_u`).
+The device is not fully hardened or fully managed yet - Infisical/Redis
+retirement, firewall narrowing, Tailscale/WARP/Cloudflare decisions, LUKS/
+power posture, and a future review of `verlyn13 NOPASSWD: ALL` remain.
 
 ## Source Input
 
@@ -60,9 +64,13 @@ External evidence ingested from:
   for the live apply evidence, including the kernel `fs.protected_regular`
   deviation note for the tempfile handling in the cleanup script.
 - [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md)
-  for the prepared privilege cleanup packet (group memberships, sudoers
-  duplicate, `/etc/sudoers.d/50-mesh-ops` decision, restorecon, validation,
-  and rollback). Not yet approved or applied.
+  for the privilege cleanup packet (group memberships, sudoers duplicate,
+  `/etc/sudoers.d/50-mesh-ops` decision, restorecon, validation, and
+  rollback).
+- [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md)
+  for the live apply evidence including snapshot path, group-membership
+  diff, post-apply `sudo -l` per user, and the R10 `restorecon -F`
+  deviation note.
 
 Repo-safe current facts from these updates:
 
@@ -171,10 +179,23 @@ Repo-safe current facts from these updates:
   matches the pre-hardening report (duplicate `wyn` grant at
   `/etc/sudoers:108` and broad `mesh-ops` NOPASSWD wildcards remain); the
   effective sshd `allowusers` is still `verlyn13` only.
-- `visudo -c` flags `/etc/sudoers.d/50-mesh-ops: bad permissions, should
-  be mode 0440`. The file is mode `0644` and still effective today, but
-  the warning is a posture defect; both sudoers drop-ins also carry
-  `unconfined_u` SELinux user rather than `system_u`.
+- `visudo -c` flagged `/etc/sudoers.d/50-mesh-ops: bad permissions, should
+  be mode 0440`. The file was mode `0644` and still effective at the time
+  of verification; both sudoers drop-ins also carried `unconfined_u`
+  SELinux user rather than `system_u`. These observations drove the
+  privilege cleanup packet contents.
+- Privilege cleanup packet was applied live on `2026-05-13T21:22:44Z` (see
+  the apply record). Post-apply state: `wheel` = `verlyn13` only, `docker`
+  = `verlyn13` only, `systemd-journal` empty; per-user `sudo -l` returns
+  "not allowed to run sudo" for `wyn`, `axel`, `ila`, `mesh-ops`;
+  `verlyn13` retains `(ALL) ALL` via `%wheel` and `NOPASSWD: ALL` via
+  `/etc/sudoers.d/ansible-automation`; `/etc/sudoers.d/50-mesh-ops` is
+  removed; the duplicate `wyn ALL=(ALL) ALL` line is gone from
+  `/etc/sudoers`; all sudoers files carry policy-default
+  `system_u:object_r:etc_t:s0`; `visudo -c` is fully clean; `sshd -T`
+  `allowusers` remains `verlyn13`; pre-apply snapshot kept at
+  `/var/backups/jefahnierocks-priv-cleanup-20260513T212114Z`. Rollback was
+  not used.
 
 ## Identity
 
@@ -210,8 +231,8 @@ Repo-safe current facts from these updates:
 | Administrative SSH | Use verified `verlyn13` SSH from the MacBook over trusted LAN; finish hardening remotely from `system-config` in small approval-gated packets. | Verified from MacBook to `192.168.0.206` using the selected 1Password-backed human interactive key. |
 | SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Applied: `authorized_keys` contains exactly one key, the approved MacBook fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8`. WSL and duplicate `ansible@hetzner.hq` lines were removed. Pre-apply backup retained on host. |
 | Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Applied: `PasswordAuthentication no`, `KbdInteractiveAuthentication no`, `AuthenticationMethods publickey`, `AllowUsers verlyn13`. Negative password-auth check confirms the server refuses non-publickey login. |
-| Mission-critical service owner | `verlyn13` is the only account that should own or run mission-critical services. | Current service ownership needs live review before cleanup. |
-| Exploratory users | `wyn`, `axel`, `ila`, and other human exploratory accounts may remain usable, but should not have `wheel`, sudo, Docker, or service-management authority by default. | Latest report says `wyn`, `axel`, `ila`, and `mesh-ops` retain elevated memberships or grants; critical hardening target. |
+| Mission-critical service owner | `verlyn13` is the only account that should own or run mission-critical services. | Applied (privilege cleanup): `wheel` and `docker` are now `verlyn13` only; `systemd-journal` empty; `mesh-ops` lost its NOPASSWD wildcards. `verlyn13 NOPASSWD: ALL` via `/etc/sudoers.d/ansible-automation` retained pending separate review. |
+| Exploratory users | `wyn`, `axel`, `ila`, and other human exploratory accounts may remain usable, but should not have `wheel`, sudo, Docker, or service-management authority by default. | Applied: `wyn`, `axel`, `ila`, `mesh-ops` no longer in `wheel`; `ila` and `mesh-ops` no longer in `docker`; `mesh-ops` no longer in `systemd-journal`; all four return "not allowed to run sudo" on `sudo -l`. `axel` retains `dialout` and `plugdev` (hardware-only groups, not admin). Accounts remain usable as standard users. |
 
 ## Remote Access
 
@@ -313,8 +334,11 @@ Do not execute these without explicit approval:
    service-management paths unless an account has a documented administrative
    purpose. Packet prepared in
    [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md);
-   awaiting explicit guardian approval before any live group, sudoers, or
-   SELinux change.
+   applied on 2026-05-13 with redacted evidence in
+   [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md).
+   `wheel` and `docker` are now `verlyn13` only; `systemd-journal` empty;
+   duplicate `wyn` sudoers line removed; `/etc/sudoers.d/50-mesh-ops` removed;
+   SELinux contexts on sudoers files normalized to `system_u`.
 4. Retire Infisical from the laptop and stop or rebind Docker-published Redis
    and admin surfaces so they are not exposed on the LAN.
 5. Tighten `firewalld` after SSH and service-retirement sequencing is clear.
@@ -425,14 +449,14 @@ Useful non-secret proof sources once the human has access:
 - Use `fedora-top.home.arpa` as the stable LAN administration target.
 - Reconcile the MacBook `known_hosts` entry for `fedora-top.home.arpa` so
   the `HostKeyAlias=192.168.0.206` workaround is no longer needed.
-- Privilege cleanup packet is prepared at
-  [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md);
-  decide whether to apply default path (remove `wyn`/`axel`/`ila`/`mesh-ops`
-  from `wheel`, `ila`/`mesh-ops` from `docker`, `mesh-ops` from
-  `systemd-journal`, drop the duplicate `wyn` sudoers grant, remove
-  `/etc/sudoers.d/50-mesh-ops`, restore SELinux contexts) or the alternate
-  retain path for `mesh-ops`. `verlyn13 NOPASSWD: ALL` is retained pending a
-  separate review packet.
+- Privilege cleanup default path applied on 2026-05-13; see
+  [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md).
+  Snapshot rollback target kept at
+  `/var/backups/jefahnierocks-priv-cleanup-20260513T212114Z` on the host.
+  Next privilege-related decisions: `mesh-ops` account lifecycle (lock or
+  delete), a future narrow review of `verlyn13 NOPASSWD: ALL`, and an
+  account-shell decision for any exploratory account that should not retain
+  interactive login.
 - Prepare Infisical/Redis retirement before relying on firewall narrowing as
   the only service-exposure control.
 - Prepare a narrow firewalld packet after SSH and service-retirement sequencing
@@ -460,9 +484,10 @@ Useful non-secret proof sources once the human has access:
 ### Blocked Pending Human/Device Access
 
 - Approval for firewall narrowing implementation.
-- Approval for privilege cleanup implementation per the prepared packet,
-  including the `mesh-ops` retain-or-drop decision and confirmation that
-  `verlyn13 NOPASSWD: ALL` remains in scope of a separate future review.
+- Future narrow review of `verlyn13 NOPASSWD: ALL` once a non-NOPASSWD admin
+  path is designed (current remote apply pattern depends on `sudo -n`).
+- Account-lifecycle decision for `mesh-ops` (lock, delete, or leave as
+  standard-only) now that privileges are gone.
 - Decision on whether to remove or repair Infisical and Tailscale DNF repo
   trust paths.
 - Cloudflare package repo setup and WARP/cloudflared installation.

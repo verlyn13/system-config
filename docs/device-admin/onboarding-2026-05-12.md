@@ -77,7 +77,8 @@ ingested as external evidence references:
 | HomeNetOps hand-back plus [fedora-top-homenetops-lan-identity-2026-05-13.md](./fedora-top-homenetops-lan-identity-2026-05-13.md) | `fedora-top` | HomeNetOps confirms static DHCP via OPNsense ISC DHCPv4 for Wi-Fi MAC `66:b5:8c:f5:45:74`, retained IP `192.168.0.206`, local DNS `fedora-top.home.arpa`, Unbound UUID `ce8c9be1-7b03-4965-8f40-d3adc8a079ac`, FQDN resolution, SSH TCP `22` reachability, and no WAN/public DNS/Cloudflare/WARP/Tailscale/firewall/WoL changes. |
 | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | `fedora-top` | Prepared SSH hardening packet confirms live SSH is still permissive, direct FQDN SSH needs host-key trust reconciliation, `authorized_keys` currently has four active lines with one approved key and a duplicated `ansible@hetzner.hq` key, and records exact cleanup, drop-in, validation, and rollback commands. No live SSH change was made while preparing the packet. |
 | [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md) | `fedora-top` | Live apply of the SSH hardening packet on 2026-05-13: `authorized_keys` cleaned to the approved MacBook fingerprint only, drop-in `/etc/ssh/sshd_config.d/20-jefahnierocks-admin.conf` installed (`root:root`, `0600`), `sshd -t` passed, `systemctl reload sshd` succeeded, the nine target effective settings verified from a fresh SSH process, negative password-auth check refused as expected, rollback unused. One minimal cleanup-script deviation recorded for kernel `fs.protected_regular` hardening on Fedora 44. |
-| [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md) | `fedora-top` | Prepared privilege cleanup packet. Read-only verification on 2026-05-13 confirms `wheel`=`verlyn13,wyn,axel,ila,mesh-ops`, `docker`=`verlyn13,ila,mesh-ops`, `systemd-journal`=`mesh-ops`, the duplicate `wyn` grant at `/etc/sudoers:108`, `verlyn13` `NOPASSWD: ALL` via `/etc/sudoers.d/ansible-automation`, and broad `mesh-ops` NOPASSWD wildcards in `/etc/sudoers.d/50-mesh-ops` (mode `0644` instead of required `0440`). Packet proposes removing four accounts from `wheel`, two from `docker`, one from `systemd-journal`, dropping the duplicate `wyn` grant, removing the `mesh-ops` sudoers drop-in (default path), running `restorecon`, with snapshot-backed rollback and a held-open SSH session. Approval-gated; no live state changed while preparing. |
+| [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md) | `fedora-top` | Privilege cleanup packet. Read-only verification on 2026-05-13 confirmed `wheel`=`verlyn13,wyn,axel,ila,mesh-ops`, `docker`=`verlyn13,ila,mesh-ops`, `systemd-journal`=`mesh-ops`, the duplicate `wyn` grant at `/etc/sudoers:108`, `verlyn13` `NOPASSWD: ALL` via `/etc/sudoers.d/ansible-automation`, and broad `mesh-ops` NOPASSWD wildcards in `/etc/sudoers.d/50-mesh-ops` (mode `0644` instead of required `0440`). Default path applied on 2026-05-13 (see apply record). |
+| [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md) | `fedora-top` | Live apply of the privilege cleanup packet on 2026-05-13: snapshot to `/var/backups/jefahnierocks-priv-cleanup-20260513T212114Z`; removed `wyn`/`axel`/`ila`/`mesh-ops` from `wheel`, `ila`/`mesh-ops` from `docker`, `mesh-ops` from `systemd-journal`; removed duplicate `wyn ALL=(ALL) ALL` at `/etc/sudoers:108` via temp + `visudo -c` + `install` swap-in; removed `/etc/sudoers.d/50-mesh-ops`; ran `restorecon -RFv` to normalize SELinux user to policy default `system_u`; validation green (visudo, per-user `sudo -l`, contexts, sshd `allowusers` unchanged). Rollback unused. One minor R10 flag deviation recorded (`-F` needed to reset SELinux user, not just type). |
 
 The BIOS checklist artifact in the same directory is a useful operator runbook,
 but the result artifact is the state evidence that should drive this record.
@@ -154,7 +155,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet is applied (drop-in installed, `authorized_keys` cleaned, sshd reloaded and verified); privilege cleanup packet is prepared and approval-gated; firewall/service hardening remains pending. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet is applied; privilege cleanup packet is applied (`wheel`/`docker` are now `verlyn13` only, `systemd-journal` empty, duplicate `wyn` sudoers grant removed, `50-mesh-ops` removed, SELinux contexts normalized); firewall/Infisical-Redis-retirement/service hardening remains pending. |
 
 ## Client Profiles
 
@@ -175,7 +176,7 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-authorized-key-install-2026-05-13.md](./fedora-top-authorized-key-install-2026-05-13.md) | Narrow Fedora-side handoff to install the approved MacBook public key for `verlyn13` and return repo-safe evidence. |
 | Fedora 44 laptop | [fedora-top-next-agent-handoff-2026-05-13.md](./fedora-top-next-agent-handoff-2026-05-13.md) | Fedora-side pre-hardening detail pass and report directive; copied to `/home/verlyn13/device-admin-prep/` on `fedora-top`. |
 | Fedora 44 laptop | [fedora-top-ssh-hardening-packet-2026-05-13.md](./fedora-top-ssh-hardening-packet-2026-05-13.md) | MacBook-side live SSH hardening packet with key cleanup, sshd drop-in, verification, and rollback commands; applied on 2026-05-13 with evidence in [fedora-top-ssh-hardening-apply-2026-05-13.md](./fedora-top-ssh-hardening-apply-2026-05-13.md). |
-| Fedora 44 laptop | [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md) | MacBook-side privilege cleanup packet: snapshot, group removals (`wheel`, `docker`, `systemd-journal`), `/etc/sudoers` duplicate cleanup, `/etc/sudoers.d/50-mesh-ops` decision (default: remove), `restorecon`, `visudo -c`, fresh-session validation, snapshot-backed rollback, and risks; approval-gated. Includes an alternate retain path for `mesh-ops` and an explicit "retain `verlyn13 NOPASSWD: ALL` pending separate review" stance. |
+| Fedora 44 laptop | [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md) | MacBook-side privilege cleanup packet: snapshot, group removals (`wheel`, `docker`, `systemd-journal`), `/etc/sudoers` duplicate cleanup, `/etc/sudoers.d/50-mesh-ops` decision (default: remove), `restorecon`, `visudo -c`, fresh-session validation, snapshot-backed rollback, and risks. Applied on 2026-05-13 along the default path; evidence in [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md). Retains `verlyn13 NOPASSWD: ALL` pending separate review. |
 | Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
@@ -320,10 +321,11 @@ Before any live change, collect or decide:
   and where its credential record belongs in 1Password.
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
-- Treat Fedora LAN SSH as established and hardened. Privilege cleanup
-  packet is prepared (2026-05-13) and waiting for approval; the remaining
-  approval-gated packets are Infisical/Redis retirement, firewalld
-  narrowing, Tailscale/WARP/Cloudflare decision, and LUKS/power policy.
+- Treat Fedora LAN SSH as established and hardened, and privilege cleanup
+  as applied (default path). The remaining approval-gated packets are
+  Infisical/Redis retirement, firewalld narrowing, Tailscale/WARP/Cloudflare
+  decision, LUKS/power policy, and a future narrow review of
+  `verlyn13 NOPASSWD: ALL`.
 - Fedora SSH hardening packet was applied on 2026-05-13; only the approved
   MacBook key remains in `authorized_keys`, and the WSL key plus both
   duplicate `ansible@hetzner.hq` entries were removed. Evidence in
