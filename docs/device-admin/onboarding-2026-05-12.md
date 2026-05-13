@@ -161,6 +161,7 @@ Use these documents when starting an agent directly on the target device:
 |---|---|---|
 | Windows PC | [handoff-desktop-2jj3187.md](./handoff-desktop-2jj3187.md) | Read-only local readiness refresh and approval-gated next-step report for `DESKTOP-2JJ3187`. |
 | Fedora 44 laptop | [handoff-fedora-top.md](./handoff-fedora-top.md) | Read-only local readiness refresh and approval-gated next-step report for `fedora-top`. |
+| Fedora 44 laptop | [fedora-top-complete-instructions.md](./fedora-top-complete-instructions.md) | Active Fedora-side SSH foothold, MacBook smoke test, remote baseline, and approval-gated hardening instructions for `fedora-top`. |
 
 Handoff agents should return evidence back to this record set. They should not
 decide the administration architecture locally.
