@@ -72,6 +72,7 @@ The following device-side prep outputs were received from
 | Operator update in chat, 2026-05-13 | `DESKTOP-2JJ3187` | MacBook Windows App profile update completed for the stable local FQDN; Windows Update is fully current; NVIDIA driver is latest available. |
 | `/Users/verlyn13/Documents/temp/fedora-top-readiness-report-2026-05-12.md` | `fedora-top` | Fresh read-only pass confirms `wyn` sudo risk, `axel`/`ila`/`mesh-ops` admin memberships, WARP/cloudflared absence, Tailscale logged out, permissive firewalld posture, LUKS2, AC not connected, recent suspend, and Redis/Infisical LAN exposure. |
 | `/Users/verlyn13/Downloads/fedora-top-phase-1-ssh-foothold-report-2026-05-13.md` plus [fedora-top-phase-1-ssh-foothold-2026-05-13.md](./fedora-top-phase-1-ssh-foothold-2026-05-13.md) | `fedora-top` | Phase 1 Fedora-side checks confirm AC connected, Wi-Fi MAC `66:B5:8C:F5:45:74`, current IP `192.168.0.206/24`, `sshd` enabled/active/listening on TCP `22`, and `authorized_keys` permissions correct. MacBook-side TCP `22` reachability succeeded, but public-key SSH login failed because the approved MacBook key is not yet installed/selected. |
+| `/Users/verlyn13/Downloads/fedora-top-authorized-key-install-report-2026-05-13.md` plus [fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md) | `fedora-top` | Authorized-key install succeeded for approved key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8`; MacBook public-key SSH as `verlyn13` now succeeds. Remote baseline confirms SSH is usable but not hardened, `PasswordAuthentication yes` remains, FedoraWorkstation firewall is broad, elevated group memberships remain, and Infisical/Redis are still LAN-exposed. |
 
 The BIOS checklist artifact in the same directory is a useful operator runbook,
 but the result artifact is the state evidence that should drive this record.
@@ -146,7 +147,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | Phase 1 device-side SSH foothold checks complete and MacBook TCP `22` reachability verified; public-key SSH login still blocked on approved MacBook key installation. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13` is verified and remote baseline is collected; SSH/firewall/privilege/service hardening remains pending and approval-gated. |
 
 ## Client Profiles
 
@@ -249,7 +250,7 @@ Remote administration is a target state, not current truth.
 | Device | Preferred path | Current status |
 |---|---|---|
 | Windows PC | RDP for GUI administration; Windows OpenSSH is the preferred future shell path after approval; WinRM/PowerShell Remoting remains off unless a concrete need is approved. No public inbound ports. | LAN RDP is enabled, TCP `3389` is reachable from the MacBook at `desktop-2jj3187.home.arpa`, interactive Windows App GUI management is verified, and HomeNetOps static DHCP/DNS plus WoL are verified. Cloudflare/WARP remains pending. |
-| Fedora 44 laptop | First prove `verlyn13` SSH from the MacBook over trusted LAN; then complete hardening remotely from `system-config`. Later off-LAN access should use Cloudflare private routing or an Access-protected path; optional Cockpit only through Cloudflare Access; Tailscale only as ACL-restricted break-glass. | Phase 1 device-side checks are complete and TCP `22` is reachable from the MacBook, but public-key SSH login failed. Approved MacBook key selection/installation is the current blocker. |
+| Fedora 44 laptop | Use verified `verlyn13` SSH from the MacBook over trusted LAN, then complete hardening remotely from `system-config`. Later off-LAN access should use Cloudflare private routing or an Access-protected path; optional Cockpit only through Cloudflare Access; Tailscale only as ACL-restricted break-glass. | LAN public-key SSH is verified. Current blockers are approval-gated SSH hardening, firewall narrowing, privilege cleanup, Infisical/Redis retirement, HomeNetOps stable naming, and LUKS/power strategy. |
 
 ## Evidence Model
 
@@ -286,7 +287,7 @@ operator-controlled path such as:
 | MAC / LAN IP / overlay identity | Ethernet MAC `18:C0:4D:39:7F:49`; static IP `192.168.0.217`; FQDN `desktop-2jj3187.home.arpa`; Wi-Fi MAC `CC:D9:AC:1F:92:7B` intentionally not mapped; WARP absent | Wi-Fi MAC `66:B5:8C:F5:45:74`; current IP `192.168.0.206/24`; Tailscale installed but logged out; WARP absent |
 | Local admin credential item | Planned; not created | Planned; not created |
 | Recovery key item | No BitLocker recovery item needed; BitLocker is not in target state for this slice | Planned; not created; LUKS2 present in source report |
-| Remote access enabled | Partial: LAN RDP enabled, firewall-scoped to `192.168.0.0/24`, TCP `3389` reachable from MacBook using `desktop-2jj3187.home.arpa`, interactive GUI management verified, and WoL verified. OpenSSH/WARP absent and duplicate stopped `cloudflared` services remain | Partial: Fedora-side `sshd` active and MacBook TCP `22` reachability verified, but MacBook public-key login failed. Do not harden SSH until approved key login succeeds. |
+| Remote access enabled | Partial: LAN RDP enabled, firewall-scoped to `192.168.0.0/24`, TCP `3389` reachable from MacBook using `desktop-2jj3187.home.arpa`, interactive GUI management verified, and WoL verified. OpenSSH/WARP absent and duplicate stopped `cloudflared` services remain | Partial: LAN SSH as `verlyn13` from the MacBook is verified. SSH still allows password auth and broad forwarding; firewall and service exposure are not hardened. |
 | Disk encryption verified | BitLocker off by operator attestation; agent-side elevated check still pending | LUKS2 root/home encryption reported; remote reboot blocked unless unlock strategy is solved |
 | Firewall verified | Ethernet profile now `Private`; custom `Jefahnierocks RDP LAN TCP/UDP 3389` rules scoped to `192.168.0.0/24`; built-in RDP rules disabled | `firewalld` active but FedoraWorkstation zone broad in latest report |
 | Patch/update posture verified | Windows Update and NVIDIA driver current by operator report; BIOS/UEFI posture improved; RDP/power LAN apply complete; HomeNetOps static DHCP/DNS/WoL complete; `cloudflared` status still pending Cloudflare truth refresh | Firmware current at prior capture; DNF refresh hit GPG prompts in latest report |
@@ -308,8 +309,9 @@ Before any live change, collect or decide:
   and where its credential record belongs in 1Password.
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
-- Select the approved MacBook public key for `verlyn13`, add it on Fedora
-  under the Phase 1 exception, and rerun the MacBook SSH smoke test.
+- Treat Fedora LAN SSH as established. Prepare the next approval-gated packets:
+  HomeNetOps static DHCP/local DNS, SSH hardening, firewalld narrowing,
+  privilege cleanup, Infisical/Redis retirement, and LUKS/power policy.
 - Decide whether the Fedora laptop should get a HomeNetOps-managed static DHCP
   mapping or local DNS record using Wi-Fi MAC `66:B5:8C:F5:45:74`.
 - Decide whether Fedora keeps Tailscale as break-glass or removes it.

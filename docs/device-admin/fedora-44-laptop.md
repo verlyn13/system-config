@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: phase-1-device-side-verified
-version: 0.3.0
+status: ssh-foothold-verified
+version: 0.4.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password]
 priority: high
@@ -12,8 +12,9 @@ priority: high
 # Fedora 44 Laptop Device Administration Record
 
 This record captures non-secret administration posture for the Fedora 44
-laptop. Phase 1 device-side SSH foothold checks are complete, but MacBook
-public-key SSH login has not succeeded yet.
+laptop. MacBook-to-Fedora public-key SSH as `verlyn13` is verified, and a
+remote read-only baseline has been collected. The device is not fully hardened
+or fully managed yet.
 
 ## Source Input
 
@@ -38,6 +39,10 @@ External evidence ingested from:
 - `/Users/verlyn13/Downloads/fedora-top-phase-1-ssh-foothold-report-2026-05-13.md`
 - [fedora-top-phase-1-ssh-foothold-2026-05-13.md](./fedora-top-phase-1-ssh-foothold-2026-05-13.md)
   for the repo-safe Phase 1 ingestion and MacBook-side smoke test result.
+- `/Users/verlyn13/Downloads/fedora-top-authorized-key-install-report-2026-05-13.md`
+- [fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md)
+  for the repo-safe key-install result, successful MacBook SSH test, and
+  remote read-only baseline.
 
 Repo-safe current facts from these updates:
 
@@ -70,10 +75,17 @@ Repo-safe current facts from these updates:
   and active, TCP `22` listening on IPv4/IPv6, and
   `/home/verlyn13/.ssh/authorized_keys` present with correct ownership and
   permissions.
-- MacBook-side smoke test confirms TCP `22` is reachable, but BatchMode
-  public-key SSH login as `verlyn13` failed. The MacBook key offered during
-  the test is not present in Fedora `authorized_keys`; do not harden SSH until
-  an approved MacBook public key is installed and login succeeds.
+- MacBook-side smoke test initially confirmed TCP `22` reachability but failed
+  public-key SSH before the approved MacBook key was installed.
+- Authorized-key install report confirms approved key fingerprint
+  `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` was installed with
+  correct permissions and SELinux context.
+- MacBook-side public-key SSH as `verlyn13` now succeeds using the selected
+  1Password-backed human interactive key. `sudo -n true` succeeded during the
+  smoke test.
+- Remote baseline confirms effective SSH still has `PasswordAuthentication
+  yes`, `X11Forwarding yes`, `AllowTcpForwarding yes`, and
+  `AllowAgentForwarding yes`; SSH is usable but not hardened.
 
 ## Identity
 
@@ -104,9 +116,9 @@ Repo-safe current facts from these updates:
 | Local admin credential | Unique per-device admin credential stored in 1Password only. Device-specific management account may be created if the implementation needs it. | Planned; item/account not created. |
 | 1Password local admin item | `jefahnierocks-device-fedora-top-local-admin` | Planned; secret value not created here. |
 | Recovery key item | `jefahnierocks-device-fedora-top-recovery-key` | Planned for LUKS recovery material. |
-| Administrative SSH | First establish verified `verlyn13` SSH from the MacBook over trusted LAN; then finish management remotely from `system-config`. | Phase 1 device-side checks are complete and TCP `22` is reachable from the MacBook, but public-key SSH login failed. |
-| SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Pending design. |
-| Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Source report says `PasswordAuthentication yes`. |
+| Administrative SSH | Use verified `verlyn13` SSH from the MacBook over trusted LAN; finish hardening remotely from `system-config` in small approval-gated packets. | Verified from MacBook to `192.168.0.206` using the selected 1Password-backed human interactive key. |
+| SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Selected human interactive key fingerprint `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8` is installed for `verlyn13`. |
+| Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Effective config still says `passwordauthentication yes`; hardening not yet applied. |
 | Mission-critical service owner | `verlyn13` is the only account that should own or run mission-critical services. | Current service ownership needs live review before cleanup. |
 | Exploratory users | `wyn`, `axel`, `ila`, and other human exploratory accounts may remain usable, but should not have `wheel`, sudo, Docker, or service-management authority by default. | Latest report says `wyn`, `axel`, `ila`, and `mesh-ops` retain elevated memberships or grants; critical hardening target. |
 
@@ -128,46 +140,29 @@ Current state:
 - Phase 1 confirms OpenSSH server is enabled, active, and listening on all
   IPv4/IPv6 interfaces.
 - MacBook TCP reachability to `192.168.0.206:22` is verified.
-- MacBook public-key login failed because no currently selected/offered
-  MacBook key is authorized on Fedora.
+- MacBook public-key SSH as `verlyn13` is verified.
+- `verlyn13` currently has non-interactive sudo capability.
 - Prior source report says password authentication is enabled,
   WARP/cloudflared are absent, and Tailscale is installed but logged out.
-- Do not claim this Fedora laptop is remotely administered until a
-  MacBook-side SSH login to `verlyn13@fedora-top` or `192.168.0.206` succeeds.
+- Do not claim this Fedora laptop is fully managed until SSH hardening,
+  firewall narrowing, privilege cleanup, service exposure cleanup, and
+  recovery/power posture are completed and verified.
 
 ## SSH Foothold Phase
 
-The next Fedora slice should be intentionally small. Once `verlyn13` can SSH
-from the MacBook, most remaining administration can be done from here.
+The SSH foothold is complete. Most remaining administration can now be done
+remotely from here, but hardening still needs explicit approval and should be
+split into small packets.
 
 Phase 1 current result:
 
 - Fedora-side checks are complete.
 - AC power is connected.
 - TCP `22` is reachable from the MacBook.
-- Public-key SSH from the MacBook fails.
-- The blocker is selecting and installing one approved MacBook public key for
-  `verlyn13`.
+- Public-key SSH from the MacBook succeeds as `verlyn13`.
+- Remote read-only baseline has been collected.
 
-Device-side minimum:
-
-- Connect AC power.
-- Confirm the current LAN IP and Wi-Fi MAC.
-- Confirm `sshd` is active and TCP `22` is reachable on the trusted LAN.
-- Install or verify one approved `verlyn13` public key in
-  `/home/verlyn13/.ssh/authorized_keys`.
-- Preserve password SSH until public-key login from the MacBook succeeds.
-- Return only redacted evidence: hostname, IP/MAC, SSH listener status,
-  firewalld zone summary, and whether key login was verified.
-
-MacBook-side verification:
-
-```bash
-nc -vz -G 3 <fedora-lan-ip> 22
-ssh verlyn13@<fedora-lan-ip> 'hostname; whoami; id; sudo -n true || echo sudo-needs-human'
-```
-
-After this succeeds, do the larger hardening remotely from the MacBook:
+Next work should do the larger hardening remotely from the MacBook:
 
 - SSH drop-in hardening and password-SSH disablement after a rollback path is
   ready.
@@ -186,8 +181,8 @@ After this succeeds, do the larger hardening remotely from the MacBook:
 | Area | Target | Current status |
 |---|---|---|
 | Disk encryption | LUKS/FDE status verified; recovery material stored in 1Password only if applicable. | Source report says root/home volume is LUKS2. Remote reboot is blocked unless TPM2/FIDO2/initramfs/local unlock strategy is chosen. |
-| SSH daemon | Enabled only with key-only admin access and private routing constraints. | Latest report says enabled, active, and all-interface listen. Effective password-auth posture still requires sudo-backed verification. |
-| SSH auth | Public-key auth confirmed before disabling password SSH. | Prior source report said password auth enabled; latest non-root handoff could not freshly reverify the effective config. Treat as not hardened. |
+| SSH daemon | Enabled only with key-only admin access and private routing constraints. | Enabled, active, all-interface listen. Effective config is verified and not hardened yet. |
+| SSH auth | Public-key auth confirmed before disabling password SSH. | Public-key login from MacBook succeeds. Effective config still has `passwordauthentication yes`; do not leave this as final posture. |
 | Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Latest report confirms FedoraWorkstation zone allows broad high ports plus `ssh`, `mdns`, and `samba-client` on Wi-Fi. |
 | Updates | Fedora updates current or scheduled; repo GPG prompts resolved deliberately. | Latest report says DNF refresh prompted for Infisical/Tailscale signing-key imports; prompts were not accepted. |
 | Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Latest report confirms Redis on all interfaces at `6379` and Infisical on all interfaces at `18080`. |
@@ -197,9 +192,8 @@ After this succeeds, do the larger hardening remotely from the MacBook:
 
 Do not execute these without explicit approval:
 
-0. Establish the LAN SSH foothold for `verlyn13` from the MacBook. This is
-   the only device-side implementation slice needed before remote management
-   can continue from here.
+0. Establish the LAN SSH foothold for `verlyn13` from the MacBook.
+   Completed on 2026-05-13; remote management can now continue from here.
 1. Remove non-`verlyn13` accounts from `wheel`, sudoers, Docker, and
    service-management paths unless an account has a documented administrative
    purpose.
@@ -217,10 +211,10 @@ Do not execute these without explicit approval:
 
 ## Evidence
 
-Source evidence has been ingested from the downloaded Fedora reports. No live
-Fedora commands were run from this session. MacBook-side TCP and SSH checks
-were run from this repo session and recorded in
-[fedora-top-phase-1-ssh-foothold-2026-05-13.md](./fedora-top-phase-1-ssh-foothold-2026-05-13.md).
+Source evidence has been ingested from the downloaded Fedora reports.
+MacBook-side TCP and SSH checks plus the remote read-only baseline were run
+from this repo session and recorded in
+[fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md).
 
 Future entries should use this shape:
 
@@ -263,21 +257,22 @@ Useful non-secret proof sources once the human has access:
 - Phase 1 Fedora-side report confirms AC is now connected, Wi-Fi MAC is
   `66:B5:8C:F5:45:74`, TCP `22` is listening, and
   `/home/verlyn13/.ssh/authorized_keys` permissions are correct.
-- MacBook-side check confirms TCP `22` reachability but public-key SSH login
-  failure.
+- Authorized-key install report confirms the selected MacBook public key is
+  present with correct ownership, permissions, and SELinux context.
+- MacBook-side check confirms public-key SSH login as `verlyn13` succeeds.
+- Remote baseline confirms `verlyn13` currently has non-interactive sudo and
+  Docker group membership.
 
 ### Safe Next Manual Step
 
-- Human approval was given on 2026-05-13 to proceed with Fedora access for
-  this exact SSH foothold work. The selected key is the existing
-  1Password-backed human interactive key
-  `~/.ssh/id_ed25519_personal.1password.pub`, fingerprint
-  `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8`.
-- Have the Fedora-side agent add that approved key to
-  `/home/verlyn13/.ssh/authorized_keys`, then rerun the MacBook-side smoke
-  test.
-- Do not perform broader hardening on the local device agent before
-  MacBook-to-Fedora public-key login is proven.
+- Treat the SSH foothold as verified. Do not perform broad hardening in one
+  batch.
+- Prepare HomeNetOps static DHCP/local DNS handoff using Wi-Fi MAC
+  `66:B5:8C:F5:45:74`, current IP `192.168.0.206`, hostname `fedora-top`.
+- Prepare a narrow SSH hardening packet, with rollback, for explicit approval.
+- Prepare a narrow firewalld packet after SSH hardening is ready.
+- Prepare a narrow privilege cleanup packet for `wheel`, `docker`, sudoers,
+  and service ownership.
 - Use Wi-Fi MAC `66:B5:8C:F5:45:74` and current IP `192.168.0.206` if
   HomeNetOps static DHCP/local DNS planning is requested.
 - After SSH is verified, remotely live-review users, groups, sudoers,
@@ -300,9 +295,9 @@ Useful non-secret proof sources once the human has access:
 ### Blocked Pending Human/Device Access
 
 - Live re-verification of current users/groups/sudoers before privilege edits.
-- Approved MacBook public key selection and installation.
-- Successful MacBook-side SSH login as `verlyn13`.
-- Sudo-backed effective SSH configuration check.
+- Approval for SSH hardening implementation.
+- Approval for firewall narrowing implementation.
+- Approval for privilege cleanup implementation.
 - Cloudflare package repo setup and WARP/cloudflared installation.
 - Firewall changes after an alternate admin path is proven.
 - 1Password recovery/admin credential item creation or update.

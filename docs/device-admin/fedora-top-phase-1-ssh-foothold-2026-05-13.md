@@ -2,8 +2,8 @@
 title: Fedora Top Phase 1 SSH Foothold Evidence - 2026-05-13
 category: operations
 component: device_admin
-status: blocked-macbook-key
-version: 0.1.0
+status: superseded-by-ssh-verified
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, evidence, lan]
 priority: high
@@ -14,8 +14,12 @@ priority: high
 This record ingests the Fedora-side Phase 1 SSH foothold report and the
 MacBook-side LAN smoke test result for `fedora-top`.
 
-The result is partial: `fedora-top` is reachable on TCP `22` from the MacBook,
-but MacBook public-key login as `verlyn13` is not yet working.
+This record is historical. Its original result was partial:
+`fedora-top` was reachable on TCP `22` from the MacBook, but MacBook
+public-key login as `verlyn13` was not yet working.
+
+Superseding record:
+[fedora-top-ssh-login-and-baseline-2026-05-13.md](./fedora-top-ssh-login-and-baseline-2026-05-13.md).
 
 Do not proceed to SSH hardening, password-SSH disablement, firewall narrowing,
 privilege cleanup, Docker/Infisical changes, WARP/Cloudflare work, Tailscale

@@ -3,7 +3,7 @@ title: Fedora Top Complete Administration Instructions
 category: operations
 component: device_admin
 status: active
-version: 0.2.0
+version: 0.3.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, hardening, handoff]
 priority: high
@@ -86,8 +86,9 @@ test from 2026-05-13:
 | Static IP | Not assigned yet |
 | SSH | Enabled, active, listening broadly on IPv4/IPv6, not hardened |
 | MacBook TCP reachability | TCP `22` reachable from MacBook |
-| MacBook SSH login | Public-key login failed; approved MacBook key is not installed/selected yet |
-| Password SSH | Reported enabled; do not disable until key login is proven |
+| MacBook SSH login | Verified as `verlyn13` using the selected 1Password-backed key |
+| `verlyn13` sudo | `sudo -n true` succeeded during smoke test |
+| Password SSH | Effective config still says `passwordauthentication yes`; hardening pending |
 | Firewall | `FedoraWorkstation` zone, broad workstation posture |
 | WARP | Absent |
 | `cloudflared` | Absent |
@@ -101,12 +102,11 @@ Phase status:
 - Phase 1 Fedora-side checks are complete.
 - `/home/verlyn13/.ssh` and `authorized_keys` have correct ownership and
   permissions.
-- No public key was added during Phase 1 because no approved MacBook public
-  key line was provided.
+- The approved MacBook public key was installed for `verlyn13`.
 - MacBook-side `nc` to `192.168.0.206:22` succeeds.
-- MacBook-side SSH public-key login fails.
-- Next safe action is to select and install exactly one approved MacBook public
-  key for `verlyn13`, then rerun Phase 2.
+- MacBook-side SSH public-key login succeeds.
+- Remote baseline confirms SSH, firewall, user privileges, and container
+  exposure still need hardening.
 
 ## Phase 1 - Fedora-Side SSH Foothold
 
