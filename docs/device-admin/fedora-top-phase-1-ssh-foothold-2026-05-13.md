@@ -138,26 +138,36 @@ That offered key is not present in the Fedora-side authorized-key fingerprints.
 The approved MacBook public key for `verlyn13@fedora-top` has not been
 installed or selected.
 
-One of these needs to happen next:
+Human approval was given in chat on 2026-05-13 to proceed with access to
+`fedora-top` for this exact SSH foothold work. The selected key for this pass
+is the existing 1Password-backed human interactive key at:
 
-1. Choose the intended 1Password-backed MacBook SSH key, provide exactly that
-   public key line to the Fedora-side agent, and add it to
-   `/home/verlyn13/.ssh/authorized_keys` under the existing Phase 1 exception.
-2. Alternatively, approve use of the offered local public key fingerprinted as
-   `SHA256:dvFc8TNaUeE/BR4qxiqrd3kqmnqnHokhiIsGWC68ykc`, then provide its
-   public key line to the Fedora-side agent.
+```text
+~/.ssh/id_ed25519_personal.1password.pub
+```
+
+Selected key fingerprint:
+
+```text
+SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8
+```
+
+The raw public key line should be provided to the Fedora-side agent through the
+operator handoff, not committed to this repo.
 
 Do not use a human workstation key for unattended automation. This key is for
 human interactive administration only.
 
 ## Next Safe Step
 
-Select one approved MacBook public key line and have the Fedora-side agent add
-it for `verlyn13`, then rerun:
+Have the Fedora-side agent add the selected approved MacBook public key for
+`verlyn13`, then rerun:
 
 ```bash
 nc -vz -G 3 192.168.0.206 22
-ssh verlyn13@192.168.0.206 'hostname; whoami; id; sudo -n true || echo sudo-needs-human'
+ssh -i ~/.ssh/id_ed25519_personal.1password.pub \
+  verlyn13@192.168.0.206 \
+  'hostname; whoami; id; sudo -n true || echo sudo-needs-human'
 ```
 
 Expected successful result:
@@ -171,4 +181,3 @@ Expected successful result:
 Only after that succeeds should the remote baseline and hardening sequence in
 [`fedora-top-complete-instructions.md`](./fedora-top-complete-instructions.md)
 continue.
-

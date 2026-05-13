@@ -268,9 +268,14 @@ Useful non-secret proof sources once the human has access:
 
 ### Safe Next Manual Step
 
-- Select one approved MacBook public key for `verlyn13`, have the Fedora-side
-  agent add it to `/home/verlyn13/.ssh/authorized_keys`, and rerun the
-  MacBook-side smoke test.
+- Human approval was given on 2026-05-13 to proceed with Fedora access for
+  this exact SSH foothold work. The selected key is the existing
+  1Password-backed human interactive key
+  `~/.ssh/id_ed25519_personal.1password.pub`, fingerprint
+  `SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8`.
+- Have the Fedora-side agent add that approved key to
+  `/home/verlyn13/.ssh/authorized_keys`, then rerun the MacBook-side smoke
+  test.
 - Do not perform broader hardening on the local device agent before
   MacBook-to-Fedora public-key login is proven.
 - Use Wi-Fi MAC `66:B5:8C:F5:45:74` and current IP `192.168.0.206` if
