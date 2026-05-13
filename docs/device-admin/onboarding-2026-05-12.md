@@ -155,7 +155,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet applied; privilege cleanup packet applied; Infisical/Redis retirement packet applied (`happy-secrets` compose project + three project-only images + three Infisical DNF repos all removed); firewalld narrowing packet prepared and approval-gated; Tailscale/WARP/Cloudflare/LUKS decisions remain pending. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | MacBook public-key SSH as `verlyn13`, static DHCP, and local DNS are verified; SSH hardening packet applied; privilege cleanup packet applied; Infisical/Redis retirement packet applied; firewalld narrowing packet applied (`FedoraWorkstation` ports empty, services unchanged, SSH still reachable for `verlyn13` over LAN, docker zone untouched); Tailscale/WARP/Cloudflare/LUKS decisions remain pending. |
 
 ## Client Profiles
 
@@ -179,7 +179,8 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-privilege-cleanup-packet-2026-05-13.md](./fedora-top-privilege-cleanup-packet-2026-05-13.md) | MacBook-side privilege cleanup packet: snapshot, group removals (`wheel`, `docker`, `systemd-journal`), `/etc/sudoers` duplicate cleanup, `/etc/sudoers.d/50-mesh-ops` decision (default: remove), `restorecon`, `visudo -c`, fresh-session validation, snapshot-backed rollback, and risks. Applied on 2026-05-13 along the default path; evidence in [fedora-top-privilege-cleanup-apply-2026-05-13.md](./fedora-top-privilege-cleanup-apply-2026-05-13.md). Retains `verlyn13 NOPASSWD: ALL` pending separate review. |
 | Fedora 44 laptop | [fedora-top-infisical-redis-retirement-packet-2026-05-13.md](./fedora-top-infisical-redis-retirement-packet-2026-05-13.md) | MacBook-side Infisical/Redis retirement packet for the `happy-secrets` compose project: forensic-only snapshot, `docker compose -p happy-secrets down --volumes --remove-orphans`, project-image removal (~1.95 GB), Infisical DNF repo file removal, `dnf clean metadata`, validation, and an explicit irreversibility note. Applied on 2026-05-13 along the default path with S4 (image removal) approved; evidence in [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md). |
 | Fedora 44 laptop | [fedora-top-infisical-redis-retirement-apply-2026-05-13.md](./fedora-top-infisical-redis-retirement-apply-2026-05-13.md) | Live apply of the Infisical/Redis retirement packet on 2026-05-13: forensic snapshot to `/var/backups/jefahnierocks-infisical-redis-retirement-20260513T214856Z` (redacted env keys for KEY/SECRET/PASSWORD/TOKEN/JWT/AUTH/CONNECTION_URI patterns); `docker compose -p happy-secrets down --volumes --remove-orphans` reported all three containers + two volumes + one network removed; remnant verification empty by label and by name; listeners on `18080`/`6379`/`5432` gone; three project-only images and 33 layer sha256s deleted (~1.95 GB reclaimed); `/etc/yum.repos.d/infisical-infisical-cli.repo` deleted; `dnf clean metadata` reported 221 MiB cleaned; `dnf repolist` shows no infisical; SSH `allowusers verlyn13` unchanged; `visudo -c` clean; `firewalld` unchanged. Rollback not applicable (intentional irreversible destruction). |
-| Fedora 44 laptop | [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md) | MacBook-side firewalld narrowing packet for `fedora-top`: pre-apply snapshot of zones (runtime + permanent) and listeners; `firewall-cmd --permanent --zone=FedoraWorkstation --remove-port=1025-65535/{tcp,udp}` then `firewall-cmd --reload`; preserves services `ssh`, `mdns`, `samba-client`, `dhcpv6-client`; documents impact on `wsdd` (Windows file-sharing discovery) and Tailscale incoming UDP; explicit decisions for an optional LAN source restriction on the `ssh` service. Docker zone (`target: ACCEPT`) is intentionally out of scope. Approval-gated; no live state changed while preparing. |
+| Fedora 44 laptop | [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md) | MacBook-side firewalld narrowing packet for `fedora-top`: pre-apply snapshot of zones (runtime + permanent) and listeners; `firewall-cmd --permanent --zone=FedoraWorkstation --remove-port=1025-65535/{tcp,udp}` then `firewall-cmd --reload`; preserves services `ssh`, `mdns`, `samba-client`, `dhcpv6-client`. Applied on 2026-05-13 along the default path; evidence in [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md). |
+| Fedora 44 laptop | [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md) | Live apply of the firewalld narrowing packet on 2026-05-13: snapshot to `/var/backups/jefahnierocks-firewalld-narrowing-20260513T230224Z` (state, default zone, active zones, runtime + permanent zone listings, direct rules, listeners, full pre-apply zone XML, sha256 manifest); `firewall-cmd --permanent --remove-port=1025-65535/tcp,udp` and `--reload` succeeded; runtime + permanent `ports` empty post-apply; services `dhcpv6-client mdns samba-client ssh` unchanged; active zones unchanged; rich rules empty; docker zone unchanged; sshd `allowusers verlyn13` unchanged; positive SSH check from a fresh MacBook session succeeded. Rollback unused. |
 | Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
@@ -325,13 +326,13 @@ Before any live change, collect or decide:
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
 - Treat Fedora LAN SSH as established and hardened, privilege cleanup
-  as applied (default path), and the Infisical/Redis retirement as
-  applied (default path with image removal). The firewalld narrowing
-  packet is prepared (2026-05-13) and waiting for approval. The
-  remaining approval-gated packets are Tailscale/WARP/Cloudflare
-  decision, LUKS/power policy, a future narrow review of
-  `verlyn13 NOPASSWD: ALL`, and a general Docker hygiene pass over
-  unrelated exited containers and reclaimable images/volumes/build cache.
+  as applied (default path), the Infisical/Redis retirement as applied
+  (default path with image removal), and the firewalld narrowing as
+  applied (default path). The remaining approval-gated packets are
+  Tailscale/WARP/Cloudflare decision, LUKS/power policy, a future
+  narrow review of `verlyn13 NOPASSWD: ALL`, and a general Docker
+  hygiene pass over the `docker` zone target, unrelated exited
+  containers, and reclaimable images/volumes/build cache.
 - Fedora SSH hardening packet was applied on 2026-05-13; only the approved
   MacBook key remains in `authorized_keys`, and the WSL key plus both
   duplicate `ansible@hetzner.hq` entries were removed. Evidence in

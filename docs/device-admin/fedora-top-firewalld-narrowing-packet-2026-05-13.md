@@ -2,8 +2,8 @@
 title: Fedora Top firewalld Narrowing Packet - 2026-05-13
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
+status: applied
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, firewalld, hardening]
 priority: high
@@ -11,16 +11,18 @@ priority: high
 
 # Fedora Top firewalld Narrowing Packet - 2026-05-13
 
-This packet prepares a narrow change to the `FedoraWorkstation` firewalld
+This packet defines the narrow change to the `FedoraWorkstation` firewalld
 zone on `fedora-top`: remove the broad `1025-65535/tcp` and
-`1025-65535/udp` port allowances and document the precise replacement
-posture. SSH for `verlyn13` over the LAN remains reachable through the
-zone's `ssh` service. No WAN exposure is introduced. The Docker zone is
-intentionally left alone in this packet.
+`1025-65535/udp` port allowances. It was applied live on 2026-05-13 along
+the default path; redacted apply evidence is recorded in
+[fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md).
 
-No live state was changed while preparing this document. All commands in
-the "Apply" sections require explicit guardian approval and a fresh
-held-open SSH session.
+SSH for `verlyn13` over the LAN remains reachable through the zone's
+`ssh` service. No WAN exposure was introduced. The Docker zone was
+intentionally left alone.
+
+The original text below is preserved for reuse and audit. No deviation
+from the packet was needed at apply time.
 
 ## Scope
 

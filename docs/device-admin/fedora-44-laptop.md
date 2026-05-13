@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: firewalld-narrowing-packet-prepared
-version: 0.13.0
+status: firewalld-narrowed
+version: 0.14.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege, docker, infisical]
 priority: high
@@ -89,12 +89,14 @@ External evidence ingested from:
   comprehensive boundary-sanity validation that confirmed SSH, sudoers,
   firewalld, Tailscale, and unrelated Docker projects were untouched.
 - [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md)
-  for the prepared `firewalld` narrowing packet that removes the
+  for the `firewalld` narrowing packet that removes the
   `FedoraWorkstation` zone's broad `1025-65535/tcp,udp` allowances while
   keeping `ssh`, `mdns`, `samba-client`, and `dhcpv6-client` services
-  intact, plus snapshot-backed rollback. Documents the impact on `wsdd`
-  WS-Discovery and the Tailscale incoming-UDP path. Docker zone is
-  intentionally out of scope. Not yet approved or applied.
+  intact, plus snapshot-backed rollback.
+- [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md)
+  for the live apply evidence including snapshot path, the empty
+  post-apply `ports` listing in both runtime and permanent, and the
+  positive fresh-session SSH check.
 
 Repo-safe current facts from these updates:
 
@@ -249,19 +251,25 @@ Repo-safe current facts from these updates:
   rollback was not used and is not applicable (volume destruction is
   intentional and irreversible per the approved phrase).
 - 2026-05-13 firewalld read-only verification (via the hardened SSH
-  channel) confirms firewalld `2.4.0` is active and enabled, nftables
+  channel) confirmed firewalld `2.4.0` active and enabled, nftables
   backend, default zone `FedoraWorkstation`, runtime and permanent
   configurations identical in content, no rich rules / direct rules /
   passthroughs on `FedoraWorkstation`, NetworkManager `connection.zone`
-  unset on all active connections (so the Wi-Fi attaches to the default
-  zone automatically). `FedoraWorkstation` still permits
+  unset on all active connections. `FedoraWorkstation` permitted
   `1025-65535/tcp,udp` plus services `dhcpv6-client mdns samba-client
-  ssh`. The `docker` zone retains its upstream `target: ACCEPT` with all
-  Docker bridges attached at runtime; this is documented but out of
-  scope for the narrowing packet. The broad port range currently allows
-  `wsdd` (Windows file-sharing discovery on UDP `3702` plus high
-  ephemerals) and `tailscaled` (random WireGuard UDP port; Tailscale
-  itself is still logged out) inbound from the LAN.
+  ssh`. The `docker` zone retained `target: ACCEPT` with all Docker
+  bridges attached at runtime.
+- firewalld narrowing packet was applied live on `2026-05-13T23:03:01Z`
+  (see the apply record). Post-apply state: `FedoraWorkstation` ports
+  are empty in both runtime and permanent; services unchanged
+  (`dhcpv6-client mdns samba-client ssh`); rich rules still empty;
+  active zone bindings unchanged (`FedoraWorkstation` on `wlp0s20f3`,
+  `docker` on the seven Docker bridges); `docker` zone unchanged
+  (`target: ACCEPT`, out of scope); `sshd -T allowusers verlyn13`
+  unchanged; positive SSH from a fresh MacBook session succeeded
+  (`nc -vz` + interactive command). Pre-apply snapshot retained at
+  `/var/backups/jefahnierocks-firewalld-narrowing-20260513T230224Z`;
+  rollback unused.
 
 ## Identity
 
@@ -373,7 +381,7 @@ Next work should do the larger hardening remotely from the MacBook:
 | Disk encryption | LUKS/FDE status verified; recovery material stored in 1Password only if applicable. | Source report says root/home volume is LUKS2. Remote reboot is blocked unless TPM2/FIDO2/initramfs/local unlock strategy is chosen. |
 | SSH daemon | Enabled only with key-only admin access and private routing constraints. | Enabled, active, all-interface listen. Effective config is hardened by `20-jefahnierocks-admin.conf` (drop-in `root:root`, `0600`); SSH remains LAN-only and is not exposed on WAN. |
 | SSH auth | Public-key auth confirmed before disabling password SSH. | Public-key login from MacBook succeeds. Effective config now has `PasswordAuthentication no`, `AuthenticationMethods publickey`, `AllowUsers verlyn13`; negative password-auth check confirms server refuses non-publickey login. |
-| Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Latest report confirms FedoraWorkstation zone allows broad high TCP/UDP ports plus `ssh`, `mdns`, `samba-client`, and `dhcpv6-client`; Docker zone target is `ACCEPT`. |
+| Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Applied (narrowing): `FedoraWorkstation` ports are empty; services `dhcpv6-client mdns samba-client ssh` unchanged; rich rules empty; SSH for `verlyn13` reachable over LAN only; no WAN exposure. `docker` zone still `target: ACCEPT` (separate hygiene packet remains). Off-LAN/private routing for SSH is a separate Tailscale/WARP/Cloudflare decision. |
 | Updates | Fedora updates current or scheduled; repo GPG prompts resolved deliberately. | Latest report says DNF refresh found a pending VS Code update and signing-key failures for Infisical/Tailscale repos; prompts were not accepted. |
 | Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Applied: `happy-secrets` compose project fully removed (3 containers, 2 volumes, 1 network); three project-only images gone; three Infisical DNF repos retired; no listeners on `18080`/`6379`/`5432`. Other unrelated exited containers (`api`, `maat-framework`, `scanner`, `act-*`) remain pending a general Docker hygiene packet. |
 | Power/recovery | AC connected; no sleep/hibernate on AC; no remote reboot until LUKS strategy is proven. | Latest report says AC is online and battery is `80%`, `pending-charge`; prior suspend/resume is recorded, so AC/no-sleep policy still needs deliberate verification before relying on remote availability. |
@@ -417,11 +425,11 @@ Do not execute these without explicit approval:
 5. Tighten `firewalld` after SSH and service-retirement sequencing is clear.
    Packet prepared in
    [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md);
-   awaiting explicit guardian approval before any live `firewall-cmd`
-   change. Default path removes the `1025-65535/tcp,udp` port ranges
-   from `FedoraWorkstation` while preserving the `ssh`, `mdns`,
-   `samba-client`, and `dhcpv6-client` services. Docker zone remains
-   untouched.
+   applied on 2026-05-13 with redacted evidence in
+   [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md).
+   `FedoraWorkstation` ports are now empty in both runtime and permanent;
+   services unchanged; SSH continues to work for `verlyn13` over LAN.
+   Docker zone remains untouched and is a separate hygiene packet.
 6. Decide whether to retain Tailscale as ACL-restricted break-glass, remove it,
    or leave it installed but logged out temporarily.
 7. Install/enroll Cloudflare WARP and install/configure `cloudflared` only
@@ -543,11 +551,10 @@ Useful non-secret proof sources once the human has access:
   listener remains; the `FedoraWorkstation` zone's broad
   `1025-65535/tcp,udp` allowances now have nothing of ours bound on those
   ports.
-- firewalld narrowing packet is prepared at
-  [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md);
-  apply removes the broad `1025-65535/tcp,udp` port ranges from
-  `FedoraWorkstation` and preserves all current services. Held-open SSH
-  session + snapshot-backed rollback per the standard pattern.
+- firewalld narrowing applied on 2026-05-13; see
+  [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md).
+  Snapshot rollback target kept at
+  `/var/backups/jefahnierocks-firewalld-narrowing-20260513T230224Z`.
 - Use Wi-Fi MAC `66:B5:8C:F5:45:74` and current IP `192.168.0.206` if
   HomeNetOps static DHCP/local DNS planning is requested.
 - Live read-only review of users, groups, sudoers, lingering user services,
