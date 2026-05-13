@@ -71,6 +71,7 @@ The following device-side prep outputs were received from
 | `/Users/verlyn13/Repos/verlyn13/HomeNetOps/docs/archive/2026-05-12-desktop-2jj3187-handoff.md` plus operator hand-back | `DESKTOP-2JJ3187` | HomeNetOps verified static DHCP for wired MAC `18:c0:4d:39:7f:49`, retained IP `192.168.0.217`, created local DNS `desktop-2jj3187.home.arpa`, verified RDP over the FQDN, registered OPNsense WoL UUID `93980551-709a-40d3-83e7-a708ee616373`, and completed cold-to-wake-to-RDP WoL smoke. |
 | Operator update in chat, 2026-05-13 | `DESKTOP-2JJ3187` | MacBook Windows App profile update completed for the stable local FQDN; Windows Update is fully current; NVIDIA driver is latest available. |
 | `/Users/verlyn13/Documents/temp/fedora-top-readiness-report-2026-05-12.md` | `fedora-top` | Fresh read-only pass confirms `wyn` sudo risk, `axel`/`ila`/`mesh-ops` admin memberships, WARP/cloudflared absence, Tailscale logged out, permissive firewalld posture, LUKS2, AC not connected, recent suspend, and Redis/Infisical LAN exposure. |
+| `/Users/verlyn13/Downloads/fedora-top-phase-1-ssh-foothold-report-2026-05-13.md` plus [fedora-top-phase-1-ssh-foothold-2026-05-13.md](./fedora-top-phase-1-ssh-foothold-2026-05-13.md) | `fedora-top` | Phase 1 Fedora-side checks confirm AC connected, Wi-Fi MAC `66:B5:8C:F5:45:74`, current IP `192.168.0.206/24`, `sshd` enabled/active/listening on TCP `22`, and `authorized_keys` permissions correct. MacBook-side TCP `22` reachability succeeded, but public-key SSH login failed because the approved MacBook key is not yet installed/selected. |
 
 The BIOS checklist artifact in the same directory is a useful operator runbook,
 but the result artifact is the state evidence that should drive this record.
@@ -145,7 +146,7 @@ Read-only refresh completed before creating these records:
 | Device | Record | Current status |
 |---|---|---|
 | Windows PC | [windows-pc.md](./windows-pc.md) | LAN RDP, Windows App GUI, static DHCP/local DNS, and WoL verified; off-LAN private access still pending. |
-| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | Source report ingested; live execution still pending approval. |
+| Fedora 44 laptop | [fedora-44-laptop.md](./fedora-44-laptop.md) | Phase 1 device-side SSH foothold checks complete and MacBook TCP `22` reachability verified; public-key SSH login still blocked on approved MacBook key installation. |
 
 ## Client Profiles
 
@@ -247,7 +248,7 @@ Remote administration is a target state, not current truth.
 | Device | Preferred path | Current status |
 |---|---|---|
 | Windows PC | RDP for GUI administration; Windows OpenSSH is the preferred future shell path after approval; WinRM/PowerShell Remoting remains off unless a concrete need is approved. No public inbound ports. | LAN RDP is enabled, TCP `3389` is reachable from the MacBook at `desktop-2jj3187.home.arpa`, interactive Windows App GUI management is verified, and HomeNetOps static DHCP/DNS plus WoL are verified. Cloudflare/WARP remains pending. |
-| Fedora 44 laptop | First prove `verlyn13` SSH from the MacBook over trusted LAN; then complete hardening remotely from `system-config`. Later off-LAN access should use Cloudflare private routing or an Access-protected path; optional Cockpit only through Cloudflare Access; Tailscale only as ACL-restricted break-glass. | Source report says SSH is active on all interfaces with password auth enabled, WARP/cloudflared absent, and Tailscale installed but logged out. |
+| Fedora 44 laptop | First prove `verlyn13` SSH from the MacBook over trusted LAN; then complete hardening remotely from `system-config`. Later off-LAN access should use Cloudflare private routing or an Access-protected path; optional Cockpit only through Cloudflare Access; Tailscale only as ACL-restricted break-glass. | Phase 1 device-side checks are complete and TCP `22` is reachable from the MacBook, but public-key SSH login failed. Approved MacBook key selection/installation is the current blocker. |
 
 ## Evidence Model
 
@@ -280,11 +281,11 @@ operator-controlled path such as:
 | Device label / hostname | `DESKTOP-2JJ3187` | `fedora-top` |
 | OS version/build | Windows 11 Pro 24H2, build 26100, from source report | Fedora Linux 44 Workstation, kernel `7.0.4-200.fc44.x86_64`, from source report |
 | Intended user/owner | Jefahnierocks-owned shared family workstation; `jeffr` current admin and kid standard users from source report | Jefahnierocks-owned Wyn summer-use laptop; `verlyn13` is the sole mission-critical admin/service owner |
-| Physical/admin context | Home LAN behind OPNsense, same LAN context as `nas.jefahnierocks.com` and `opnsense.jefahnierocks.com`; Ethernet now connected after operator action; BIOS power/WoL prep completed | Home LAN behind OPNsense, same LAN context as `nas.jefahnierocks.com` and `opnsense.jefahnierocks.com`; laptop on Wi-Fi; AC required for availability; latest report says battery only and recent suspend |
-| MAC / LAN IP / overlay identity | Ethernet MAC `18:C0:4D:39:7F:49`; static IP `192.168.0.217`; FQDN `desktop-2jj3187.home.arpa`; Wi-Fi MAC `CC:D9:AC:1F:92:7B` intentionally not mapped; WARP absent | Source report: Wi-Fi `192.168.0.206`; Tailscale installed but logged out; WARP absent |
+| Physical/admin context | Home LAN behind OPNsense, same LAN context as `nas.jefahnierocks.com` and `opnsense.jefahnierocks.com`; Ethernet now connected after operator action; BIOS power/WoL prep completed | Home LAN behind OPNsense, same LAN context as `nas.jefahnierocks.com` and `opnsense.jefahnierocks.com`; laptop on Wi-Fi; AC connected in Phase 1; no unattended reboot until LUKS strategy is chosen |
+| MAC / LAN IP / overlay identity | Ethernet MAC `18:C0:4D:39:7F:49`; static IP `192.168.0.217`; FQDN `desktop-2jj3187.home.arpa`; Wi-Fi MAC `CC:D9:AC:1F:92:7B` intentionally not mapped; WARP absent | Wi-Fi MAC `66:B5:8C:F5:45:74`; current IP `192.168.0.206/24`; Tailscale installed but logged out; WARP absent |
 | Local admin credential item | Planned; not created | Planned; not created |
 | Recovery key item | No BitLocker recovery item needed; BitLocker is not in target state for this slice | Planned; not created; LUKS2 present in source report |
-| Remote access enabled | Partial: LAN RDP enabled, firewall-scoped to `192.168.0.0/24`, TCP `3389` reachable from MacBook using `desktop-2jj3187.home.arpa`, interactive GUI management verified, and WoL verified. OpenSSH/WARP absent and duplicate stopped `cloudflared` services remain | Not ready: SSH active but not hardened; WARP/cloudflared absent; Tailscale logged out in latest report |
+| Remote access enabled | Partial: LAN RDP enabled, firewall-scoped to `192.168.0.0/24`, TCP `3389` reachable from MacBook using `desktop-2jj3187.home.arpa`, interactive GUI management verified, and WoL verified. OpenSSH/WARP absent and duplicate stopped `cloudflared` services remain | Partial: Fedora-side `sshd` active and MacBook TCP `22` reachability verified, but MacBook public-key login failed. Do not harden SSH until approved key login succeeds. |
 | Disk encryption verified | BitLocker off by operator attestation; agent-side elevated check still pending | LUKS2 root/home encryption reported; remote reboot blocked unless unlock strategy is solved |
 | Firewall verified | Ethernet profile now `Private`; custom `Jefahnierocks RDP LAN TCP/UDP 3389` rules scoped to `192.168.0.0/24`; built-in RDP rules disabled | `firewalld` active but FedoraWorkstation zone broad in latest report |
 | Patch/update posture verified | Windows Update and NVIDIA driver current by operator report; BIOS/UEFI posture improved; RDP/power LAN apply complete; HomeNetOps static DHCP/DNS/WoL complete; `cloudflared` status still pending Cloudflare truth refresh | Firmware current at prior capture; DNF refresh hit GPG prompts in latest report |
@@ -306,10 +307,10 @@ Before any live change, collect or decide:
   and where its credential record belongs in 1Password.
 - Continue using the MacBook Windows App profile with
   `desktop-2jj3187.home.arpa` as the target.
-- Establish MacBook-to-Fedora SSH as `verlyn13`; once that works, treat the
-  Fedora device as remotely manageable from `system-config`.
+- Select the approved MacBook public key for `verlyn13`, add it on Fedora
+  under the Phase 1 exception, and rerun the MacBook SSH smoke test.
 - Decide whether the Fedora laptop should get a HomeNetOps-managed static DHCP
-  mapping or local DNS record after Wi-Fi MAC is confirmed.
+  mapping or local DNS record using Wi-Fi MAC `66:B5:8C:F5:45:74`.
 - Decide whether Fedora keeps Tailscale as break-glass or removes it.
 - Decide Fedora LUKS strategy: no unattended reboot, TPM2 auto-unlock, FIDO2,
   or initramfs SSH unlock.

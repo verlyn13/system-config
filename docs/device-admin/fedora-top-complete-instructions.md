@@ -3,7 +3,7 @@ title: Fedora Top Complete Administration Instructions
 category: operations
 component: device_admin
 status: active
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, hardening, handoff]
 priority: high
@@ -73,25 +73,40 @@ Exception for this first slice:
 
 ## Current Known State
 
-This state is from the prior local Fedora readiness reports and must be
-rechecked during execution:
+This state includes the Phase 1 Fedora-side report and the MacBook-side smoke
+test from 2026-05-13:
 
 | Item | Current known state |
 |---|---|
 | Hostname | `fedora-top` |
 | OS | Fedora Linux 44 Workstation |
-| Kernel | `7.0.4-200.fc44.x86_64` in the prior report |
-| Current LAN IP | `192.168.0.206/24` on Wi-Fi in the prior report |
+| Kernel | `7.0.4-200.fc44.x86_64` |
+| Wi-Fi MAC | `66:B5:8C:F5:45:74` |
+| Current LAN IP | `192.168.0.206/24` on Wi-Fi |
 | Static IP | Not assigned yet |
-| SSH | Active, listening broadly, not hardened |
+| SSH | Enabled, active, listening broadly on IPv4/IPv6, not hardened |
+| MacBook TCP reachability | TCP `22` reachable from MacBook |
+| MacBook SSH login | Public-key login failed; approved MacBook key is not installed/selected yet |
 | Password SSH | Reported enabled; do not disable until key login is proven |
 | Firewall | `FedoraWorkstation` zone, broad workstation posture |
 | WARP | Absent |
 | `cloudflared` | Absent |
 | Tailscale | Installed and active but logged out |
 | Disk encryption | LUKS2 root/home; no remote reboot until unlock strategy is chosen |
-| Power | Prior report said battery power and recent suspend |
+| Power | AC connected in Phase 1; battery `80%`, `pending-charge` |
 | Containers | Redis and Infisical were exposed on all interfaces |
+
+Phase status:
+
+- Phase 1 Fedora-side checks are complete.
+- `/home/verlyn13/.ssh` and `authorized_keys` have correct ownership and
+  permissions.
+- No public key was added during Phase 1 because no approved MacBook public
+  key line was provided.
+- MacBook-side `nc` to `192.168.0.206:22` succeeds.
+- MacBook-side SSH public-key login fails.
+- Next safe action is to select and install exactly one approved MacBook public
+  key for `verlyn13`, then rerun Phase 2.
 
 ## Phase 1 - Fedora-Side SSH Foothold
 

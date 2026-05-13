@@ -2,8 +2,8 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: draft
-version: 0.2.0
+status: phase-1-device-side-verified
+version: 0.3.0
 last_updated: 2026-05-13
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password]
 priority: high
@@ -11,9 +11,9 @@ priority: high
 
 # Fedora 44 Laptop Device Administration Record
 
-This scaffold captures non-secret administration posture for the Fedora 44
-laptop. It is an intake record only until live device-side checks are
-performed.
+This record captures non-secret administration posture for the Fedora 44
+laptop. Phase 1 device-side SSH foothold checks are complete, but MacBook
+public-key SSH login has not succeeded yet.
 
 ## Source Input
 
@@ -35,8 +35,11 @@ execution.
 External evidence ingested from:
 
 - `/Users/verlyn13/Documents/temp/fedora-top-readiness-report-2026-05-12.md`
+- `/Users/verlyn13/Downloads/fedora-top-phase-1-ssh-foothold-report-2026-05-13.md`
+- [fedora-top-phase-1-ssh-foothold-2026-05-13.md](./fedora-top-phase-1-ssh-foothold-2026-05-13.md)
+  for the repo-safe Phase 1 ingestion and MacBook-side smoke test result.
 
-Repo-safe current facts from that update:
+Repo-safe current facts from these updates:
 
 - Fresh read-only pass confirms `fedora-top`, Fedora 44 Workstation, kernel
   `7.0.4-200.fc44.x86_64`, and Wi-Fi `192.168.0.206/24`.
@@ -62,6 +65,15 @@ Repo-safe current facts from that update:
   should be the only account running mission-critical services, exploratory
   accounts should stay usable without dangerous privileges, and Infisical
   belongs on the Hetzner server only.
+- Phase 1 Fedora-side SSH foothold report confirms AC power connected, Wi-Fi
+  MAC `66:B5:8C:F5:45:74`, current LAN IP `192.168.0.206/24`, `sshd` enabled
+  and active, TCP `22` listening on IPv4/IPv6, and
+  `/home/verlyn13/.ssh/authorized_keys` present with correct ownership and
+  permissions.
+- MacBook-side smoke test confirms TCP `22` is reachable, but BatchMode
+  public-key SSH login as `verlyn13` failed. The MacBook key offered during
+  the test is not present in Fedora `authorized_keys`; do not harden SSH until
+  an approved MacBook public key is installed and login succeeds.
 
 ## Identity
 
@@ -79,8 +91,8 @@ Repo-safe current facts from that update:
 | Field | Value |
 |---|---|
 | Wired MAC | Pending device access |
-| Wi-Fi MAC | Pending device access |
-| Current LAN IP | `192.168.0.206/24` on Wi-Fi from source report; no static IP is assigned yet |
+| Wi-Fi MAC | `66:B5:8C:F5:45:74`, verified in Phase 1 report |
+| Current LAN IP | `192.168.0.206/24` on Wi-Fi from Phase 1 report; no static IP is assigned yet |
 | Tailscale identity | Tailscale installed and service active but logged out; no Tailscale IP in source report |
 | WARP identity | WARP not installed in source report |
 | DNS / hostname record | Planned only; no DNS change approved |
@@ -92,7 +104,7 @@ Repo-safe current facts from that update:
 | Local admin credential | Unique per-device admin credential stored in 1Password only. Device-specific management account may be created if the implementation needs it. | Planned; item/account not created. |
 | 1Password local admin item | `jefahnierocks-device-fedora-top-local-admin` | Planned; secret value not created here. |
 | Recovery key item | `jefahnierocks-device-fedora-top-recovery-key` | Planned for LUKS recovery material. |
-| Administrative SSH | First establish verified `verlyn13` SSH from the MacBook over trusted LAN; then finish management remotely from `system-config`. | Source report says SSH is enabled on all interfaces and needs hardening. |
+| Administrative SSH | First establish verified `verlyn13` SSH from the MacBook over trusted LAN; then finish management remotely from `system-config`. | Phase 1 device-side checks are complete and TCP `22` is reachable from the MacBook, but public-key SSH login failed. |
 | SSH identity | Device-specific or explicitly approved human-interactive key use only; no unattended automation with a human workstation key. | Pending design. |
 | Password SSH | Disable after key-based access is confirmed and local fallback remains open. | Source report says `PasswordAuthentication yes`. |
 | Mission-critical service owner | `verlyn13` is the only account that should own or run mission-critical services. | Current service ownership needs live review before cleanup. |
@@ -113,17 +125,29 @@ Preferred path:
 
 Current state:
 
-- Source report says OpenSSH server is active and listening on all IPv4/IPv6
-  interfaces, password authentication is enabled, WARP/cloudflared are absent,
-  and Tailscale is installed but logged out.
+- Phase 1 confirms OpenSSH server is enabled, active, and listening on all
+  IPv4/IPv6 interfaces.
+- MacBook TCP reachability to `192.168.0.206:22` is verified.
+- MacBook public-key login failed because no currently selected/offered
+  MacBook key is authorized on Fedora.
+- Prior source report says password authentication is enabled,
+  WARP/cloudflared are absent, and Tailscale is installed but logged out.
 - Do not claim this Fedora laptop is remotely administered until a
-  MacBook-side SSH login to `verlyn13@fedora-top` or the current LAN IP has
-  been verified.
+  MacBook-side SSH login to `verlyn13@fedora-top` or `192.168.0.206` succeeds.
 
 ## SSH Foothold Phase
 
 The next Fedora slice should be intentionally small. Once `verlyn13` can SSH
 from the MacBook, most remaining administration can be done from here.
+
+Phase 1 current result:
+
+- Fedora-side checks are complete.
+- AC power is connected.
+- TCP `22` is reachable from the MacBook.
+- Public-key SSH from the MacBook fails.
+- The blocker is selecting and installing one approved MacBook public key for
+  `verlyn13`.
 
 Device-side minimum:
 
@@ -167,7 +191,7 @@ After this succeeds, do the larger hardening remotely from the MacBook:
 | Firewall | `firewalld` or equivalent active; SSH limited to Cloudflare/Tailscale/trusted path. | Latest report confirms FedoraWorkstation zone allows broad high ports plus `ssh`, `mdns`, and `samba-client` on Wi-Fi. |
 | Updates | Fedora updates current or scheduled; repo GPG prompts resolved deliberately. | Latest report says DNF refresh prompted for Infisical/Tailscale signing-key imports; prompts were not accepted. |
 | Containers | No Redis or admin surface exposed broadly on LAN. Infisical should not run on this laptop; current needed Infisical location is Hetzner only. | Latest report confirms Redis on all interfaces at `6379` and Infisical on all interfaces at `18080`. |
-| Power/recovery | AC connected; no sleep/hibernate on AC; no remote reboot until LUKS strategy is proven. | Latest report says laptop was on battery, about 5 hours remaining, and recently suspended. |
+| Power/recovery | AC connected; no sleep/hibernate on AC; no remote reboot until LUKS strategy is proven. | Phase 1 report says AC is now connected and battery is `80%`, `pending-charge`; prior readiness report showed recent suspend, so AC/no-sleep policy still needs deliberate verification before relying on remote availability. |
 
 ## Approval-Gated Build Phases
 
@@ -193,8 +217,10 @@ Do not execute these without explicit approval:
 
 ## Evidence
 
-Source evidence has been ingested from the downloaded Fedora report. No new
-live Fedora commands were run from this session.
+Source evidence has been ingested from the downloaded Fedora reports. No live
+Fedora commands were run from this session. MacBook-side TCP and SSH checks
+were run from this repo session and recorded in
+[fedora-top-phase-1-ssh-foothold-2026-05-13.md](./fedora-top-phase-1-ssh-foothold-2026-05-13.md).
 
 Future entries should use this shape:
 
@@ -234,14 +260,21 @@ Useful non-secret proof sources once the human has access:
   is installed but logged out.
 - Latest readiness report confirms AC/power readiness is not met and Docker
   exposes Redis/Infisical broadly on LAN.
+- Phase 1 Fedora-side report confirms AC is now connected, Wi-Fi MAC is
+  `66:B5:8C:F5:45:74`, TCP `22` is listening, and
+  `/home/verlyn13/.ssh/authorized_keys` permissions are correct.
+- MacBook-side check confirms TCP `22` reachability but public-key SSH login
+  failure.
 
 ### Safe Next Manual Step
 
-- Establish and verify MacBook-to-Fedora SSH as `verlyn13` over trusted LAN.
-  Do not perform broader hardening on the local device agent before this
-  foothold is proven.
-- Capture the current Wi-Fi MAC and LAN IP for HomeNetOps static DHCP/local DNS
-  planning.
+- Select one approved MacBook public key for `verlyn13`, have the Fedora-side
+  agent add it to `/home/verlyn13/.ssh/authorized_keys`, and rerun the
+  MacBook-side smoke test.
+- Do not perform broader hardening on the local device agent before
+  MacBook-to-Fedora public-key login is proven.
+- Use Wi-Fi MAC `66:B5:8C:F5:45:74` and current IP `192.168.0.206` if
+  HomeNetOps static DHCP/local DNS planning is requested.
 - After SSH is verified, remotely live-review users, groups, sudoers,
   lingering user services, and Docker access, then prepare a privilege cleanup
   that leaves `verlyn13` as the only mission-critical admin/service owner.
@@ -262,7 +295,7 @@ Useful non-secret proof sources once the human has access:
 ### Blocked Pending Human/Device Access
 
 - Live re-verification of current users/groups/sudoers before privilege edits.
-- Confirmed admin SSH public key and authorized_keys state.
+- Approved MacBook public key selection and installation.
 - Successful MacBook-side SSH login as `verlyn13`.
 - Sudo-backed effective SSH configuration check.
 - Cloudflare package repo setup and WARP/cloudflared installation.
