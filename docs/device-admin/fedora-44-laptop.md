@@ -2,10 +2,10 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: firewalld-narrowed
-version: 0.14.0
+status: tailscale-retain-or-remove-packet-prepared
+version: 0.15.0
 last_updated: 2026-05-13
-tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege, docker, infisical]
+tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege, docker, infisical, tailscale]
 priority: high
 ---
 
@@ -103,6 +103,13 @@ External evidence ingested from:
   `current-status.yaml` in the same commit that lands any new
   `*-packet-*.md` or `*-apply-*.md` so the YAML stays the
   authoritative summary.
+- [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md)
+  for the prepared Tailscale decision packet. Two options with their
+  own approval phrases; recommended default is Option A (Remove). Live
+  state today: `tailscale-1.96.4-1` installed, `tailscaled` active and
+  enabled, logged out, UDP/41641 listener bound but blocked by the
+  post-2026-05-13 firewall narrowing, DNF repo healthy, GPG key
+  imported. Not yet approved or applied.
 
 Repo-safe current facts from these updates:
 
@@ -276,6 +283,20 @@ Repo-safe current facts from these updates:
   (`nc -vz` + interactive command). Pre-apply snapshot retained at
   `/var/backups/jefahnierocks-firewalld-narrowing-20260513T230224Z`;
   rollback unused.
+- 2026-05-13 Tailscale read-only verification (via the hardened SSH
+  channel) confirms `tailscale-1.96.4-1` installed, `tailscaled`
+  active and enabled, logged out, UDP `41641` listener bound by
+  `tailscaled` but blocked by the post-narrowing firewall; `tailscale
+  netcheck` shows DERP-relay reachability (Seattle ~54 ms) without
+  any open inbound UDP; `tailscale-stable` DNF repo healthy and
+  `gpg-pubkey-957f5868-5e5499b8` imported, with `tailscale 1.98.1-1`
+  pending as an available upgrade (not applied); no host systemd
+  unit, cron, or firewalld rule otherwise references Tailscale; no
+  account retains a NOPASSWD sudoers grant over `tailscale *` or
+  `systemctl ... tailscaled` after the privilege cleanup. A
+  node-bound enrollment URL is emitted by `tailscale status` while
+  the host is logged out; treat that URL as a sensitive artifact
+  and do not record it in this repo.
 
 ## Identity
 
@@ -437,7 +458,10 @@ Do not execute these without explicit approval:
    services unchanged; SSH continues to work for `verlyn13` over LAN.
    Docker zone remains untouched and is a separate hygiene packet.
 6. Decide whether to retain Tailscale as ACL-restricted break-glass, remove it,
-   or leave it installed but logged out temporarily.
+   or leave it installed but logged out temporarily. Packet prepared in
+   [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md);
+   awaiting explicit guardian approval. Recommended default is Option A
+   (Remove); Option B (Retain logged-out) is documented.
 7. Install/enroll Cloudflare WARP and install/configure `cloudflared` only
    after the Cloudflare design packet is approved.
 8. Create Cloudflare Access/private routing for SSH and optional Cockpit only

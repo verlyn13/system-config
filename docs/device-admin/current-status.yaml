@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-13T23:03:01Z
+last_updated: 2026-05-13T23:18:14Z
 
 devices:
   - device: fedora-top
@@ -89,17 +89,30 @@ devices:
         apply_commit: d3e44b8
         applied_at: 2026-05-13T23:03:01Z
 
-    prepared_packets: []
+    prepared_packets:
+      - name: tailscale-retain-or-remove
+        packet_doc: docs/device-admin/fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md
+        prepared_at: 2026-05-13T23:18:14Z
+        state: approval-required
+        approval_phrase_excerpt: >-
+          Two phrases provided. Recommended default is Option A
+          (Remove): "I approve applying the Fedora Tailscale Remove
+          option live now: ... systemctl disable --now tailscaled;
+          dnf -y remove tailscale; ..." (see packet doc for full
+          text). Option B (Retain logged-out) is documented as the
+          alternative.
 
     blocked_items:
-      - item: tailscale-retain-or-remove
+      - item: tailscale-retain-or-remove-decision
         owner: human
         notes: >-
-          tailscaled is installed and active but logged out; the
-          tailscale-stable DNF repo is still enabled. Decide retain
-          (as ACL-restricted break-glass) vs remove. Affects the
-          off-LAN access design and whether the firewall needs a
-          stable WireGuard UDP rule.
+          Packet prepared 2026-05-13; awaiting guardian choice between
+          Option A (Remove, recommended) and Option B (Retain
+          logged-out). Live state today: tailscale-1.96.4-1
+          installed, tailscaled active+enabled, logged out, listener
+          on udp/41641 bound but blocked by post-narrowing firewall.
+          DNF repo healthy, GPG key imported, 1.98.1 upgrade pending
+          but not applied.
       - item: warp-and-cloudflared-design
         owner: human
         notes: >-
@@ -127,12 +140,12 @@ devices:
           workaround can be retired from routine SSH commands.
 
     approval_required:
-      - action: tailscale-retain-or-remove-packet
-        state: planned
+      - action: tailscale-retain-or-remove
+        state: approval-required
         approval_phrase: >-
-          The Tailscale retain/remove decision packet has not been
-          authored yet; an approval phrase will be supplied with that
-          packet when it is prepared.
+          See docs/device-admin/fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md.
+          Two phrases provided (Option A Remove is the recommended
+          default; Option B Retain logged-out is the alternative).
       - action: docker-hygiene-packet
         state: planned
         approval_phrase: >-
@@ -150,21 +163,22 @@ devices:
 
     next_recommended_action:
       summary: >-
-        Move the remote-admin operating readiness forward. The natural
-        next packet is the Tailscale retain/remove decision packet
-        (because it gates the off-LAN access design and may reopen one
-        firewalld UDP port). Alternative parallel packets that do not
-        require Tailscale: docker hygiene cleanup, LUKS remote-reboot
-        strategy design, and the verlyn13 NOPASSWD review (gated on a
-        replacement admin path).
+        Apply the prepared Tailscale retain-or-remove packet. The
+        recommended default is Option A (Remove) because Tailscale
+        currently provides no functional value on this device
+        (logged out, listener firewall-blocked, no peer state) and
+        the Jefahnierocks off-LAN remote-admin path is moving toward
+        Cloudflare WARP + cloudflared. Option B (Retain logged-out)
+        is the alternative if a Tailscale-based break-glass overlay
+        is desired alongside the WARP path.
       preferred_packet: tailscale-retain-or-remove
-      preferred_packet_status: planned
+      preferred_packet_status: approval-required
       preferred_packet_blockers:
-        - slug: operator-decision-required
+        - slug: guardian-approval-required
           note: >-
-            Keep Tailscale as ACL-restricted break-glass or remove it
-            entirely.
+            Pick Option A (Remove, recommended) or Option B (Retain
+            logged-out). Approval phrases for both are in the packet.
       handback_to_human: true
 
-    last_verified: 2026-05-13T23:03:01Z
+    last_verified: 2026-05-13T23:18:14Z
     latest_system_config_commit: d3e44b8
