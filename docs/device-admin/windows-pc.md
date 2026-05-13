@@ -114,7 +114,7 @@ Accounts explicitly called out as do-not-touch in the source report:
 | 1Password local admin item | `jefahnierocks-device-desktop-2jj3187-local-admin` | Planned; secret value not created here. |
 | Recovery key item | None for this slice. | BitLocker is not in target state; do not create a recovery-key item unless a later explicit decision enables BitLocker. |
 | Shared admin password | Not allowed. | No shared credential approved. |
-| Remote administration | RDP plus SSH/PowerShell over Cloudflare private network or Access-protected hostnames only. | LAN RDP server-side enablement applied, TCP `3389` reachable from the MacBook on `desktop-2jj3187.home.arpa`, and Windows App GUI management verified by operator report. |
+| Remote administration | RDP for GUI administration; future shell administration through Windows OpenSSH only after approval. | LAN RDP server-side enablement applied, TCP `3389` reachable from the MacBook on `desktop-2jj3187.home.arpa`, and Windows App GUI management verified by operator report. |
 | PowerShell Remoting / WinRM | Disabled unless explicit need and approval. | Not approved. |
 | Kid local privilege | Kids remain standard users. | Source report says this is already correct. |
 | Codex sandbox accounts | Preserve. | Source report says leave sandbox accounts untouched. |
@@ -134,6 +134,37 @@ Preferred path:
   [windows-app-desktop-2jj3187.md](./windows-app-desktop-2jj3187.md). That
   profile defines client-side values only and does not approve broader RDP
   exposure beyond the LAN-scoped rules already applied.
+
+## Shell Administration Posture
+
+Current approved shell posture:
+
+- Use PowerShell inside the verified RDP session for ad hoc interactive
+  administration.
+- Do not enable PowerShell Remoting or WinRM yet.
+- Do not expose PowerShell Remoting, WinRM, OpenSSH, or another shell service
+  outside the LAN or a future approved private overlay.
+
+Preferred future shell path:
+
+- Windows OpenSSH Server is the preferred first remote shell service if GUI
+  management is not enough.
+- OpenSSH should be enabled only after explicit approval, then restricted to
+  LAN/private-overlay source ranges by Windows Firewall.
+- Administrative access should use public-key authentication. For Windows
+  local administrators, place approved admin keys in
+  `C:\ProgramData\ssh\administrators_authorized_keys` with Microsoft-required
+  ACLs, then verify login before disabling password SSH.
+- Human interactive keys may be used for human sessions through the approved
+  1Password SSH-agent posture. Do not reuse a human workstation key for
+  unattended automation.
+
+PowerShell Remoting / WinRM remains a later exception path:
+
+- Enable only if a concrete workflow requires WinRM semantics.
+- Prefer HTTPS transport, narrow firewall source ranges, and explicit rollback
+  steps.
+- Do not use broad `TrustedHosts` or public WAN exposure for this workstation.
 
 Current state:
 

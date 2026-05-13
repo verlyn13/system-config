@@ -244,7 +244,7 @@ Remote administration is a target state, not current truth.
 
 | Device | Preferred path | Current status |
 |---|---|---|
-| Windows PC | RDP and SSH/PowerShell over Cloudflare private network or Access-protected hostnames; no public inbound ports. | LAN RDP is enabled, TCP `3389` is reachable from the MacBook at `desktop-2jj3187.home.arpa`, interactive Windows App GUI management is verified, and HomeNetOps static DHCP/DNS plus WoL are verified. Cloudflare/WARP remains pending. |
+| Windows PC | RDP for GUI administration; Windows OpenSSH is the preferred future shell path after approval; WinRM/PowerShell Remoting remains off unless a concrete need is approved. No public inbound ports. | LAN RDP is enabled, TCP `3389` is reachable from the MacBook at `desktop-2jj3187.home.arpa`, interactive Windows App GUI management is verified, and HomeNetOps static DHCP/DNS plus WoL are verified. Cloudflare/WARP remains pending. |
 | Fedora 44 laptop | SSH over Cloudflare private routing or Access-protected hostname; optional Cockpit only through Cloudflare Access; Tailscale only as ACL-restricted break-glass. | Source report says SSH is active on all interfaces with password auth enabled, WARP/cloudflared absent, and Tailscale installed but logged out. |
 
 ## Evidence Model
