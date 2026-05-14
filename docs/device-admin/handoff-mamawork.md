@@ -73,16 +73,21 @@ direct chat.
    for `verlyn13`?** Check via `for k in
    ~/.ssh/id_*; do ssh-keygen -lf "$k" 2>/dev/null; done` on
    `fedora-top` and look for fingerprint
-   `SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk`. If found,
-   SSH from `verlyn13@fedora-top` to `DadAdmin@192.168.0.101`
-   should work once `known_hosts` is set up (the
-   [known_hosts reconciliation packet](./fedora-top-known-hosts-reconciliation-packet-2026-05-13.md)
-   addresses `fedora-top.home.arpa`, not `192.168.0.101`'s
-   MAMAWORK-side trust path - that's a separate small change). If
-   the private key is gone, a fresh keypair must be generated on
-   `fedora-top` and the new public key added to
-   `C:\ProgramData\ssh\administrators_authorized_keys` on MAMAWORK
-   in a future elevated-write packet.
+   `SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk`. The point
+   of this question is **only** to decide whether MAMAWORK SSH
+   bootstrap can reuse an existing intended key or needs a fresh
+   keypair. `DadAdmin_WinNet` is **legacy / bootstrap context** for
+   the prior Fedora-to-MAMAWORK remote development setup and is
+   **not** the Fedora admin-backup key path. Do not repurpose it
+   for Fedora admin backup; that role belongs to the separate
+   [fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md](./fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md).
+   If the private key is found, record only the fingerprint match
+   (already known) in the reply. If the private key is gone or
+   continuity is unclear, the future
+   `mamawork-ssh-key-bootstrap` packet will generate a fresh
+   keypair on `fedora-top` and add the new public key to
+   `C:\ProgramData\ssh\administrators_authorized_keys` on
+   MAMAWORK in an elevated-write packet.
 2. **Which Microsoft Account maps to which household member?**
    (`ahnie`, `axelp`, `ilage`, `jeffr`, `wynst`).
 3. **Is `ahnie`'s membership in MAMAWORK `Administrators` intended?**

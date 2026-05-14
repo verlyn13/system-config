@@ -120,14 +120,12 @@ devices:
         packet_doc: docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
         prepared_at: 2026-05-14T00:10:00Z
         state: approval-required
-        approval_phrase_excerpt: >-
-          "I approve applying the MacBook known_hosts reconciliation
-          for fedora-top.home.arpa: back up ~/.ssh/known_hosts; sanity
-          check ... run ssh-keyscan -t ed25519 -H
-          fedora-top.home.arpa, verify the fetched key's fingerprint
-          matches SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w
-          ... MacBook-side only; do not touch fedora-top, sshd, ..."
-          (see packet for full text).
+        approval_phrase_excerpt: "See packet for full text. MacBook-side only; adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts using the verified ED25519 fingerprint SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w."
+      - name: admin-backup-ssh-key-strategy
+        packet_doc: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md
+        prepared_at: 2026-05-14T17:30:00Z
+        state: prepared
+        approval_phrase_excerpt: "See packet for full text. Adds one additional verlyn13 ED25519 public key to fedora-top /home/verlyn13/.ssh/authorized_keys, with the private half held in 1Password only (NOT the legacy MAMAWORK DadAdmin_WinNet key). Keeps AllowUsers verlyn13, keeps PasswordAuthentication no, does not add any other admin user. Snapshot-backed rollback. Closes the single-MacBook dependency for fedora-top remote administration."
 
     blocked_items:
       - item: cloudflare-dns-handback-needed
@@ -192,15 +190,12 @@ devices:
           WARP/cloudflared cutover, Tailscale login-with-ACL, and
           Tailscale remove-after-Cloudflare. Each will quote its
           own live-action approval phrase when drafted.
+      - action: fedora-top-admin-backup-ssh-key-strategy
+        state: prepared
+        approval_phrase: "See docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md 'Required Approval Phrase' section. Adds one additional verlyn13 admin key path (1Password-backed) to fedora-top authorized_keys; no password SSH; no other admin user; no DadAdmin_WinNet reuse. Highest priority because the host currently has a single-client dependency on the MacBook."
       - action: fedora-top-known-hosts-reconciliation
         state: approval-required
-        approval_phrase: >-
-          See
-          docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
-          "Required Approval Phrase" section. MacBook-side only;
-          adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts
-          using the verified ED25519 fingerprint
-          SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w.
+        approval_phrase: "See docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md 'Required Approval Phrase' section. MacBook-side only; adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts using the verified ED25519 fingerprint SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w."
       - action: docker-hygiene-packet
         state: planned
         approval_phrase: >-
@@ -323,13 +318,7 @@ devices:
           (handback-request-cloudflare-dns-2026-05-13.md).
       - item: mamawork-ssh-key-continuity-verification
         owner: human
-        notes: >-
-          Verify whether the DadAdmin_WinNet ED25519 private key
-          (fingerprint
-          SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk) still
-          exists on fedora-top after the prior workstation
-          migration. Gates whether the future mamawork-ssh-key-
-          bootstrap packet generates a fresh keypair.
+        notes: "Verify whether the DadAdmin_WinNet ED25519 private key (fingerprint SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk) still exists on fedora-top after the prior workstation migration. This question's purpose is ONLY to decide whether MAMAWORK SSH bootstrap can reuse an existing intended key or needs a fresh keypair. DadAdmin_WinNet is legacy/bootstrap context and is explicitly NOT the Fedora admin-backup key - that role belongs to fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md. Gates whether the future mamawork-ssh-key-bootstrap packet generates a fresh keypair."
       - item: mamawork-pwsh51-optional-features-rerun
         owner: human
         notes: >-
