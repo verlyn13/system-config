@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T02:45:00Z
+last_updated: 2026-05-14T03:05:00Z
 
 devices:
   - device: fedora-top
@@ -284,6 +284,16 @@ devices:
         prepared_at: 2026-05-14T02:50:00Z
         state: prepared
         approval_phrase_excerpt: "Operator-applied on MAMAWORK from elevated PowerShell. Snapshots administrators_authorized_keys + DadAdmin per-user authorized_keys, verifies the new operator-supplied public-key fingerprint matches SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY (1Password item op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13), appends to administrators_authorized_keys, mirrors into DadAdmin per-user authorized_keys, refuses duplicates. Does NOT remove the legacy DadAdmin_WinNet line. Does NOT touch sshd_config, Windows Firewall, RDP, WinRM, accounts/groups, the duplicate DadAdmin.MamaWork profile, or C:\\Users\\jeffr\\.ssh\\authorized_keys.txt. Remote verification deferred to after the MAMAWORK SSH investigation packet remediates TCP/22."
+      - name: mamawork-lan-rdp-implementation
+        packet_doc: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
+        prepared_at: 2026-05-14T03:00:00Z
+        state: prepared
+        approval_phrase_excerpt: "Operator-applied on MAMAWORK from elevated PowerShell 7+. Mirrors the DESKTOP-2JJ3187 RDP pattern: NetworkCategory Private; fDenyTSConnections=0; UserAuthentication=1 (NLA); TermService Running+Automatic; disable built-in Remote Desktop firewall group; create custom Jefahnierocks RDP LAN TCP 3389 + UDP 3389 (Inbound Allow, Private, RemoteAddress 192.168.0.0/24); powercfg /hibernate off + AC sleep/hibernate 0 + HYBRIDSLEEP 0; idempotent NIC Magic Packet/Pattern Match/PME Enabled; capture evidence to C:\\Users\\Public\\Documents\\jefahnierocks-device-admin\\mamawork-rdp-lan-<ts>.txt. Does NOT touch SSH/sshd/authorized_keys, WinRM, accounts, BitLocker, Secure Boot, Tailscale, Cloudflare, WARP, cloudflared, OPNsense, DNS, DHCP, 1Password, or host-static-vs-DHCP. Verify with MacBook nc -vz on 192.168.0.101:3389 and mamawork.home.arpa:3389, then Windows App profile per windows-app-mamawork.md."
+      - name: windows-app-mamawork-profile
+        packet_doc: docs/device-admin/windows-app-mamawork.md
+        prepared_at: 2026-05-14T03:00:00Z
+        state: prepared
+        approval_phrase_excerpt: "Documentation-only profile for the MacBook Windows App: PC name mamawork.home.arpa; friendly name MAMAWORK - Jefahnierocks Admin; credentials Ask when required (NEVER saved); gateway No gateway; reconnect checked; admin-session unchecked; no redirected folders; no public IP/DNS target. Approval inherent in the RDP implementation packet's GUI smoke test step; no separate apply doc needed."
       - name: mamawork-ssh-investigation
         packet_doc: docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md
         prepared_at: 2026-05-14T17:30:00Z
@@ -357,6 +367,9 @@ devices:
       - action: mamawork-ssh-key-bootstrap
         state: prepared
         approval_phrase: "See docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md 'Required Approval Phrase' section. Operator-applied on MAMAWORK from elevated PowerShell using the fresh 1Password key SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY."
+      - action: mamawork-lan-rdp-implementation
+        state: prepared
+        approval_phrase: "See docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md 'Required Approval Phrase' section. Operator-applied on MAMAWORK from elevated PowerShell 7+; mirrors the DESKTOP-2JJ3187 pattern; LAN-only RDP scoped to 192.168.0.0/24 on the Private profile; no WAN exposure; no WinRM/VNC; no SSH/firewall/account/Cloudflare/Tailscale/WARP changes."
       - action: mamawork-ssh-hardening
         state: planned
         approval_phrase: >-
@@ -388,22 +401,22 @@ devices:
           operator interaction required.
 
     next_recommended_action:
-      summary: "Three parallel-able tracks. (1) Confirm WARP enrollment plan: Kids profile for MAMAWORK (with Litecky trade-off explicit) and pick MAMAWORK enrollment identity. (2) MAMAWORK SSH investigation - approved, awaits operator-run elevated PowerShell on MAMAWORK; returning SUMMARY.md unblocks the remediation packet. (3) Fedora admin-backup - approved, awaits operator-created 1Password SSH Key item + returned public-key body and ED25519 fingerprint. The MAMAWORK DHCP source-of-truth packet remains deferred until MAMAWORK SSH is stable. The fedora-top known_hosts reconciliation packet remains available as a small MacBook-side cleanup."
-      preferred_packet: mamawork-ssh-investigation
-      preferred_packet_status: approved-blocked-on-operator-run
+      summary: "Operator-side on MAMAWORK from elevated PowerShell: (B) apply mamawork-ssh-key-bootstrap (installs new 1Password admin key SHA256:qilvkR7/... into administrators_authorized_keys); (C) apply mamawork-lan-rdp-implementation (LAN-only RDP scoped to 192.168.0.0/24, NLA, custom firewall rules, Private profile); (D) configure the MacBook Windows App profile per windows-app-mamawork.md and verify the GUI session. The mamawork-ssh-investigation packet can be run in parallel to diagnose the TCP/22 timeout if SSH-from-fedora-top is also wanted. (E) WARP/Tunnel cutover packets stay deferred until LAN admin paths (RDP + SSH-after-investigation) are stable."
+      preferred_packet: mamawork-ssh-key-bootstrap
+      preferred_packet_status: prepared
       preferred_packet_blockers:
-        - slug: operator-elevated-powershell-run
-          note: "Operator runs the read-only PowerShell procedure on MAMAWORK and returns SUMMARY.md."
-      secondary_packet: fedora-top-admin-backup-ssh-key-strategy
-      secondary_packet_status: approved-blocked-on-operator-input
+        - slug: operator-elevated-powershell-on-mamawork
+          note: "Operator runs the bootstrap script in an elevated PowerShell session on MAMAWORK; returns non-secret SUMMARY back to system-config."
+      secondary_packet: mamawork-lan-rdp-implementation
+      secondary_packet_status: prepared
       secondary_packet_blockers:
-        - slug: operator-1password-item-creation
-          note: "Operator creates the 1Password SSH Key item and returns the public-key body + ED25519 fingerprint."
-      tertiary_packet: fedora-top-warp-enrollment-cutover
-      tertiary_packet_status: drafteable
+        - slug: operator-elevated-powershell-on-mamawork
+          note: "Same operator-side PowerShell session; can run immediately after the SSH key bootstrap."
+      tertiary_packet: mamawork-ssh-investigation
+      tertiary_packet_status: approved-blocked-on-operator-run
       tertiary_packet_blockers:
-        - slug: operator-confirm-kids-profile-and-enrollment-identity
-          note: "Operator confirms Kids profile placement for fedora-top with WARP identity wynrjohnson@gmail.com (already in cloudflare-dns kids.emails). No cloudflare-dns IaC change needed. Once confirmed, system-config drafts the WARP-enrollment-only cutover packet citing cloudflare-dns b5b9460."
+        - slug: operator-elevated-powershell-run
+          note: "Read-only investigation of why TCP/22 from fedora-top to MAMAWORK times out; can be run in parallel with B + C."
       handback_to_human: true
 
     last_verified: 2026-05-13T15:00:11-08:00
@@ -484,10 +497,38 @@ recommended_packet_order_2026_05_14:
     artifact: docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md
   - step: E
     description: "Await actual cloudflare-dns handback before drafting WARP / cloudflared cutover packets for fedora-top or MAMAWORK."
-    state: blocked
-    blockers:
-      - cloudflare-dns-handback-not-yet-received
+    state: superseded
+    superseded_at: 2026-05-14T19:15:00Z
+    superseded_note: "cloudflare-dns handback received and ingested in commit cb6aeba (citing cloudflare-dns commit b5b9460). WARP enrollment for fedora-top + MAMAWORK is now drafteable, BUT the 2026-05-14 priority refresh below sequences SSH-key + RDP before WARP."
   - step: F
     description: "Keep fedora-top known_hosts reconciliation available as a small MacBook-side cleanup packet, but do not let it distract from the broader backup-admin requirement (step B)."
     state: prepared
     artifact: docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
+
+recommended_packet_order_2026_05_14_priority_refresh:
+  note: "2026-05-14 priority refresh from the operator. The cloudflare-dns handback unblocked WARP-enrollment cutovers, but the operator's explicit request was to prioritize practical remote administration (SSH key + RDP) over WARP/Tunnel work for this packet series."
+  steps:
+    - step: A
+      description: "Apply fedora-top admin-backup SSH key packet (LIVE)."
+      state: done
+      landed_in_commit: 1d3a520
+      artifact_apply: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md
+    - step: B
+      description: "Prepare/apply MAMAWORK SSH key bootstrap packet using the new 1Password-backed key."
+      state: prepared
+      landed_in_commit: 037f62f
+      artifact: docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md
+    - step: C
+      description: "Prepare/apply MAMAWORK LAN RDP bootstrap packet, modeled on windows-lan-rdp-implementation-2026-05-13.md, scoped to 192.168.0.0/24 on Private profile, NLA, no WAN exposure."
+      state: prepared
+      landed_in_commit: pending     # filled by Lane C commit
+      artifact: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
+    - step: D
+      description: "Prepare MAMAWORK Windows App profile guidance for the MacBook."
+      state: prepared
+      landed_in_commit: pending     # filled by Lane C commit
+      artifact: docs/device-admin/windows-app-mamawork.md
+    - step: E
+      description: "WARP / Tunnel work for fedora-top and MAMAWORK is deferred until LAN admin paths (SSH-key + RDP) are stable. cloudflare-dns handback at b5b9460 unblocks the cutover packet authoring whenever the operator is ready."
+      state: deferred-by-operator
+      step_note: "Per 2026-05-14 operator priority refresh."
