@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T18:30:00Z
+last_updated: 2026-05-14T19:15:00Z
 
 devices:
   - device: fedora-top
@@ -133,17 +133,12 @@ devices:
       - item: fedora-top-admin-backup-operator-input
         owner: human
         notes: "Fedora admin-backup SSH key strategy was approved 2026-05-14 (see prepared_packets entry). Apply is blocked on the human creating a 1Password SSH Key item (proposed name jefahnierocks-device-fedora-top-admin-backup-verlyn13) and returning two non-secret values: the resulting ED25519 public-key body (single OpenSSH line) and its fingerprint. The agent will NOT create the 1Password item per system-config secrets policy."
-      - item: cloudflare-dns-handback-needed
-        owner: cloudflare-dns
-        notes: >-
-          The remote-admin routing design (prepared 2026-05-13) asks
-          cloudflare-dns for a handback covering Zero Trust org
-          structure, WARP enrollment posture, Access policy posture,
-          Tunnel naming convention, and the device-profile
-          recommendation for fedora-top (Wyn user, verlyn13
-          administrator). No Cloudflare-side assertion in
-          system-config is authoritative until that handback lands;
-          quoted by commit SHA.
+      - item: fedora-top-warp-enrollment-cutover-pending
+        owner: human
+        notes: "cloudflare-dns recommends fedora-top -> Kids profile with WARP identity wynrjohnson@gmail.com (already in policy-inputs.yaml kids.emails). The Kids profile already matches by identity.email so NO Pulumi change is needed on the cloudflare-dns side for a WARP-enrollment-only cutover. system-config can draft fedora-top-warp-enrollment-cutover-packet once the operator confirms (1) Kids profile placement, (2) wynrjohnson@gmail.com as enrollment identity. Cited cloudflare-dns commit: b5b9460."
+      - item: fedora-top-ssh-over-tunnel-cutover-pending
+        owner: cloudflare-dns + human
+        notes: "Off-LAN SSH admin path via Cloudflare Tunnel + Access requires cloudflare-dns to land a Pulumi commit adding the SSH Access app + Tunnel + connector token + posture checks for fedora-top FIRST. Working naming candidates from cloudflare-dns: tunnel-fedora-top, access-app-ssh-fedora-top, ssh-fedora-top.homezerotrust.cloudflareaccess.com. Recommended ingress: strict deny-by-default ssh-only. Recommended Access session 8h, posture WARP+home-managed-network, country US. All TBD until cloudflare-dns lands the IaC."
       - item: tailscale-login-with-acl-pending
         owner: human
         notes: >-
@@ -312,13 +307,15 @@ devices:
       - item: mamawork-ssh-investigation-operator-run
         owner: human
         notes: "MAMAWORK SSH investigation packet was approved 2026-05-14 (read-only). Apply is blocked on the operator running the documented elevated PowerShell procedure ON MAMAWORK (not from fedora-top, since SSH to MAMAWORK is the broken path the investigation diagnoses) and returning a non-secret SUMMARY.md. Once SUMMARY arrives, system-config ingests findings into a small evidence doc and a follow-up remediation packet is drafted per the investigation's hypothesis-tree outcomes."
-      - item: mamawork-cloudflare-profile-recommendation-pending
+      - item: mamawork-warp-enrollment-cutover-pending
+        owner: human + cloudflare-dns
+        notes: "cloudflare-dns recommends MAMAWORK -> Kids profile but flags an explicit trade-off: Kids profile is LOCKED, so Mama (primary user with Litecky Editing Services workload) cannot disconnect WARP. Before MAMAWORK enrolls, every Litecky-required domain that the Kids-controls Gateway policies (06-adult-themes, 07-ytrestricted, 08-safesearch, 09-content-block, 13-kids-social-block) would block MUST be added to the cloudflare-dns 01-custom-allow list (precedence 10) via a cloudflare-dns Pulumi commit. Operator must pick MAMAWORK enrollment identity between axelptjohnson@gmail.com and wynrjohnson@gmail.com. WARP is system-level so one identity applies to all Windows accounts on the machine. Cited cloudflare-dns commit: b5b9460."
+      - item: mamawork-litecky-allow-list-required-before-warp
         owner: cloudflare-dns
-        notes: >-
-          Zero Trust profile recommendation for MAMAWORK
-          (kids' learning device; verlyn13 administrator) is part
-          of the broader cloudflare-dns handback request
-          (handback-request-cloudflare-dns-2026-05-13.md).
+        notes: "Hard prerequisite to the MAMAWORK Kids-profile WARP cutover. cloudflare-dns must add Litecky-required domains to 01-custom-allow (precedence 10) BEFORE the cutover. Inbound request to cloudflare-dns will be filed once the operator enumerates the Litecky domain set."
+      - item: mamawork-litecky-org-migration-future
+        owner: human + cloudflare-dns + Litecky
+        notes: "Long-term: MAMAWORK may migrate to a separate Litecky Cloudflare org. At that point MAMAWORK profile placement revisits - a Litecky org would let Mama run an adults-equivalent profile under Litecky's Zero Trust posture without forcing kids-controls on her work. Tracked here as a future consideration, not a current packet."
       - item: mamawork-ssh-key-continuity-verification
         owner: human
         notes: "Verify whether the DadAdmin_WinNet ED25519 private key (fingerprint SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk) still exists on fedora-top after the prior workstation migration. This question's purpose is ONLY to decide whether MAMAWORK SSH bootstrap can reuse an existing intended key or needs a fresh keypair. DadAdmin_WinNet is legacy/bootstrap context and is explicitly NOT the Fedora admin-backup key - that role belongs to fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md. Gates whether the future mamawork-ssh-key-bootstrap packet generates a fresh keypair."
@@ -387,7 +384,7 @@ devices:
           operator interaction required.
 
     next_recommended_action:
-      summary: "Operator-side work to unblock the two approved packets. (1) Create the 1Password SSH Key item for the Fedora admin-backup and return its public-key body + fingerprint; system-config then applies the Fedora admin-backup packet (closes the single-MacBook dependency). (2) Run the MAMAWORK SSH investigation procedure in elevated PowerShell on MAMAWORK and return the non-secret SUMMARY.md; system-config then ingests findings and drafts a small remediation packet. The MAMAWORK DHCP source-of-truth packet is approved but explicitly deferred until SSH access is stable. The fedora-top known_hosts reconciliation packet remains available as a small MacBook-side cleanup but has lower priority than the admin-backup work."
+      summary: "Three parallel-able tracks. (1) Confirm WARP enrollment plan: Kids profile for MAMAWORK (with Litecky trade-off explicit) and pick MAMAWORK enrollment identity. (2) MAMAWORK SSH investigation - approved, awaits operator-run elevated PowerShell on MAMAWORK; returning SUMMARY.md unblocks the remediation packet. (3) Fedora admin-backup - approved, awaits operator-created 1Password SSH Key item + returned public-key body and ED25519 fingerprint. The MAMAWORK DHCP source-of-truth packet remains deferred until MAMAWORK SSH is stable. The fedora-top known_hosts reconciliation packet remains available as a small MacBook-side cleanup."
       preferred_packet: mamawork-ssh-investigation
       preferred_packet_status: approved-blocked-on-operator-run
       preferred_packet_blockers:
@@ -398,6 +395,11 @@ devices:
       secondary_packet_blockers:
         - slug: operator-1password-item-creation
           note: "Operator creates the 1Password SSH Key item and returns the public-key body + ED25519 fingerprint."
+      tertiary_packet: fedora-top-warp-enrollment-cutover
+      tertiary_packet_status: drafteable
+      tertiary_packet_blockers:
+        - slug: operator-confirm-kids-profile-and-enrollment-identity
+          note: "Operator confirms Kids profile placement for fedora-top with WARP identity wynrjohnson@gmail.com (already in cloudflare-dns kids.emails). No cloudflare-dns IaC change needed. Once confirmed, system-config drafts the WARP-enrollment-only cutover packet citing cloudflare-dns b5b9460."
       handback_to_human: true
 
     last_verified: 2026-05-13T15:00:11-08:00
@@ -408,9 +410,14 @@ outbound_handback_requests:
     target_path: /Users/verlyn13/Repos/local/cloudflare-dns
     request_doc: docs/device-admin/handback-request-cloudflare-dns-2026-05-13.md
     requested_at: 2026-05-14T00:25:00Z
-    state: open
+    answered_at: 2026-05-14T19:15:00Z
+    state: answered
+    answered_doc: docs/device-admin/cloudflare-dns-handback-ingest-2026-05-14.md
+    cited_source_commit: b5b9460
+    cited_source_path: docs/handback-system-config-2026-05-13.md
     summary: "Org structure, WARP/device enrollment posture, Access policy posture, Tunnel posture, naming conventions, and per-device Zero Trust profile recommendation for fedora-top (Wyn user, verlyn13 administrator) and MAMAWORK (kids' learning device, verlyn13 administrator)."
-    note: "An earlier system-config-side draft response was mistakenly circulated as if it were a cloudflare-dns handback; that text was authored in system-config and does NOT satisfy this request. State remains open until an actual reply from /Users/verlyn13/Repos/local/cloudflare-dns arrives, citing a commit SHA in that repo."
+    answered_summary: "Single Cloudflare account (team homezerotrust, team domain homezerotrust.cloudflareaccess.com); IaC is Pulumi TypeScript (NOT OpenTofu); tokens live in gopass not 1Password. WARP already enrolled on 7 fleet devices; fedora-top and MAMAWORK would be first Linux/Windows enrollments. Identity providers: Google OAuth + email OTP. Four profiles: Default + Kids (locked, full tunnel) + Adults (unlocked) + Headless (MDM, locked). WARP is system-level on macOS/Windows/Linux: one identity per machine. RECOMMENDATION: Kids profile for BOTH fedora-top (user Wyn) and MAMAWORK (kids' learning + shared school workload). MAMAWORK trade-off: Kids profile is locked so Mama cannot disconnect; Litecky-required domains must be allow-listed in cloudflare-dns 01-custom-allow BEFORE cutover; MAMAWORK may migrate to a Litecky org later. No Access app or Tunnel exists today (both TBD; working naming candidates recorded). Per-device 1Password admin items: cloudflare-dns does not own them; system-config naming candidates accepted unchanged."
+    note: "Supersedes the earlier mistakenly-circulated system-config-side draft response. The Hetzner advisory (commit 009c091) quoted some cloudflare-dns state for context; this handback is the authoritative source on all Cloudflare-policy questions and overrides any conflict with the Hetzner advisory."
 
   - target_repo: homenetops
     target_path: ~/Repos/verlyn13/HomeNetOps
@@ -421,6 +428,20 @@ outbound_handback_requests:
     answered_doc: docs/device-admin/mamawork-homenetops-lan-identity-2026-05-14.md
     summary: "Two items. (1) Posture confirmation for fedora-top - no new rule requested. (2) New MAMAWORK static DHCP reservation for the wired MAC plus Unbound host override for mamawork.home.arpa."
     answered_summary: "PASS. MAMAWORK static DHCP reservation bound on the OPNsense appliance; Unbound override for mamawork.home.arpa is active and resolves to 192.168.0.101; LAN/igc1 ARP confirms the IP-to-MAC binding; dig from the LAN resolver returns 192.168.0.101. TCP/22 from fedora-top to MAMAWORK times out, but the HomeNetOps report explicitly notes this is a Windows-side issue and OPNsense is not gating same-subnet TCP/22. ARP permanent=false because MAMAWORK is currently using a host-side static IP; the ISC static-ARP defense layer will not activate until MAMAWORK switches to DHCP (separate optional packet flagged). Fedora-top posture confirmation is implicit in the same handback - LAN routing PASS and SSH from fedora-top reaches the MAMAWORK end-of-network."
+
+cross_cutting_tbd_items:
+  - item: tunnel-naming-convention
+    owner: cloudflare-dns
+    notes: "Working candidate (tunnel-<host>) recorded in the cloudflare-dns handback. Authoritative when cloudflare-dns lands the first Tunnel via Pulumi."
+  - item: access-app-naming-convention-for-ssh
+    owner: cloudflare-dns
+    notes: "Working candidates recorded: logical access-app-ssh-<host>; dashboard label SSH - <host>; hostname ssh-<host>.homezerotrust.cloudflareaccess.com. Authoritative when cloudflare-dns lands the first SSH Access app."
+  - item: default-access-session-duration-and-posture
+    owner: cloudflare-dns
+    notes: "Working recommendations: session 8h (or 24h for low-friction admin), posture WARP+home-managed-network, country US. Not authoritative until cloudflare-dns lands the first SSH Access app."
+  - item: warp-mdm-service-token-1password-mirror
+    owner: human
+    notes: "Optional. cloudflare-dns currently holds the token in Pulumi state + Cloudflare Access service-tokens UI only. If system-config wants a 1Password break-glass copy, suggested item name jefahnierocks-cloudflare-warp-mdm-service-token. Not required for fedora-top or MAMAWORK enrollment (both use browser OAuth, not service-token)."
 
 advisory_ingests:
   - source_repo: hetzner

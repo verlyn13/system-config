@@ -370,10 +370,21 @@ These should be answered in or with the
   [HomeNetOps handback request](./handback-request-homenetops-2026-05-13.md).
 - `cloudflare-dns` owns Cloudflare DNS, Tunnel, Access, Gateway,
   WARP device enrollment, Zero Trust profile assignment, and
-  adult-vs-kids profile membership. No Cloudflare assertion about
-  MAMAWORK is authoritative in this repo until a `cloudflare-dns`
-  handback supplies it; see the outbound
-  [cloudflare-dns handback request](./handback-request-cloudflare-dns-2026-05-13.md).
+  adult-vs-kids profile membership. The authoritative
+  [cloudflare-dns handback ingest](./cloudflare-dns-handback-ingest-2026-05-14.md)
+  (citing cloudflare-dns commit `b5b9460`) recommends MAMAWORK ->
+  **Kids profile** with one explicit trade-off: Kids profile is
+  **locked**, so Mama (primary Litecky Editing Services user)
+  cannot disconnect WARP on her Windows account. Every Litecky-
+  required domain that the kids-controls Gateway policies would
+  block must be added to the cloudflare-dns `01-custom-allow` list
+  (precedence 10) **before** the MAMAWORK WARP cutover. Operator
+  picks the WARP enrollment identity between
+  `axelptjohnson@gmail.com` and `wynrjohnson@gmail.com`. **WARP is
+  system-level**: one identity per machine, regardless of how many
+  Windows user accounts exist on MAMAWORK. MAMAWORK may migrate to
+  a separate Litecky Cloudflare org later; at that point profile
+  placement revisits.
 
 ## Related
 

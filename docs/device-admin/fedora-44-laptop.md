@@ -117,14 +117,22 @@ External evidence ingested from:
   SSH (current), Tailscale (transition / break-glass, retained
   logged-out), and Cloudflare WARP + `cloudflared` (target).
   Categorizes direct WAN SSH as rejected. Enumerates evidence
-  needed from `cloudflare-dns` (Zero Trust org structure, WARP
-  enrollment, Access policy posture, Tunnel naming, device-profile
-  recommendation for `fedora-top` as a Wyn-used laptop administered
-  by verlyn13) and from HomeNetOps (confirmation that no new LAN
-  rule is required for the future cutover). Records household
-  admin / family-account stance. Lists four future approval-gated
-  packets and their placeholder approval phrases. Design only; no
-  live action authorized by this packet.
+  needed from `cloudflare-dns` and from HomeNetOps. Records
+  household admin / family-account stance.
+- [cloudflare-dns-handback-ingest-2026-05-14.md](./cloudflare-dns-handback-ingest-2026-05-14.md)
+  for the authoritative `cloudflare-dns` handback (commit
+  `b5b9460`, path `docs/handback-system-config-2026-05-13.md` in
+  the cloudflare-dns repo). Cloudflare account is a single account
+  with team `homezerotrust`; IaC is **Pulumi (TypeScript)**, NOT
+  OpenTofu; tokens live in **gopass** under
+  `cloudflare/cloudflare-dns/*`. Profile recommendation for
+  fedora-top: **Kids profile**, WARP identity
+  `wynrjohnson@gmail.com` (already in `policy-inputs.yaml`
+  kids.emails); no Pulumi change needed for WARP-only enrollment.
+  Off-LAN SSH path requires a future cloudflare-dns Pulumi commit
+  adding the SSH Access app + Tunnel + connector token (naming
+  candidates `access-app-ssh-fedora-top` and `tunnel-fedora-top`;
+  hostname `ssh-fedora-top.homezerotrust.cloudflareaccess.com`).
 
 Repo-safe current facts from these updates:
 
