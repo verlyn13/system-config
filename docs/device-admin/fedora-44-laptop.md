@@ -112,6 +112,19 @@ External evidence ingested from:
   Tailscale package, daemon, repo, GPG key, listener posture all
   unchanged. Further Tailscale operating work is blocked on the
   remote-admin routing design packet.
+- [fedora-top-remote-admin-routing-design-2026-05-13.md](./fedora-top-remote-admin-routing-design-2026-05-13.md)
+  for the prepared remote-admin routing design. Compares LAN-only
+  SSH (current), Tailscale (transition / break-glass, retained
+  logged-out), and Cloudflare WARP + `cloudflared` (target).
+  Categorizes direct WAN SSH as rejected. Enumerates evidence
+  needed from `cloudflare-dns` (Zero Trust org structure, WARP
+  enrollment, Access policy posture, Tunnel naming, device-profile
+  recommendation for `fedora-top` as a Wyn-used laptop administered
+  by verlyn13) and from HomeNetOps (confirmation that no new LAN
+  rule is required for the future cutover). Records household
+  admin / family-account stance. Lists four future approval-gated
+  packets and their placeholder approval phrases. Design only; no
+  live action authorized by this packet.
 
 Repo-safe current facts from these updates:
 

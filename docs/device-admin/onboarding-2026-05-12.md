@@ -185,6 +185,7 @@ Use these documents when starting an agent directly on the target device:
 | All devices (format) | [handback-format.md](./handback-format.md) | Schema for `current-status.yaml`, the packet-state vocabulary (`applied`, `prepared`, `approval-required`, `blocked`, `planned`), the agent handback template, and rules for when to update the YAML. |
 | Fedora 44 laptop | [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md) | MacBook-side Tailscale retain-or-remove packet. Two options with their own approval phrases. Guardian chose Option B (Retain logged-out) on 2026-05-13 - see [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md). Documentation-only; live state unchanged. Auth-URL exposure note carried forward; no daemon restart performed. |
 | Fedora 44 laptop | [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md) | Decision record for Option B (Retain logged-out). No live host change. Tailscale package, daemon, repo, GPG key, and listener posture unchanged from the 2026-05-13T23:18:14Z verification. Operator stop rules attached: no login, no enrollment, no auth-key creation, no firewalld passage, no upgrade, no daemon restart, no auth-URL recording in repo. Further Tailscale work is blocked on the remote-admin routing design packet. |
+| Fedora 44 laptop | [fedora-top-remote-admin-routing-design-2026-05-13.md](./fedora-top-remote-admin-routing-design-2026-05-13.md) | Prepared remote-admin routing design. LAN-only SSH = current; Tailscale (logged-out) = transition / break-glass; Cloudflare WARP + `cloudflared` = target; direct WAN SSH = rejected. Records household admin / family-account stance. Requests `cloudflare-dns` handback (Zero Trust org, WARP enrollment, Access posture, Tunnel naming, profile recommendation for a Wyn-used + verlyn13-administered device) and a minor HomeNetOps confirmation (no new LAN rule required). Lists four future approval-gated packets (`known-hosts-reconciliation`, `cloudflare-warp-cloudflared-cutover`, `tailscale-login-with-acl`, `tailscale-remove-after-cloudflare-proven`) with placeholder approval phrases. Design only; no live action authorized by approving this packet. |
 | Fedora 44 laptop | [fedora-top-system-config-agent-directive-2026-05-13.md](./fedora-top-system-config-agent-directive-2026-05-13.md) | Directive for the active `system-config` agent to prepare or apply the Fedora SSH hardening packet, depending on explicit guardian approval. |
 
 Handoff agents should return evidence back to this record set. They should not
@@ -332,12 +333,18 @@ Before any live change, collect or decide:
 - Treat Fedora LAN SSH as established and hardened, privilege cleanup
   as applied (default path), the Infisical/Redis retirement as applied
   (default path with image removal), the firewalld narrowing as
-  applied (default path), and the Tailscale retain-or-remove decision
-  as recorded (Option B Retain logged-out, documentation-only). The
-  next-priority packet is the remote-admin routing design (LAN /
-  Tailscale / WARP+cloudflared comparison; design only). The
-  remaining approval-gated items are the WARP / Cloudflare off-LAN
-  cutover, LUKS/power policy, a future narrow review of
+  applied (default path), the Tailscale retain-or-remove decision as
+  recorded (Option B Retain logged-out, documentation-only), and the
+  remote-admin routing design as prepared (LAN current / Tailscale
+  transition / WARP+cloudflared target / direct WAN rejected). The
+  next live-action packet is `fedora-top-known-hosts-reconciliation`
+  (small, MacBook-side only). In parallel, request a `cloudflare-dns`
+  handback covering Zero Trust org structure, WARP enrollment posture,
+  Access policy posture, Tunnel naming, and a device-profile
+  recommendation for `fedora-top`. The remaining approval-gated
+  items are the WARP / Cloudflare off-LAN cutover (needs the
+  handback), the optional Tailscale login-with-ACL break-glass
+  packet, LUKS/power policy, a future narrow review of
   `verlyn13 NOPASSWD: ALL`, and a general Docker hygiene pass over
   the `docker` zone target, unrelated exited containers, and
   reclaimable images/volumes/build cache.

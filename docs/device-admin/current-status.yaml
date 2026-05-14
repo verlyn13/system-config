@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-13T23:30:00Z
+last_updated: 2026-05-13T23:45:00Z
 
 devices:
   - device: fedora-top
@@ -93,7 +93,7 @@ devices:
         packet_doc: docs/device-admin/fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md
         apply_record: docs/device-admin/fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md
         packet_commit: 2134aaf
-        apply_commit: pending     # filled by Lane 1 commit
+        apply_commit: 4135970
         applied_at: 2026-05-13T23:30:00Z
         outcome: retained-logged-out
         notes: >-
@@ -104,33 +104,46 @@ devices:
           firewalld passage, no upgrade, no daemon restart, no
           auth URL recording in repo.
 
-    prepared_packets: []
+    prepared_packets:
+      - name: remote-admin-routing-design
+        packet_doc: docs/device-admin/fedora-top-remote-admin-routing-design-2026-05-13.md
+        prepared_at: 2026-05-13T23:45:00Z
+        state: prepared
+        approval_phrase_excerpt: >-
+          Design/prep packet only; no live action is authorized by
+          approving this packet itself. The packet enumerates four
+          future approval-gated packets (known_hosts reconciliation,
+          Cloudflare WARP/cloudflared cutover, Tailscale
+          login-with-ACL, Tailscale remove-after-Cloudflare); each
+          will quote its own approval phrase when drafted.
 
     blocked_items:
-      - item: remote-admin-routing-design-pending
-        owner: human
+      - item: cloudflare-dns-handback-needed
+        owner: cloudflare-dns
         notes: >-
-          Tailscale retain decision recorded 2026-05-13; next gate
-          is the remote-admin routing design packet that compares
-          LAN-only SSH, Tailscale, and Cloudflare WARP/cloudflared,
-          categorizes each as current/transition/break-glass/target/
-          rejected, and enumerates evidence needed from
-          cloudflare-dns and HomeNetOps. No further Tailscale
-          operating work is authorized until that packet lands.
+          The remote-admin routing design (prepared 2026-05-13) asks
+          cloudflare-dns for a handback covering Zero Trust org
+          structure, WARP enrollment posture, Access policy posture,
+          Tunnel naming convention, and the device-profile
+          recommendation for fedora-top (Wyn user, verlyn13
+          administrator). No Cloudflare-side assertion in
+          system-config is authoritative until that handback lands;
+          quoted by commit SHA.
       - item: tailscale-login-with-acl-pending
         owner: human
         notes: >-
-          If the routing design selects Tailscale as a break-glass
-          overlay, a future tailscale-login-with-acl packet must
-          design ACL scope, identity provider, auth-key lifecycle,
-          and any required firewalld passage before any tailnet
-          enrollment.
+          The retained-logged-out posture is the agreed transitional
+          state. Activating Tailscale would require a separate packet
+          that designs ACL scope, identity provider, auth-key
+          lifecycle, and any required firewalld passage. Not
+          authorized today.
       - item: warp-and-cloudflared-design
         owner: human
         notes: >-
-          Off-LAN access via Cloudflare WARP and `cloudflared` needs a
-          design packet (token scope, device enrollment, Access policy)
-          before any client install.
+          Off-LAN access via Cloudflare WARP and `cloudflared` is the
+          target long-term path per the 2026-05-13 routing design.
+          Cutover packet authoring is gated on the cloudflare-dns
+          handback above.
       - item: luks-remote-reboot-strategy
         owner: human
         notes: >-
@@ -153,14 +166,23 @@ devices:
 
     approval_required:
       - action: remote-admin-routing-design
+        state: prepared
+        approval_phrase: >-
+          The design/prep packet at
+          docs/device-admin/fedora-top-remote-admin-routing-design-2026-05-13.md
+          is repo-only and is not itself a live action. Approving
+          it advances the four future approval-gated packets it
+          enumerates: known_hosts reconciliation, Cloudflare
+          WARP/cloudflared cutover, Tailscale login-with-ACL, and
+          Tailscale remove-after-Cloudflare. Each will quote its
+          own live-action approval phrase when drafted.
+      - action: fedora-top-known-hosts-reconciliation
         state: planned
         approval_phrase: >-
-          A design/prep packet at
-          docs/device-admin/fedora-top-remote-admin-routing-design-2026-05-13.md
-          is being authored next. Design output is repo-only; any
-          subsequent live cutover (Tailscale enrollment, WARP
-          install, cloudflared install, firewalld passage) will
-          require its own approval phrase quoted in that packet.
+          Small standalone packet; preferred next live action after
+          this design packet lands. Phrase will be drafted with the
+          packet. Will operate only on MacBook ~/.ssh/known_hosts,
+          will not touch fedora-top.
       - action: docker-hygiene-packet
         state: planned
         approval_phrase: >-
@@ -178,21 +200,22 @@ devices:
 
     next_recommended_action:
       summary: >-
-        Author the remote-admin routing design packet. It must
-        compare LAN-only SSH (current), Tailscale (retained
-        logged-out), and Cloudflare WARP / cloudflared (target);
-        categorize each path; preserve repo boundaries between
-        system-config, HomeNetOps, and cloudflare-dns; enumerate
-        evidence needed from cloudflare-dns and HomeNetOps; and
-        list approval phrases for any future live cutover.
-      preferred_packet: remote-admin-routing-design
+        Hand the prepared remote-admin routing design to the human
+        and to cloudflare-dns. The next live-action packet is
+        fedora-top-known-hosts-reconciliation (small, scoped, no
+        cross-repo dependency). In parallel, request a cloudflare-dns
+        handback covering Zero Trust org structure, WARP enrollment
+        posture, Access policy posture, Tunnel naming, and the
+        device-profile recommendation for fedora-top (Wyn user,
+        verlyn13 administrator) so the Cloudflare WARP/cloudflared
+        cutover packet can be authored.
+      preferred_packet: fedora-top-known-hosts-reconciliation
       preferred_packet_status: planned
       preferred_packet_blockers:
         - slug: doc-authoring
           note: >-
-            Authoring follows the Tailscale retain decision in the
-            same change set; no external blocker.
+            Small standalone packet; no external blocker.
       handback_to_human: true
 
     last_verified: 2026-05-13T23:18:14Z
-    latest_system_config_commit: pending     # filled by Lane 1 commit
+    latest_system_config_commit: 4135970
