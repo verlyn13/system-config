@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T17:30:00Z
+last_updated: 2026-05-14T17:45:00Z
 
 devices:
   - device: fedora-top
@@ -229,7 +229,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-13T23:18:14Z
-    latest_system_config_commit: 44f1dd7
+    latest_system_config_commit: a3ab575
 
   - device: mamawork
     owner: Jefahnierocks
@@ -394,7 +394,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-13T15:00:11-08:00
-    latest_system_config_commit: 10031c5
+    latest_system_config_commit: 5f650f9
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns
@@ -443,12 +443,12 @@ recommended_packet_order_2026_05_14:
   - step: C
     description: "Prepare MAMAWORK Windows-side SSH investigation / remediation packet."
     state: done
-    landed_in_commit: pending     # filled by Lane 3 commit
+    landed_in_commit: 5f650f9
     artifact: docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md
   - step: D
     description: "Prepare optional MAMAWORK DHCP source-of-truth packet."
     state: done
-    landed_in_commit: pending     # filled by Lane 3 commit
+    landed_in_commit: 5f650f9
     artifact: docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md
   - step: E
     description: "Await actual cloudflare-dns handback before drafting WARP / cloudflared cutover packets for fedora-top or MAMAWORK."
