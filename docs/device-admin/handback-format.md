@@ -47,7 +47,7 @@ this repo.
 ## Packet State Vocabulary
 
 The directive that introduced this format established five packet
-states. Use only these tokens:
+states. Use these tokens:
 
 | State | Meaning |
 |---|---|
@@ -56,6 +56,19 @@ states. Use only these tokens:
 | `approval-required` | A packet doc exists and has been surfaced to the human; an approval phrase is pending. Also goes in `prepared_packets[]` with an explicit `approval_phrase_excerpt`. |
 | `blocked` | The work cannot proceed without an external decision or piece of state. Goes in `blocked_items[]` with `owner: human` (or `owner: <other-repo>`). |
 | `planned` | The packet does not yet exist. Tracked in `next_recommended_action` or in `approval_required[]` with a note that the approval phrase will be supplied when the packet is drafted. |
+
+Additional sub-states (added 2026-05-14) for packets that have been
+**approved by the guardian** but cannot yet apply for an external
+reason. Use the `approval-required` family in `approval_required[]` and
+the matching `prepared_packets[]` entry; mark `approved_at` and a
+`blocking_input` / `deferral_reason` field:
+
+| State | Meaning |
+|---|---|
+| `approved-blocked-on-operator-input` | Approval received; apply waits on operator-provided material (e.g. a 1Password public-key fingerprint, a new MAC, a config value). |
+| `approved-blocked-on-operator-run` | Approval received; apply waits on operator to execute a packet-side procedure on a host the agent cannot reach (e.g. an elevated PowerShell run on a Windows host, an in-person LUKS step). |
+| `approved-deferred-by-operator` | Approval received; operator has explicitly deferred apply for sequencing reasons. Keep ready; do not start without an unblocking ack. |
+| `prepared-optional` | Packet doc exists and is ready, but the operator has not asked for it to be applied; usually paired with a deferral or with a "nice-to-have" note. |
 
 A packet may move between states. The history lives in commit messages
 and in the `*-apply-*.md` files; this YAML always reflects the current

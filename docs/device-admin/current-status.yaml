@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T17:45:00Z
+last_updated: 2026-05-14T18:30:00Z
 
 devices:
   - device: fedora-top
@@ -124,10 +124,15 @@ devices:
       - name: admin-backup-ssh-key-strategy
         packet_doc: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md
         prepared_at: 2026-05-14T17:30:00Z
-        state: prepared
+        approved_at: 2026-05-14T18:30:00Z
+        state: approved-blocked-on-operator-input
+        blocking_input: "Operator must (a) create a 1Password SSH Key item in op://Dev (proposed name: jefahnierocks-device-fedora-top-admin-backup-verlyn13; final name is the operator's choice) so 1Password generates the ed25519 keypair locally; (b) enable the 1Password SSH agent integration on whichever device will hold the backup path; (c) return only the public-key body and the ED25519 fingerprint so the apply can run with the documented fingerprint-match gate. The agent will NOT create the 1Password item; that is human-only per system-config policy."
         approval_phrase_excerpt: "See packet for full text. Adds one additional verlyn13 ED25519 public key to fedora-top /home/verlyn13/.ssh/authorized_keys, with the private half held in 1Password only (NOT the legacy MAMAWORK DadAdmin_WinNet key). Keeps AllowUsers verlyn13, keeps PasswordAuthentication no, does not add any other admin user. Snapshot-backed rollback. Closes the single-MacBook dependency for fedora-top remote administration."
 
     blocked_items:
+      - item: fedora-top-admin-backup-operator-input
+        owner: human
+        notes: "Fedora admin-backup SSH key strategy was approved 2026-05-14 (see prepared_packets entry). Apply is blocked on the human creating a 1Password SSH Key item (proposed name jefahnierocks-device-fedora-top-admin-backup-verlyn13) and returning two non-secret values: the resulting ED25519 public-key body (single OpenSSH line) and its fingerprint. The agent will NOT create the 1Password item per system-config secrets policy."
       - item: cloudflare-dns-handback-needed
         owner: cloudflare-dns
         notes: >-
@@ -191,8 +196,9 @@ devices:
           Tailscale remove-after-Cloudflare. Each will quote its
           own live-action approval phrase when drafted.
       - action: fedora-top-admin-backup-ssh-key-strategy
-        state: prepared
-        approval_phrase: "See docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md 'Required Approval Phrase' section. Adds one additional verlyn13 admin key path (1Password-backed) to fedora-top authorized_keys; no password SSH; no other admin user; no DadAdmin_WinNet reuse. Highest priority because the host currently has a single-client dependency on the MacBook."
+        state: approved-blocked-on-operator-input
+        approved_at: 2026-05-14T18:30:00Z
+        approval_phrase: "See docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md 'Required Approval Phrase' section. Adds one additional verlyn13 admin key path (1Password-backed) to fedora-top authorized_keys; no password SSH; no other admin user; no DadAdmin_WinNet reuse. Highest priority because the host currently has a single-client dependency on the MacBook. Approval received 2026-05-14; apply blocked on operator-created 1Password SSH Key item and returned public-key body + fingerprint."
       - action: fedora-top-known-hosts-reconciliation
         state: approval-required
         approval_phrase: "See docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md 'Required Approval Phrase' section. MacBook-side only; adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts using the verified ED25519 fingerprint SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w."
@@ -282,12 +288,16 @@ devices:
       - name: mamawork-ssh-investigation
         packet_doc: docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md
         prepared_at: 2026-05-14T17:30:00Z
-        state: prepared
+        approved_at: 2026-05-14T18:30:00Z
+        state: approved-blocked-on-operator-run
+        blocking_input: "Operator runs the documented procedure on MAMAWORK in an elevated PowerShell 7+ session (as MAMAWORK\\jeffr). Output goes to C:\\Users\\Public\\Documents\\jefahnierocks-device-admin\\mamawork-ssh-investigation-<ts>\\. Operator returns a non-secret SUMMARY.md to system-config; agent then ingests findings into a small evidence doc. The PowerShell run is operator-local because fedora-top -> MAMAWORK SSH currently times out (that is the problem the investigation diagnoses)."
         approval_phrase_excerpt: "Read-only Windows-side investigation of why TCP/22 from fedora-top times out despite HomeNetOps PASS. From an elevated PowerShell session, captures hostname/identity/elevation, network category, sshd service state, listener binding for port 22, firewall rules touching TCP/22 (incl. the Dad Remote Management rule), sshd_config directives, authorized_keys posture, and OpenSSH/Operational + Security 4625 events. Writes output to C:\\Users\\Public\\Documents\\jefahnierocks-device-admin\\mamawork-ssh-investigation-<timestamp>\\. Does not start/stop/edit any service or rule. Does not touch sshd_config or authorized_keys."
       - name: mamawork-switch-to-dhcp-source-of-truth
         packet_doc: docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md
         prepared_at: 2026-05-14T17:30:00Z
-        state: prepared-optional
+        approved_at: 2026-05-14T18:30:00Z
+        state: approved-deferred-by-operator
+        deferral_reason: "Guardian approved but explicitly said this can wait and must NOT be bundled with the SSH investigation packet. Sequencing: run AFTER the SSH investigation is complete and its remediation packet has landed (so MAMAWORK SSH access is stable before introducing a brief reconnect window from the DHCP switch). The packet remains ready to apply when the operator schedules a separate window."
         approval_phrase_excerpt: "Optional. Switches the MAMAWORK wired adapter from host-side static IP (192.168.0.101 manual) to DHCP, so the existing OPNsense reservation owns the address and ISC static-ARP defense can activate. Brief reconnect window (2-10 seconds). Intentionally separate from the SSH investigation packet so connectivity changes are not bundled with debugging."
 
     blocked_items:
@@ -299,19 +309,9 @@ devices:
           MS-Account mapping, admin reduction, sandbox-account
           identities, Defender exclusions, BitLocker / Secure Boot
           stance, backup, workload constraints).
-      - item: mamawork-windows-side-ssh-investigation-pending
-        owner: human + future packet
-        notes: >-
-          HomeNetOps confirms LAN/DNS PASS for MAMAWORK on
-          2026-05-14 (see
-          mamawork-homenetops-lan-identity-2026-05-14.md). However
-          TCP/22 from fedora-top to mamawork.home.arpa and to
-          192.168.0.101 times out. This is a Windows-side issue
-          (OpenSSH service, sshd binding, Windows Firewall on
-          Private profile, authorized_keys, or admin user form);
-          OPNsense is NOT gating same-subnet TCP/22. Investigation
-          packet at
-          mamawork-ssh-investigation-packet-2026-05-14.md.
+      - item: mamawork-ssh-investigation-operator-run
+        owner: human
+        notes: "MAMAWORK SSH investigation packet was approved 2026-05-14 (read-only). Apply is blocked on the operator running the documented elevated PowerShell procedure ON MAMAWORK (not from fedora-top, since SSH to MAMAWORK is the broken path the investigation diagnoses) and returning a non-secret SUMMARY.md. Once SUMMARY arrives, system-config ingests findings into a small evidence doc and a follow-up remediation packet is drafted per the investigation's hypothesis-tree outcomes."
       - item: mamawork-cloudflare-profile-recommendation-pending
         owner: cloudflare-dns
         notes: >-
@@ -346,11 +346,13 @@ devices:
 
     approval_required:
       - action: mamawork-ssh-investigation
-        state: prepared
-        approval_phrase: "See docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md 'Required Approval Phrase' section. Read-only Windows-side investigation; no service or rule changes."
+        state: approved-blocked-on-operator-run
+        approved_at: 2026-05-14T18:30:00Z
+        approval_phrase: "See docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md 'Required Approval Phrase' section. Read-only Windows-side investigation; no service or rule changes. Approval received 2026-05-14; awaiting operator to run the elevated PowerShell procedure on MAMAWORK and return a non-secret SUMMARY.md."
       - action: mamawork-switch-to-dhcp-source-of-truth
-        state: prepared-optional
-        approval_phrase: "See docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md 'Required Approval Phrase' section. Optional; carries a brief reconnect window; intentionally NOT bundled with the SSH investigation packet."
+        state: approved-deferred-by-operator
+        approved_at: 2026-05-14T18:30:00Z
+        approval_phrase: "See docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md 'Required Approval Phrase' section. Optional; carries a brief reconnect window; intentionally NOT bundled with the SSH investigation packet. Approved 2026-05-14 but explicitly deferred until after SSH investigation + its remediation packet are complete."
       - action: mamawork-ssh-key-bootstrap
         state: planned
         approval_phrase: "Phrase will be drafted with the packet. Gated on ssh-key-continuity-verification (see blocked_items)."
@@ -385,12 +387,17 @@ devices:
           operator interaction required.
 
     next_recommended_action:
-      summary: "Apply the prepared mamawork-ssh-investigation packet (read-only). The investigation will identify which Windows-side cause (service, firewall rule, network profile, sshd_config) is producing the TCP/22 timeout despite HomeNetOps PASS. The investigation output will determine the small follow-up remediation packet."
+      summary: "Operator-side work to unblock the two approved packets. (1) Create the 1Password SSH Key item for the Fedora admin-backup and return its public-key body + fingerprint; system-config then applies the Fedora admin-backup packet (closes the single-MacBook dependency). (2) Run the MAMAWORK SSH investigation procedure in elevated PowerShell on MAMAWORK and return the non-secret SUMMARY.md; system-config then ingests findings and drafts a small remediation packet. The MAMAWORK DHCP source-of-truth packet is approved but explicitly deferred until SSH access is stable. The fedora-top known_hosts reconciliation packet remains available as a small MacBook-side cleanup but has lower priority than the admin-backup work."
       preferred_packet: mamawork-ssh-investigation
-      preferred_packet_status: prepared
+      preferred_packet_status: approved-blocked-on-operator-run
       preferred_packet_blockers:
-        - slug: guardian-approval-required
-          note: "Read-only investigation; approval phrase is in the packet."
+        - slug: operator-elevated-powershell-run
+          note: "Operator runs the read-only PowerShell procedure on MAMAWORK and returns SUMMARY.md."
+      secondary_packet: fedora-top-admin-backup-ssh-key-strategy
+      secondary_packet_status: approved-blocked-on-operator-input
+      secondary_packet_blockers:
+        - slug: operator-1password-item-creation
+          note: "Operator creates the 1Password SSH Key item and returns the public-key body + ED25519 fingerprint."
       handback_to_human: true
 
     last_verified: 2026-05-13T15:00:11-08:00
