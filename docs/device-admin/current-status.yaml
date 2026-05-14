@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T00:25:00Z
+last_updated: 2026-05-14T00:40:00Z
 
 devices:
   - device: fedora-top
@@ -388,7 +388,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-13T15:00:11-08:00
-    latest_system_config_commit: pending     # filled by Lane 2 commit
+    latest_system_config_commit: 10031c5
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns
