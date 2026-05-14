@@ -180,6 +180,15 @@ never satisfies an `outbound_handback_request` to a different repo;
 if a Hetzner advisory quotes some `cloudflare-dns` state, the
 `cloudflare-dns` request still has to be answered by `cloudflare-dns`.
 
+The top-level `recommended_packet_order_<YYYY_MM_DD>` block (added
+2026-05-14) records a directive-blessed ordering of upcoming work.
+The date-suffix in the key name lets multiple ordering plans
+coexist over time without clobbering each other; the most recent
+date wins in practice. Each step has a `state` (`done`, `prepared`,
+`approval-required`, `blocked`, `planned`) and may cite a landed
+commit SHA or an artifact path so future agents can trace
+intent-to-implementation without re-reading every packet doc.
+
 ## Handback Template For Future Agents
 
 When an agent (Claude Code, Codex, or human-operated) finishes a
