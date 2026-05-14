@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T03:05:00Z
+last_updated: 2026-05-14T03:10:00Z
 
 devices:
   - device: fedora-top
@@ -93,7 +93,7 @@ devices:
         packet_doc: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md
         apply_record: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md
         packet_commit: a3ab575
-        apply_commit: pending     # filled by Lane A commit
+        apply_commit: 1d3a520
         applied_at: 2026-05-14T02:42:25Z
         outcome: "Second verlyn13 admin key appended. Primary MacBook key SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8 unchanged; backup key SHA256:VUu4nr5J+JjTpwFzRw+l2WQoKbfLhQhXAwGQmdlL6qU added from 1Password op://Dev/jefahnierocks-device-fedora-top-admin-backup-verlyn13. AllowUsers verlyn13, PasswordAuthentication no, all sshd effective settings unchanged. Single-MacBook dependency closed (server-side). First-use backup-path verification deferred."
 
@@ -228,8 +228,8 @@ devices:
             Approval phrase quoted in the packet doc.
       handback_to_human: true
 
-    last_verified: 2026-05-13T23:18:14Z
-    latest_system_config_commit: a3ab575
+    last_verified: 2026-05-14T02:42:25Z
+    latest_system_config_commit: 1d3a520
 
   - device: mamawork
     owner: Jefahnierocks
@@ -521,12 +521,12 @@ recommended_packet_order_2026_05_14_priority_refresh:
     - step: C
       description: "Prepare/apply MAMAWORK LAN RDP bootstrap packet, modeled on windows-lan-rdp-implementation-2026-05-13.md, scoped to 192.168.0.0/24 on Private profile, NLA, no WAN exposure."
       state: prepared
-      landed_in_commit: pending     # filled by Lane C commit
+      landed_in_commit: 98e2b1b
       artifact: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
     - step: D
       description: "Prepare MAMAWORK Windows App profile guidance for the MacBook."
       state: prepared
-      landed_in_commit: pending     # filled by Lane C commit
+      landed_in_commit: 98e2b1b
       artifact: docs/device-admin/windows-app-mamawork.md
     - step: E
       description: "WARP / Tunnel work for fedora-top and MAMAWORK is deferred until LAN admin paths (SSH-key + RDP) are stable. cloudflare-dns handback at b5b9460 unblocks the cutover packet authoring whenever the operator is ready."
