@@ -420,7 +420,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-13T15:00:11-08:00
-    latest_system_config_commit: 5f650f9
+    latest_system_config_commit: 98e2b1b
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns
