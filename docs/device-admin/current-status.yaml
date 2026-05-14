@@ -279,6 +279,11 @@ devices:
         prepared_at: 2026-05-14T00:25:00Z
         state: prepared
         approval_phrase_excerpt: "This record is repo-only intake ingest; no live host change is authorized by approving it. Future mamawork-ssh-key-bootstrap, mamawork-ssh-hardening, mamawork-privilege-cleanup, mamawork-defender-exclusions-audit, mamawork-backup-plan, mamawork-bitlocker-securboot, and mamawork-cloudflare-warp-cloudflared-cutover packets will quote their own approval phrases when drafted."
+      - name: mamawork-ssh-key-bootstrap
+        packet_doc: docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md
+        prepared_at: 2026-05-14T02:50:00Z
+        state: prepared
+        approval_phrase_excerpt: "Operator-applied on MAMAWORK from elevated PowerShell. Snapshots administrators_authorized_keys + DadAdmin per-user authorized_keys, verifies the new operator-supplied public-key fingerprint matches SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY (1Password item op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13), appends to administrators_authorized_keys, mirrors into DadAdmin per-user authorized_keys, refuses duplicates. Does NOT remove the legacy DadAdmin_WinNet line. Does NOT touch sshd_config, Windows Firewall, RDP, WinRM, accounts/groups, the duplicate DadAdmin.MamaWork profile, or C:\\Users\\jeffr\\.ssh\\authorized_keys.txt. Remote verification deferred to after the MAMAWORK SSH investigation packet remediates TCP/22."
       - name: mamawork-ssh-investigation
         packet_doc: docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md
         prepared_at: 2026-05-14T17:30:00Z
@@ -316,8 +321,8 @@ devices:
         owner: human + cloudflare-dns + Litecky
         notes: "Long-term: MAMAWORK may migrate to a separate Litecky Cloudflare org. At that point MAMAWORK profile placement revisits - a Litecky org would let Mama run an adults-equivalent profile under Litecky's Zero Trust posture without forcing kids-controls on her work. Tracked here as a future consideration, not a current packet."
       - item: mamawork-ssh-key-continuity-verification
-        owner: human
-        notes: "Verify whether the DadAdmin_WinNet ED25519 private key (fingerprint SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk) still exists on fedora-top after the prior workstation migration. This question's purpose is ONLY to decide whether MAMAWORK SSH bootstrap can reuse an existing intended key or needs a fresh keypair. DadAdmin_WinNet is legacy/bootstrap context and is explicitly NOT the Fedora admin-backup key - that role belongs to fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md. Gates whether the future mamawork-ssh-key-bootstrap packet generates a fresh keypair."
+        owner: resolved
+        notes: "RESOLVED 2026-05-14. Operator checked 8 private-key files under /home/verlyn13/.ssh on fedora-top; the legacy DadAdmin_WinNet fingerprint SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk is NOT present. A fresh MAMAWORK admin key was minted in 1Password (op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13, fingerprint SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY) and the mamawork-ssh-key-bootstrap packet now uses that key. The legacy DadAdmin_WinNet line remains in administrators_authorized_keys but its private half is missing, so the dangling line is effectively harmless and will be cleaned up in a small follow-up packet after the new key is verified end-to-end."
       - item: mamawork-pwsh51-optional-features-rerun
         owner: human
         notes: >-
@@ -350,8 +355,8 @@ devices:
         approved_at: 2026-05-14T18:30:00Z
         approval_phrase: "See docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md 'Required Approval Phrase' section. Optional; carries a brief reconnect window; intentionally NOT bundled with the SSH investigation packet. Approved 2026-05-14 but explicitly deferred until after SSH investigation + its remediation packet are complete."
       - action: mamawork-ssh-key-bootstrap
-        state: planned
-        approval_phrase: "Phrase will be drafted with the packet. Gated on ssh-key-continuity-verification (see blocked_items)."
+        state: prepared
+        approval_phrase: "See docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md 'Required Approval Phrase' section. Operator-applied on MAMAWORK from elevated PowerShell using the fresh 1Password key SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY."
       - action: mamawork-ssh-hardening
         state: planned
         approval_phrase: >-

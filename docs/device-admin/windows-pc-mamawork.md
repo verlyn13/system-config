@@ -161,20 +161,35 @@ Current state captured 2026-05-13:
   `C:\ProgramData\ssh\administrators_authorized_keys` and
   `C:\Users\DadAdmin\.ssh\authorized_keys` (per-profile copy is
   NTFS-ACL-protected: only `DadAdmin` and `SYSTEM` can read).
-  **Classification:** `DadAdmin_WinNet` is **legacy / bootstrap
-  context** for the prior Fedora-to-MAMAWORK remote-development path
-  (when the primary dev host was a different machine). Its only
-  current value is to test whether the matching private half still
-  exists on `fedora-top` for `verlyn13` after the workstation
-  migration. If the private half exists, MAMAWORK SSH bootstrap can
-  reuse it; if it does not, MAMAWORK will get a freshly generated
-  keypair via the future `mamawork-ssh-key-bootstrap` packet.
-  `DadAdmin_WinNet` is **explicitly NOT the Fedora admin-backup
-  key**; that role is filled by the separate
-  [fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md](./fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md),
-  which adds a second `verlyn13` admin key to `fedora-top` from a
-  1Password-managed source. Do not reuse `DadAdmin_WinNet` for
-  Fedora admin backup.
+  **Classification (resolved 2026-05-14):** `DadAdmin_WinNet` is
+  **legacy / bootstrap context** for the prior Fedora-to-MAMAWORK
+  remote-development path. The operator's 2026-05-14 continuity
+  check on `fedora-top` (8 private-key files under
+  `/home/verlyn13/.ssh/`) confirmed the matching private half is
+  **not present** on `fedora-top` after the workstation migration.
+  The legacy line in `administrators_authorized_keys` is therefore
+  a dangling reference (no client can present a matching private
+  key); it is safe to leave in place during the bootstrap and is
+  scheduled for removal in a small follow-up packet after the new
+  key is verified end-to-end.
+
+  The **new MAMAWORK admin key** is held in
+  `op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13`
+  (ED25519, fingerprint
+  `SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY`,
+  comment `verlyn13@mamawork-admin`). The
+  [mamawork-ssh-key-bootstrap packet (2026-05-14)](./mamawork-ssh-key-bootstrap-packet-2026-05-14.md)
+  appends this key to MAMAWORK's
+  `C:\ProgramData\ssh\administrators_authorized_keys` (and mirrors
+  it into `C:\Users\DadAdmin\.ssh\authorized_keys`). The private
+  half stays in 1Password.
+
+  Note: `DadAdmin_WinNet` is **explicitly NOT the Fedora admin-
+  backup key**; that role is filled by
+  [fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md](./fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md),
+  which used a separate 1Password item
+  (`op://Dev/jefahnierocks-device-fedora-top-admin-backup-verlyn13`)
+  applied live on 2026-05-14T02:42:25Z.
 - Per-user `.ssh` directories observed:
   - `DadAdmin`: admin key present.
   - `DadAdmin.MamaWork`: duplicate profile, admin key also present.
