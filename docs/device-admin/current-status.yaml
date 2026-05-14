@@ -276,7 +276,7 @@ devices:
         packet_doc: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
         apply_record: docs/device-admin/mamawork-lan-rdp-implementation-apply-2026-05-14.md
         packet_commit: 98e2b1b
-        apply_commit: pending     # filled in by housekeeping
+        apply_commit: 61819ae
         applied_at: 2026-05-14T08:56:39-08:00
         outcome: "Host-side state PASS (NetworkCategory Private; fDenyTSConnections=0; UserAuthentication=1; TermService Running+Automatic; custom Jefahnierocks RDP LAN TCP 3389 + UDP 3389 rules Inbound Allow Profile=Private RemoteAddress=192.168.0.0/24; built-in Remote Desktop group all disabled; powercfg hibernate off; Magic Packet/Pattern Match/S0ix-magic-packet on NIC Enabled; Test-NetConnection 127.0.0.1:3389 TcpTestSucceeded=True; listener bound on 0.0.0.0:3389 and [::]:3389). LAN inbound reachability FAIL from BOTH MacBook and fedora-top - every TCP probe (3389, 22, 445, 135, 139) times out; L2 ARP REACHABLE; DNS PASS. Same shape as the SSH TCP/22 problem; the cause is a layer above the per-rule allow (Block rule, ASR, third-party WFP, or network-identity drift). RDP is host-side-correct but not yet usable for remote administration; gated on the read-only inbound investigation packet."
         notes: "Operator note: the packet's Write-Evidence helper (Tee-Object) dropped multi-line strings during the apply; operator re-captured via Set-Content. Packet helper patched in v0.2.0 in the same commit as this apply record so the bug does not recur."
