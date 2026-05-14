@@ -2,12 +2,23 @@
 title: MAMAWORK LAN RDP Implementation Packet - 2026-05-14
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
+status: applied-host-side-lan-unreachable
+version: 0.2.0
 last_updated: 2026-05-14
 tags: [device-admin, mamawork, windows, rdp, firewall, lan, power]
 priority: high
 ---
+
+> **2026-05-14 v0.2.0 changes**:
+> - Applied live on 2026-05-14T08:56:39-08:00. Host-side state PASS;
+>   LAN inbound TCP times out from MacBook + fedora-top. See
+>   [mamawork-lan-rdp-implementation-apply-2026-05-14.md](./mamawork-lan-rdp-implementation-apply-2026-05-14.md).
+> - `Write-Evidence` helper patched: previously
+>   `Tee-Object -FilePath ... -Append` silently dropped piped
+>   multi-line strings; replaced with a `Write-Evidence` function
+>   that uses `Add-Content` with `-Value` carrying the
+>   pre-formatted string. The packet text below shows the patched
+>   form so the same bug does not recur on the next Windows host.
 
 # MAMAWORK LAN RDP Implementation Packet - 2026-05-14
 
@@ -159,8 +170,13 @@ $EvidencePath = Join-Path $EvidenceDir "mamawork-rdp-lan-$Timestamp.txt"
 New-Item -ItemType Directory -Path $EvidenceDir -Force | Out-Null
 
 function Write-Evidence {
+  # Patched v0.2.0: pipe-via-Tee-Object silently dropped multi-line
+  # strings during the 2026-05-14 apply on MAMAWORK. Switch to
+  # Add-Content with the full pre-formatted string as -Value so the
+  # write happens atomically and preserves all lines.
   param([string]$Message)
-  $Message | Tee-Object -FilePath $EvidencePath -Append
+  Add-Content -Path $EvidencePath -Value $Message
+  Write-Host $Message
 }
 
 Write-Evidence "timestamp: $(Get-Date -Format o)"

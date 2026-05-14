@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T03:10:00Z
+last_updated: 2026-05-14T18:00:00Z
 
 devices:
   - device: fedora-top
@@ -271,7 +271,15 @@ devices:
       handoff-mamawork.md must be answered before any live
       elevated change.
 
-    applied_packets: []
+    applied_packets:
+      - name: mamawork-lan-rdp-implementation
+        packet_doc: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
+        apply_record: docs/device-admin/mamawork-lan-rdp-implementation-apply-2026-05-14.md
+        packet_commit: 98e2b1b
+        apply_commit: pending     # filled in by housekeeping
+        applied_at: 2026-05-14T08:56:39-08:00
+        outcome: "Host-side state PASS (NetworkCategory Private; fDenyTSConnections=0; UserAuthentication=1; TermService Running+Automatic; custom Jefahnierocks RDP LAN TCP 3389 + UDP 3389 rules Inbound Allow Profile=Private RemoteAddress=192.168.0.0/24; built-in Remote Desktop group all disabled; powercfg hibernate off; Magic Packet/Pattern Match/S0ix-magic-packet on NIC Enabled; Test-NetConnection 127.0.0.1:3389 TcpTestSucceeded=True; listener bound on 0.0.0.0:3389 and [::]:3389). LAN inbound reachability FAIL from BOTH MacBook and fedora-top - every TCP probe (3389, 22, 445, 135, 139) times out; L2 ARP REACHABLE; DNS PASS. Same shape as the SSH TCP/22 problem; the cause is a layer above the per-rule allow (Block rule, ASR, third-party WFP, or network-identity drift). RDP is host-side-correct but not yet usable for remote administration; gated on the read-only inbound investigation packet."
+        notes: "Operator note: the packet's Write-Evidence helper (Tee-Object) dropped multi-line strings during the apply; operator re-captured via Set-Content. Packet helper patched in v0.2.0 in the same commit as this apply record so the bug does not recur."
 
     prepared_packets:
       - name: mamawork-intake-ingest
@@ -284,11 +292,7 @@ devices:
         prepared_at: 2026-05-14T02:50:00Z
         state: prepared
         approval_phrase_excerpt: "Operator-applied on MAMAWORK from elevated PowerShell. Snapshots administrators_authorized_keys + DadAdmin per-user authorized_keys, verifies the new operator-supplied public-key fingerprint matches SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY (1Password item op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13), appends to administrators_authorized_keys, mirrors into DadAdmin per-user authorized_keys, refuses duplicates. Does NOT remove the legacy DadAdmin_WinNet line. Does NOT touch sshd_config, Windows Firewall, RDP, WinRM, accounts/groups, the duplicate DadAdmin.MamaWork profile, or C:\\Users\\jeffr\\.ssh\\authorized_keys.txt. Remote verification deferred to after the MAMAWORK SSH investigation packet remediates TCP/22."
-      - name: mamawork-lan-rdp-implementation
-        packet_doc: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
-        prepared_at: 2026-05-14T03:00:00Z
-        state: prepared
-        approval_phrase_excerpt: "Operator-applied on MAMAWORK from elevated PowerShell 7+. Mirrors the DESKTOP-2JJ3187 RDP pattern: NetworkCategory Private; fDenyTSConnections=0; UserAuthentication=1 (NLA); TermService Running+Automatic; disable built-in Remote Desktop firewall group; create custom Jefahnierocks RDP LAN TCP 3389 + UDP 3389 (Inbound Allow, Private, RemoteAddress 192.168.0.0/24); powercfg /hibernate off + AC sleep/hibernate 0 + HYBRIDSLEEP 0; idempotent NIC Magic Packet/Pattern Match/PME Enabled; capture evidence to C:\\Users\\Public\\Documents\\jefahnierocks-device-admin\\mamawork-rdp-lan-<ts>.txt. Does NOT touch SSH/sshd/authorized_keys, WinRM, accounts, BitLocker, Secure Boot, Tailscale, Cloudflare, WARP, cloudflared, OPNsense, DNS, DHCP, 1Password, or host-static-vs-DHCP. Verify with MacBook nc -vz on 192.168.0.101:3389 and mamawork.home.arpa:3389, then Windows App profile per windows-app-mamawork.md."
+# mamawork-lan-rdp-implementation moved to applied_packets[] (state: applied-host-side-lan-unreachable). See apply record for the LAN-inbound-TCP-blackhole finding.
       - name: windows-app-mamawork-profile
         packet_doc: docs/device-admin/windows-app-mamawork.md
         prepared_at: 2026-05-14T03:00:00Z
@@ -367,9 +371,7 @@ devices:
       - action: mamawork-ssh-key-bootstrap
         state: prepared
         approval_phrase: "See docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md 'Required Approval Phrase' section. Operator-applied on MAMAWORK from elevated PowerShell using the fresh 1Password key SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY."
-      - action: mamawork-lan-rdp-implementation
-        state: prepared
-        approval_phrase: "See docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md 'Required Approval Phrase' section. Operator-applied on MAMAWORK from elevated PowerShell 7+; mirrors the DESKTOP-2JJ3187 pattern; LAN-only RDP scoped to 192.168.0.0/24 on the Private profile; no WAN exposure; no WinRM/VNC; no SSH/firewall/account/Cloudflare/Tailscale/WARP changes."
+# mamawork-lan-rdp-implementation applied 2026-05-14T08:56:39-08:00; see applied_packets[]
       - action: mamawork-ssh-hardening
         state: planned
         approval_phrase: >-
@@ -401,22 +403,17 @@ devices:
           operator interaction required.
 
     next_recommended_action:
-      summary: "Operator-side on MAMAWORK from elevated PowerShell: (B) apply mamawork-ssh-key-bootstrap (installs new 1Password admin key SHA256:qilvkR7/... into administrators_authorized_keys); (C) apply mamawork-lan-rdp-implementation (LAN-only RDP scoped to 192.168.0.0/24, NLA, custom firewall rules, Private profile); (D) configure the MacBook Windows App profile per windows-app-mamawork.md and verify the GUI session. The mamawork-ssh-investigation packet can be run in parallel to diagnose the TCP/22 timeout if SSH-from-fedora-top is also wanted. (E) WARP/Tunnel cutover packets stay deferred until LAN admin paths (RDP + SSH-after-investigation) are stable."
-      preferred_packet: mamawork-ssh-key-bootstrap
-      preferred_packet_status: prepared
+      summary: "Run the inbound-TCP-blackhole investigation on MAMAWORK. The 2026-05-14 RDP apply succeeded host-side but proved that ALL inbound TCP (3389, 22, 445, 135, 139) times out from BOTH MacBook and fedora-top despite correct firewall posture. Until that is diagnosed, MAMAWORK has no remote-admin path. The existing mamawork-ssh-investigation-packet-2026-05-14.md procedure should be re-run on MAMAWORK with two scope additions: (a) enumerate ALL Block rules (Get-NetFirewallRule -Action Block -Direction Inbound -Enabled True), and (b) run Set-NetFirewallProfile -Name Private -LogBlocked True for ~60 seconds while a fresh external probe runs, then tail %SystemRoot%\\System32\\LogFiles\\Firewall\\pfirewall.log to see the actual drop decision, then revert LogBlocked. Once the cause is identified, a small follow-up remediation packet closes the gap and SSH+RDP both become reachable. The SSH key bootstrap packet remains prepared; it is operator-applicable in parallel because it only writes authorized_keys files - it does not depend on LAN reachability."
+      preferred_packet: mamawork-ssh-investigation
+      preferred_packet_status: approved-blocked-on-operator-run
       preferred_packet_blockers:
         - slug: operator-elevated-powershell-on-mamawork
-          note: "Operator runs the bootstrap script in an elevated PowerShell session on MAMAWORK; returns non-secret SUMMARY back to system-config."
-      secondary_packet: mamawork-lan-rdp-implementation
+          note: "Operator runs the read-only investigation procedure on MAMAWORK plus the two scope additions above; returns non-secret SUMMARY.md."
+      secondary_packet: mamawork-ssh-key-bootstrap
       secondary_packet_status: prepared
       secondary_packet_blockers:
         - slug: operator-elevated-powershell-on-mamawork
-          note: "Same operator-side PowerShell session; can run immediately after the SSH key bootstrap."
-      tertiary_packet: mamawork-ssh-investigation
-      tertiary_packet_status: approved-blocked-on-operator-run
-      tertiary_packet_blockers:
-        - slug: operator-elevated-powershell-run
-          note: "Read-only investigation of why TCP/22 from fedora-top to MAMAWORK times out; can be run in parallel with B + C."
+          note: "Independent of inbound TCP reachability; installs the new 1Password admin key into administrators_authorized_keys + DadAdmin per-user authorized_keys. Remote verification waits until inbound TCP is restored."
       handback_to_human: true
 
     last_verified: 2026-05-13T15:00:11-08:00
