@@ -182,7 +182,12 @@ Use these documents when starting an agent directly on the target device:
 | Fedora 44 laptop | [fedora-top-firewalld-narrowing-packet-2026-05-13.md](./fedora-top-firewalld-narrowing-packet-2026-05-13.md) | MacBook-side firewalld narrowing packet for `fedora-top`: pre-apply snapshot of zones (runtime + permanent) and listeners; `firewall-cmd --permanent --zone=FedoraWorkstation --remove-port=1025-65535/{tcp,udp}` then `firewall-cmd --reload`; preserves services `ssh`, `mdns`, `samba-client`, `dhcpv6-client`. Applied on 2026-05-13 along the default path; evidence in [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md). |
 | Fedora 44 laptop | [fedora-top-firewalld-narrowing-apply-2026-05-13.md](./fedora-top-firewalld-narrowing-apply-2026-05-13.md) | Live apply of the firewalld narrowing packet on 2026-05-13: snapshot to `/var/backups/jefahnierocks-firewalld-narrowing-20260513T230224Z` (state, default zone, active zones, runtime + permanent zone listings, direct rules, listeners, full pre-apply zone XML, sha256 manifest); `firewall-cmd --permanent --remove-port=1025-65535/tcp,udp` and `--reload` succeeded; runtime + permanent `ports` empty post-apply; services `dhcpv6-client mdns samba-client ssh` unchanged; active zones unchanged; rich rules empty; docker zone unchanged; sshd `allowusers verlyn13` unchanged; positive SSH check from a fresh MacBook session succeeded. Rollback unused. |
 | All devices (index) | [current-status.yaml](./current-status.yaml) | Machine-readable per-device current state. Tracks applied/prepared/blocked packets, latest commits, remote-admin paths, and the next recommended action. Read this first when picking up a device-admin directive. |
-| All devices (format) | [handback-format.md](./handback-format.md) | Schema for `current-status.yaml`, the packet-state vocabulary (`applied`, `prepared`, `approval-required`, `blocked`, `planned`), the agent handback template, and rules for when to update the YAML. |
+| All devices (format) | [handback-format.md](./handback-format.md) | Schema for `current-status.yaml`, the packet-state vocabulary (`applied`, `prepared`, `approval-required`, `blocked`, `planned`), the agent handback template, the cross-cutting `outbound_handback_requests` block, and rules for when to update the YAML. |
+| MAMAWORK mini-PC | [windows-pc-mamawork.md](./windows-pc-mamawork.md) | Master record for the second household Windows host (`MAMAWORK`, AZW SER mini-PC, Windows 11 Pro 25H2). Ingests the elevated read-only intake captured 2026-05-13 by `MAMAWORK\jeffr` in PowerShell 7.6.1. Host has OpenSSH running (inherited admin path; admin key `DadAdmin_WinNet` ED25519 fingerprint `SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk`); RDP/WinRM disabled; BitLocker/Secure Boot off; PIA fully removed. No live change has been authorized from this repo. Status: `inventory-pending`. |
+| MAMAWORK mini-PC | [handoff-mamawork.md](./handoff-mamawork.md) | Follow-up handoff that captures 16 operator questions (SSH key continuity from fedora-top, family Microsoft Account mapping, `DadAdmin` replacement, `CodexSandboxOnline`/`CodexSandboxOffline`/`WsiAccount` identities, Defender exclusion subjects, BitLocker / Secure Boot stance, backup plan, etc.) and lists the future approval-gated packets that each question gates. |
+| Outbound to cloudflare-dns | [handback-request-cloudflare-dns-2026-05-13.md](./handback-request-cloudflare-dns-2026-05-13.md) | Request to `/Users/verlyn13/Repos/local/cloudflare-dns` for the org-wide Zero Trust / WARP / Access / Tunnel posture and per-device Zero Trust profile recommendations for fedora-top (Wyn user, verlyn13 administrator) and MAMAWORK (kids' learning device, verlyn13 administrator). Non-secret only; no live Cloudflare change requested. |
+| Outbound to HomeNetOps | [handback-request-homenetops-2026-05-13.md](./handback-request-homenetops-2026-05-13.md) | Two-item request to `~/Repos/verlyn13/HomeNetOps`: (1) posture confirmation for fedora-top (no new rule requested); (2) static-DHCP reservation for MAMAWORK Ethernet MAC `B0-41-6F-0E-B7-B6` -> `192.168.0.101` plus Unbound host override `mamawork.home.arpa`. Mirrors the 2026-05-13 fedora-top pattern. Non-secret only. |
+| Fedora 44 laptop | [fedora-top-known-hosts-reconciliation-packet-2026-05-13.md](./fedora-top-known-hosts-reconciliation-packet-2026-05-13.md) | MacBook-side packet that adds a `fedora-top.home.arpa` entry to `~/.ssh/known_hosts` using the verified ED25519 fingerprint `SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w`, so routine SSH no longer needs `HostKeyAlias=192.168.0.206`. ssh-keyscan + fingerprint-match gate (not blind TOFU). Approval-gated; no fedora-top side change. |
 | Fedora 44 laptop | [fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md) | MacBook-side Tailscale retain-or-remove packet. Two options with their own approval phrases. Guardian chose Option B (Retain logged-out) on 2026-05-13 - see [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md). Documentation-only; live state unchanged. Auth-URL exposure note carried forward; no daemon restart performed. |
 | Fedora 44 laptop | [fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md](./fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md) | Decision record for Option B (Retain logged-out). No live host change. Tailscale package, daemon, repo, GPG key, and listener posture unchanged from the 2026-05-13T23:18:14Z verification. Operator stop rules attached: no login, no enrollment, no auth-key creation, no firewalld passage, no upgrade, no daemon restart, no auth-URL recording in repo. Further Tailscale work is blocked on the remote-admin routing design packet. |
 | Fedora 44 laptop | [fedora-top-remote-admin-routing-design-2026-05-13.md](./fedora-top-remote-admin-routing-design-2026-05-13.md) | Prepared remote-admin routing design. LAN-only SSH = current; Tailscale (logged-out) = transition / break-glass; Cloudflare WARP + `cloudflared` = target; direct WAN SSH = rejected. Records household admin / family-account stance. Requests `cloudflare-dns` handback (Zero Trust org, WARP enrollment, Access posture, Tunnel naming, profile recommendation for a Wyn-used + verlyn13-administered device) and a minor HomeNetOps confirmation (no new LAN rule required). Lists four future approval-gated packets (`known-hosts-reconciliation`, `cloudflare-warp-cloudflared-cutover`, `tailscale-login-with-acl`, `tailscale-remove-after-cloudflare-proven`) with placeholder approval phrases. Design only; no live action authorized by approving this packet. |
@@ -337,17 +342,23 @@ Before any live change, collect or decide:
   recorded (Option B Retain logged-out, documentation-only), and the
   remote-admin routing design as prepared (LAN current / Tailscale
   transition / WARP+cloudflared target / direct WAN rejected). The
-  next live-action packet is `fedora-top-known-hosts-reconciliation`
-  (small, MacBook-side only). In parallel, request a `cloudflare-dns`
-  handback covering Zero Trust org structure, WARP enrollment posture,
-  Access policy posture, Tunnel naming, and a device-profile
-  recommendation for `fedora-top`. The remaining approval-gated
-  items are the WARP / Cloudflare off-LAN cutover (needs the
+  next live-action packet is
+  `fedora-top-known-hosts-reconciliation` (prepared 2026-05-14,
+  approval-required, MacBook-side only). Second Windows PC `MAMAWORK`
+  intake has been ingested from the elevated 2026-05-13 report; 16
+  operator questions are captured in `handoff-mamawork.md`. Two
+  outbound handback requests are open: one to `cloudflare-dns` for
+  Zero Trust org structure plus per-device profile recommendations
+  for fedora-top and MAMAWORK; one to HomeNetOps for the MAMAWORK
+  static-DHCP reservation plus Unbound host override (no new rule
+  requested for fedora-top). The remaining approval-gated items are
+  the WARP / Cloudflare off-LAN cutover (needs the `cloudflare-dns`
   handback), the optional Tailscale login-with-ACL break-glass
   packet, LUKS/power policy, a future narrow review of
-  `verlyn13 NOPASSWD: ALL`, and a general Docker hygiene pass over
-  the `docker` zone target, unrelated exited containers, and
-  reclaimable images/volumes/build cache.
+  `verlyn13 NOPASSWD: ALL`, a general Docker hygiene pass on
+  fedora-top, and the MAMAWORK packet series (`ssh-key-bootstrap`,
+  `ssh-hardening`, `privilege-cleanup`, `defender-exclusions-audit`,
+  `backup-plan`, `bitlocker-securboot`).
 - Fedora SSH hardening packet was applied on 2026-05-13; only the approved
   MacBook key remains in `authorized_keys`, and the WSL key plus both
   duplicate `ansible@hetzner.hq` entries were removed. Evidence in

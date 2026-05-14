@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T00:10:00Z
+last_updated: 2026-05-14T00:25:00Z
 
 devices:
   - device: fedora-top
@@ -234,4 +234,184 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-13T23:18:14Z
-    latest_system_config_commit: 9f76b91
+    latest_system_config_commit: 44f1dd7
+
+  - device: mamawork
+    owner: Jefahnierocks
+    hostname: MAMAWORK
+    fqdn: mamawork.home.arpa
+    ip: 192.168.0.101
+
+    remote_admin_paths:
+      - kind: ssh
+        target: DadAdmin@192.168.0.101
+        notes: >-
+          LAN-only. OpenSSH SSH Server inherited from the prior
+          primary dev box. Pubkey-only (PasswordAuthentication no).
+          Authorized admin key fingerprint
+          SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk
+          (ED25519, labeled DadAdmin_WinNet). Whether the matching
+          private half is on fedora-top after the prior workstation
+          migration is an open operator question. mamawork.home.arpa
+          does not resolve on the LAN yet; HomeNetOps reservation +
+          Unbound override are pending.
+      - kind: ssh
+        target: DadAdmin@mamawork.home.arpa
+        notes: >-
+          Will become the stable FQDN admin path once HomeNetOps
+          adds the Unbound host override (see outbound HomeNetOps
+          handback request 2026-05-13).
+
+    current_management_status: >-
+      inventory-pending; not fully managed. Elevated read-only intake
+      was captured 2026-05-13 (operator-side bundle at
+      /Users/verlyn13/Downloads/mamaworkpc/, not committed). OpenSSH
+      is running but not yet hardened from system-config; the
+      "Dad Remote Management" Windows Firewall rule is Profile=Any
+      (planned to scope to Private). RDP, WinRM, and PSRemoting are
+      all disabled. Defender is fully enabled; BitLocker and Secure
+      Boot are off (decisions deferred). No third-party remote-admin
+      agent, no VPN/overlay (PIA was uninstalled by the operator
+      2026-05-13). 16 operator questions captured in
+      handoff-mamawork.md must be answered before any live
+      elevated change.
+
+    applied_packets: []
+
+    prepared_packets:
+      - name: mamawork-intake-ingest
+        packet_doc: docs/device-admin/windows-pc-mamawork.md
+        prepared_at: 2026-05-14T00:25:00Z
+        state: prepared
+        approval_phrase_excerpt: >-
+          This record is repo-only intake ingest; no live host
+          change is authorized by approving it. Future
+          mamawork-ssh-key-bootstrap, mamawork-ssh-hardening,
+          mamawork-privilege-cleanup, mamawork-defender-exclusions-
+          audit, mamawork-backup-plan, mamawork-bitlocker-securboot,
+          and mamawork-cloudflare-warp-cloudflared-cutover packets
+          will quote their own approval phrases when drafted.
+
+    blocked_items:
+      - item: mamawork-operator-questions
+        owner: human
+        notes: >-
+          16 operator answers tracked in handoff-mamawork.md gate
+          the future MAMAWORK packets (SSH key continuity, family
+          MS-Account mapping, admin reduction, sandbox-account
+          identities, Defender exclusions, BitLocker / Secure Boot
+          stance, backup, workload constraints).
+      - item: mamawork-homenetops-reservation-pending
+        owner: homenetops
+        notes: >-
+          OPNsense static-DHCP reservation for B0-41-6F-0E-B7-B6 ->
+          192.168.0.101 and Unbound host override for
+          mamawork.home.arpa are requested via
+          handback-request-homenetops-2026-05-13.md.
+      - item: mamawork-cloudflare-profile-recommendation-pending
+        owner: cloudflare-dns
+        notes: >-
+          Zero Trust profile recommendation for MAMAWORK
+          (kids' learning device; verlyn13 administrator) is part
+          of the broader cloudflare-dns handback request
+          (handback-request-cloudflare-dns-2026-05-13.md).
+      - item: mamawork-ssh-key-continuity-verification
+        owner: human
+        notes: >-
+          Verify whether the DadAdmin_WinNet ED25519 private key
+          (fingerprint
+          SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk) still
+          exists on fedora-top after the prior workstation
+          migration. Gates whether the future mamawork-ssh-key-
+          bootstrap packet generates a fresh keypair.
+      - item: mamawork-pwsh51-optional-features-rerun
+        owner: human
+        notes: >-
+          Get-WindowsCapability -Online and Get-WindowsOptionalFeature
+          -Online both failed with "Class not registered" in pwsh 7
+          during the 2026-05-13 intake. A second elevated pass from
+          Windows PowerShell 5.1 is needed for definitive optional-
+          features inventory (OpenSSH feature presence, Hyper-V, WSL,
+          Containers).
+
+    approval_required:
+      - action: mamawork-ssh-key-bootstrap
+        state: planned
+        approval_phrase: >-
+          Phrase will be drafted with the packet. Gated on
+          ssh-key-continuity-verification (see blocked_items).
+      - action: mamawork-ssh-hardening
+        state: planned
+        approval_phrase: >-
+          Phrase will be drafted with the packet. Mirrors the
+          fedora-top SSH hardening pattern; includes scoping the
+          Dad Remote Management firewall rule to Profile=Private
+          and tightening sshd_config (LogLevel, StrictModes,
+          AllowGroups, removal of dead HostKey reference,
+          reconciling C:\Users\jeffr\.ssh\authorized_keys.txt).
+      - action: mamawork-privilege-cleanup
+        state: planned
+        approval_phrase: >-
+          Phrase will be drafted with the packet. Gated on the
+          operator-questions answers (admin reduction, sandbox
+          accounts, WsiAccount).
+      - action: mamawork-defender-exclusions-audit
+        state: planned
+        approval_phrase: >-
+          Phrase will be drafted with the packet; expect this audit
+          to be operator-led via the Defender GUI.
+      - action: mamawork-backup-plan
+        state: planned
+        approval_phrase: >-
+          Phrase will be drafted with the packet.
+      - action: mamawork-bitlocker-securboot
+        state: planned
+        approval_phrase: >-
+          Phrase will be drafted with the packet; significant
+          operator interaction required.
+
+    next_recommended_action:
+      summary: >-
+        Return answers to the 16 operator questions in
+        handoff-mamawork.md (especially Q1 - DadAdmin_WinNet private
+        key continuity on fedora-top). In parallel, the outbound
+        handback requests to cloudflare-dns and HomeNetOps land the
+        org-wide and LAN-side evidence needed for both fedora-top
+        and MAMAWORK cutovers.
+      preferred_packet: mamawork-operator-question-answers
+      preferred_packet_status: planned
+      preferred_packet_blockers:
+        - slug: human-input-required
+          note: >-
+            Answers can be returned as a markdown reply, a small
+            inline doc, or a handback-format-style reply.
+      handback_to_human: true
+
+    last_verified: 2026-05-13T15:00:11-08:00
+    latest_system_config_commit: pending     # filled by Lane 2 commit
+
+outbound_handback_requests:
+  - target_repo: cloudflare-dns
+    target_path: /Users/verlyn13/Repos/local/cloudflare-dns
+    request_doc: docs/device-admin/handback-request-cloudflare-dns-2026-05-13.md
+    requested_at: 2026-05-14T00:25:00Z
+    state: open
+    summary: >-
+      Org structure, WARP/device enrollment posture, Access policy
+      posture, Tunnel posture, naming conventions, and per-device
+      Zero Trust profile recommendation for fedora-top (Wyn user,
+      verlyn13 administrator) and MAMAWORK (kids' learning device,
+      verlyn13 administrator).
+
+  - target_repo: homenetops
+    target_path: ~/Repos/verlyn13/HomeNetOps
+    request_doc: docs/device-admin/handback-request-homenetops-2026-05-13.md
+    requested_at: 2026-05-14T00:25:00Z
+    state: open
+    summary: >-
+      (1) Posture confirmation for fedora-top - no new rule
+      requested, just confirm outbound TCP/443 permitted and LAN
+      path intact. (2) New MAMAWORK static-DHCP reservation for
+      B0-41-6F-0E-B7-B6 -> 192.168.0.101 plus Unbound host override
+      for mamawork.home.arpa; mirrors the 2026-05-13 fedora-top
+      pattern.

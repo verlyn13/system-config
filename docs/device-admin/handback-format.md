@@ -130,11 +130,25 @@ devices:
 
     last_verified: 2026-MM-DDTHH:MM:SSZ
     latest_system_config_commit: <short-sha>
+
+outbound_handback_requests:
+  - target_repo: <repo-slug>           # cloudflare-dns | homenetops | other
+    target_path: <local path or URL>   # for cross-machine lookup
+    request_doc: docs/device-admin/handback-request-<repo-slug>-YYYY-MM-DD.md
+    requested_at: 2026-MM-DDTHH:MM:SSZ
+    state: open | answered | superseded
+    summary: >-
+      one-paragraph non-secret description of what is being requested
 ```
 
 `schema_version: 1` is the only currently defined schema. Adding new
 **optional** fields does not require a bump. Removing or renaming any
-field above does.
+field above does. The top-level `outbound_handback_requests` block
+captures cross-cutting requests `system-config` has sent to sibling
+authority repos (HomeNetOps, `cloudflare-dns`, etc.) and was added in
+the 2026-05-14 second-Windows-PC scaffold work; agents should mark
+each entry as `answered` when the corresponding repo returns the
+evidence, with a pointer to the answering commit/doc.
 
 ## Handback Template For Future Agents
 
