@@ -136,9 +136,28 @@ outbound_handback_requests:
     target_path: <local path or URL>   # for cross-machine lookup
     request_doc: docs/device-admin/handback-request-<repo-slug>-YYYY-MM-DD.md
     requested_at: 2026-MM-DDTHH:MM:SSZ
+    answered_at: 2026-MM-DDTHH:MM:SSZ      # present only when state=answered
     state: open | answered | superseded
+    answered_doc: docs/device-admin/<ingest-doc>.md   # the system-config-side ingest
     summary: >-
       one-paragraph non-secret description of what is being requested
+    answered_summary: >-                   # present only when state=answered
+      one-paragraph non-secret summary of what came back
+    note: >-                               # optional, for caveats (e.g. partial answers)
+      free-text qualifier
+
+advisory_ingests:
+  - source_repo: <repo-slug>           # hetzner | infisical | other
+    source_path: <local path>
+    source_doc: <path inside source repo>
+    source_commit: <40-char SHA>       # commit cited by the source doc
+    ingested_at: 2026-MM-DDTHH:MM:SSZ
+    ingest_doc: docs/device-admin/<ingest-doc>.md
+    classification: advisory           # NOT device-admin authority
+    summary: >-
+      one-paragraph non-secret description of what was ingested
+    encoded_decisions:
+      - one-line decision recorded by system-config in response
 ```
 
 `schema_version: 1` is the only currently defined schema. Adding new
@@ -149,6 +168,17 @@ authority repos (HomeNetOps, `cloudflare-dns`, etc.) and was added in
 the 2026-05-14 second-Windows-PC scaffold work; agents should mark
 each entry as `answered` when the corresponding repo returns the
 evidence, with a pointer to the answering commit/doc.
+
+The top-level `advisory_ingests` block (added 2026-05-14) records
+non-authoritative status reports from sibling repos that `system-config`
+has read for context but that **do not** constitute authority over
+device admin (Hetzner, for example, is hosting infrastructure but is
+not the household device control plane). Each entry includes the
+source repo + commit + ingest doc, and lists the cross-cutting
+decisions `system-config` encoded in response. An advisory ingest
+never satisfies an `outbound_handback_request` to a different repo;
+if a Hetzner advisory quotes some `cloudflare-dns` state, the
+`cloudflare-dns` request still has to be answered by `cloudflare-dns`.
 
 ## Handback Template For Future Agents
 

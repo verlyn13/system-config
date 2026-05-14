@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T00:40:00Z
+last_updated: 2026-05-14T17:30:00Z
 
 devices:
   - device: fedora-top
@@ -301,13 +301,19 @@ devices:
           MS-Account mapping, admin reduction, sandbox-account
           identities, Defender exclusions, BitLocker / Secure Boot
           stance, backup, workload constraints).
-      - item: mamawork-homenetops-reservation-pending
-        owner: homenetops
+      - item: mamawork-windows-side-ssh-investigation-pending
+        owner: human + future packet
         notes: >-
-          OPNsense static-DHCP reservation for B0-41-6F-0E-B7-B6 ->
-          192.168.0.101 and Unbound host override for
-          mamawork.home.arpa are requested via
-          handback-request-homenetops-2026-05-13.md.
+          HomeNetOps confirms LAN/DNS PASS for MAMAWORK on
+          2026-05-14 (see
+          mamawork-homenetops-lan-identity-2026-05-14.md). However
+          TCP/22 from fedora-top to mamawork.home.arpa and to
+          192.168.0.101 times out. This is a Windows-side issue
+          (OpenSSH service, sshd binding, Windows Firewall on
+          Private profile, authorized_keys, or admin user form);
+          OPNsense is NOT gating same-subnet TCP/22. Investigation
+          packet at
+          mamawork-ssh-investigation-packet-2026-05-14.md.
       - item: mamawork-cloudflare-profile-recommendation-pending
         owner: cloudflare-dns
         notes: >-
@@ -333,6 +339,18 @@ devices:
           Windows PowerShell 5.1 is needed for definitive optional-
           features inventory (OpenSSH feature presence, Hyper-V, WSL,
           Containers).
+      - item: mamawork-host-static-vs-dhcp-source-of-truth
+        owner: human + future packet
+        notes: >-
+          MAMAWORK currently uses a host-side static IP; OPNsense
+          static reservation exists but arp permanent=false because
+          the host did not lease the address from OPNsense. The
+          OPNsense ISC static-ARP defense layer therefore does not
+          activate. Optional packet
+          mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md
+          addresses this; intentionally separate from the SSH
+          investigation packet so connectivity disruption is not
+          bundled with debugging.
 
     approval_required:
       - action: mamawork-ssh-key-bootstrap
@@ -396,22 +414,34 @@ outbound_handback_requests:
     request_doc: docs/device-admin/handback-request-cloudflare-dns-2026-05-13.md
     requested_at: 2026-05-14T00:25:00Z
     state: open
-    summary: >-
-      Org structure, WARP/device enrollment posture, Access policy
-      posture, Tunnel posture, naming conventions, and per-device
-      Zero Trust profile recommendation for fedora-top (Wyn user,
-      verlyn13 administrator) and MAMAWORK (kids' learning device,
-      verlyn13 administrator).
+    summary: "Org structure, WARP/device enrollment posture, Access policy posture, Tunnel posture, naming conventions, and per-device Zero Trust profile recommendation for fedora-top (Wyn user, verlyn13 administrator) and MAMAWORK (kids' learning device, verlyn13 administrator)."
+    note: "An earlier system-config-side draft response was mistakenly circulated as if it were a cloudflare-dns handback; that text was authored in system-config and does NOT satisfy this request. State remains open until an actual reply from /Users/verlyn13/Repos/local/cloudflare-dns arrives, citing a commit SHA in that repo."
 
   - target_repo: homenetops
     target_path: ~/Repos/verlyn13/HomeNetOps
     request_doc: docs/device-admin/handback-request-homenetops-2026-05-13.md
     requested_at: 2026-05-14T00:25:00Z
-    state: open
+    answered_at: 2026-05-14T17:30:00Z
+    state: answered
+    answered_doc: docs/device-admin/mamawork-homenetops-lan-identity-2026-05-14.md
+    summary: "Two items. (1) Posture confirmation for fedora-top - no new rule requested. (2) New MAMAWORK static DHCP reservation for the wired MAC plus Unbound host override for mamawork.home.arpa."
+    answered_summary: "PASS. MAMAWORK static DHCP reservation bound on the OPNsense appliance; Unbound override for mamawork.home.arpa is active and resolves to 192.168.0.101; LAN/igc1 ARP confirms the IP-to-MAC binding; dig from the LAN resolver returns 192.168.0.101. TCP/22 from fedora-top to MAMAWORK times out, but the HomeNetOps report explicitly notes this is a Windows-side issue and OPNsense is not gating same-subnet TCP/22. ARP permanent=false because MAMAWORK is currently using a host-side static IP; the ISC static-ARP defense layer will not activate until MAMAWORK switches to DHCP (separate optional packet flagged). Fedora-top posture confirmation is implicit in the same handback - LAN routing PASS and SSH from fedora-top reaches the MAMAWORK end-of-network."
+
+advisory_ingests:
+  - source_repo: hetzner
+    source_path: /Users/verlyn13/Organizations/the-nash-group/hetzner
+    source_doc: docs/reports/cloudflare-management-status-for-system-config-2026-05-14.md
+    source_commit: 009c091bc63556e6fb43503bf70aee97a269ea82
+    ingested_at: 2026-05-14T17:30:00Z
+    ingest_doc: docs/device-admin/hetzner-cloudflare-management-status-ingest-2026-05-14.md
+    classification: advisory   # not device-admin authority
     summary: >-
-      (1) Posture confirmation for fedora-top - no new rule
-      requested, just confirm outbound TCP/443 permitted and LAN
-      path intact. (2) New MAMAWORK static-DHCP reservation for
-      B0-41-6F-0E-B7-B6 -> 192.168.0.101 plus Unbound host override
-      for mamawork.home.arpa; mirrors the 2026-05-13 fedora-top
-      pattern.
+      Hetzner brokers Cloudflare Tunnel ingress for hosted apps
+      (Infisical, Postal Web, runpod-review-webui); it is NOT a
+      household device control plane. The report explicitly does
+      not refresh live Cloudflare or live `cloudflare-dns` state.
+    encoded_decisions:
+      - Do not route household device administration through Hetzner by default.
+      - Preferred remote-admin target stays Cloudflare Zero Trust / WARP private access governed by cloudflare-dns.
+      - Tailscale stays transition / break-glass only.
+      - Treating Hetzner as a device bastion is a new design lane that has not been started.

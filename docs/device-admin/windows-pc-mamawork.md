@@ -97,7 +97,7 @@ intake; gap flagged for v1.1 of the inventory script).
 | Connection-specific DNS suffix | `home.arpa` |
 | DNS resolvers | `8.8.8.8`, `8.8.4.4` (manual, intentional per report; no PIA residue) |
 | Network category | `Private` (correct for LAN-scoped firewall rules) |
-| HomeNetOps reservation | Not yet present. Request pending: reservation for `B0-41-6F-0E-B7-B6` -> `192.168.0.101`, plus Unbound host override `mamawork.home.arpa -> 192.168.0.101`. The static host-side config is functional today; the OPNsense-side reservation prevents future conflicts and gives `fedora-top` a stable name to SSH to. |
+| HomeNetOps reservation | **PASS** as of 2026-05-14 (see [mamawork-homenetops-lan-identity-2026-05-14.md](./mamawork-homenetops-lan-identity-2026-05-14.md)). OPNsense static DHCP reservation bound for `B0-41-6F-0E-B7-B6` -> `192.168.0.101`, plus Unbound host override `mamawork.home.arpa -> 192.168.0.101`. ARP `permanent=false` until MAMAWORK switches from host-static to DHCP - optional follow-up packet flagged. |
 | Default routes | Single path, Ethernet 2 -> `192.168.0.1`; no VPN/tunnel default route |
 | WoL | Configured on Ethernet 2 (`Magic Packet`, `Pattern Match`, `Shutdown WoL`); also armed on Wi-Fi (less reliable). HomeNetOps WoL registration is also pending. |
 
