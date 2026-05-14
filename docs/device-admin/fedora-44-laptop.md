@@ -2,9 +2,9 @@
 title: Fedora 44 Laptop Device Administration Record
 category: operations
 component: device_admin
-status: tailscale-retained-logged-out
-version: 0.16.0
-last_updated: 2026-05-13
+status: admin-backup-key-applied
+version: 0.17.0
+last_updated: 2026-05-14
 tags: [device-admin, fedora, ssh, luks, firewalld, 1password, privilege, docker, infisical, tailscale]
 priority: high
 ---
@@ -133,6 +133,20 @@ External evidence ingested from:
   adding the SSH Access app + Tunnel + connector token (naming
   candidates `access-app-ssh-fedora-top` and `tunnel-fedora-top`;
   hostname `ssh-fedora-top.homezerotrust.cloudflareaccess.com`).
+- [fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md](./fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md)
+  for the live apply on `2026-05-14T02:42:25Z`. Admin-backup
+  ED25519 public key
+  `SHA256:VUu4nr5J+JjTpwFzRw+l2WQoKbfLhQhXAwGQmdlL6qU`
+  (`verlyn13@fedora-top-admin-backup`) appended to
+  `/home/verlyn13/.ssh/authorized_keys` from the operator's
+  1Password item
+  `op://Dev/jefahnierocks-device-fedora-top-admin-backup-verlyn13`,
+  gated by fingerprint match. Primary MacBook key
+  (`SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8`) verified
+  still works post-apply; sshd effective settings unchanged.
+  Pre-apply snapshot at
+  `/var/backups/jefahnierocks-fedora-top-admin-backup-key-20260514T024225Z`.
+  Backup-path login verification deferred to first-use.
 
 Repo-safe current facts from these updates:
 

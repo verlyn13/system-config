@@ -2,8 +2,8 @@
 title: Fedora Top Admin-Backup SSH Key Strategy Packet - 2026-05-14
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
+status: applied
+version: 0.2.0
 last_updated: 2026-05-14
 tags: [device-admin, fedora, ssh, admin-backup, 1password, hardening]
 priority: high
@@ -19,11 +19,13 @@ a single approved MacBook ED25519 key
 using the 1Password SSH agent on it - `verlyn13` loses remote-admin
 access to `fedora-top`.
 
-This packet prepares the addition of **a second `verlyn13` admin
-public key path**, backed by 1Password (or another approved admin-
-recovery mechanism), so that one independent device failure does not
-sever administration. The packet is preparation only; no live
-`fedora-top` change is authorized by approving this document.
+This packet defines the addition of **a second `verlyn13` admin
+public key path**, backed by 1Password, so that one independent
+device failure does not sever administration. It was applied live on
+2026-05-14T02:42:25Z. Redacted apply evidence is recorded in
+[fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md](./fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md).
+
+The original text below is preserved for reuse and audit.
 
 ## Scope
 

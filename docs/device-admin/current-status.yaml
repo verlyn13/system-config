@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T19:15:00Z
+last_updated: 2026-05-14T02:45:00Z
 
 devices:
   - device: fedora-top
@@ -89,6 +89,14 @@ devices:
         apply_commit: d3e44b8
         applied_at: 2026-05-13T23:03:01Z
 
+      - name: admin-backup-ssh-key-strategy
+        packet_doc: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md
+        apply_record: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md
+        packet_commit: a3ab575
+        apply_commit: pending     # filled by Lane A commit
+        applied_at: 2026-05-14T02:42:25Z
+        outcome: "Second verlyn13 admin key appended. Primary MacBook key SHA256:ofocO0zOCEVFg7bAP6ElZLe7cfjBMi53zXMc5Y4sPa8 unchanged; backup key SHA256:VUu4nr5J+JjTpwFzRw+l2WQoKbfLhQhXAwGQmdlL6qU added from 1Password op://Dev/jefahnierocks-device-fedora-top-admin-backup-verlyn13. AllowUsers verlyn13, PasswordAuthentication no, all sshd effective settings unchanged. Single-MacBook dependency closed (server-side). First-use backup-path verification deferred."
+
       - name: tailscale-retain-or-remove
         packet_doc: docs/device-admin/fedora-top-tailscale-retain-or-remove-packet-2026-05-13.md
         apply_record: docs/device-admin/fedora-top-tailscale-retain-or-remove-apply-2026-05-13.md
@@ -121,18 +129,12 @@ devices:
         prepared_at: 2026-05-14T00:10:00Z
         state: approval-required
         approval_phrase_excerpt: "See packet for full text. MacBook-side only; adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts using the verified ED25519 fingerprint SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w."
-      - name: admin-backup-ssh-key-strategy
-        packet_doc: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md
-        prepared_at: 2026-05-14T17:30:00Z
-        approved_at: 2026-05-14T18:30:00Z
-        state: approved-blocked-on-operator-input
-        blocking_input: "Operator must (a) create a 1Password SSH Key item in op://Dev (proposed name: jefahnierocks-device-fedora-top-admin-backup-verlyn13; final name is the operator's choice) so 1Password generates the ed25519 keypair locally; (b) enable the 1Password SSH agent integration on whichever device will hold the backup path; (c) return only the public-key body and the ED25519 fingerprint so the apply can run with the documented fingerprint-match gate. The agent will NOT create the 1Password item; that is human-only per system-config policy."
-        approval_phrase_excerpt: "See packet for full text. Adds one additional verlyn13 ED25519 public key to fedora-top /home/verlyn13/.ssh/authorized_keys, with the private half held in 1Password only (NOT the legacy MAMAWORK DadAdmin_WinNet key). Keeps AllowUsers verlyn13, keeps PasswordAuthentication no, does not add any other admin user. Snapshot-backed rollback. Closes the single-MacBook dependency for fedora-top remote administration."
+# admin-backup-ssh-key-strategy moved to applied_packets[] above on 2026-05-14T02:42:25Z
 
     blocked_items:
-      - item: fedora-top-admin-backup-operator-input
+      - item: fedora-top-admin-backup-first-use-verification
         owner: human
-        notes: "Fedora admin-backup SSH key strategy was approved 2026-05-14 (see prepared_packets entry). Apply is blocked on the human creating a 1Password SSH Key item (proposed name jefahnierocks-device-fedora-top-admin-backup-verlyn13) and returning two non-secret values: the resulting ED25519 public-key body (single OpenSSH line) and its fingerprint. The agent will NOT create the 1Password item per system-config secrets policy."
+        notes: "The Fedora admin-backup ED25519 key (fingerprint SHA256:VUu4nr5J+JjTpwFzRw+l2WQoKbfLhQhXAwGQmdlL6qU, item op://Dev/jefahnierocks-device-fedora-top-admin-backup-verlyn13) is installed in fedora-top authorized_keys as of 2026-05-14T02:42:25Z. First-use verification (operator logs in to fedora-top from a non-MacBook context that holds the backup private key in its 1Password SSH agent) is the next step. The server-side single-MacBook dependency is already closed; this is just confirming the operator side works as expected."
       - item: fedora-top-warp-enrollment-cutover-pending
         owner: human
         notes: "cloudflare-dns recommends fedora-top -> Kids profile with WARP identity wynrjohnson@gmail.com (already in policy-inputs.yaml kids.emails). The Kids profile already matches by identity.email so NO Pulumi change is needed on the cloudflare-dns side for a WARP-enrollment-only cutover. system-config can draft fedora-top-warp-enrollment-cutover-packet once the operator confirms (1) Kids profile placement, (2) wynrjohnson@gmail.com as enrollment identity. Cited cloudflare-dns commit: b5b9460."
@@ -190,10 +192,7 @@ devices:
           WARP/cloudflared cutover, Tailscale login-with-ACL, and
           Tailscale remove-after-Cloudflare. Each will quote its
           own live-action approval phrase when drafted.
-      - action: fedora-top-admin-backup-ssh-key-strategy
-        state: approved-blocked-on-operator-input
-        approved_at: 2026-05-14T18:30:00Z
-        approval_phrase: "See docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md 'Required Approval Phrase' section. Adds one additional verlyn13 admin key path (1Password-backed) to fedora-top authorized_keys; no password SSH; no other admin user; no DadAdmin_WinNet reuse. Highest priority because the host currently has a single-client dependency on the MacBook. Approval received 2026-05-14; apply blocked on operator-created 1Password SSH Key item and returned public-key body + fingerprint."
+# fedora-top-admin-backup-ssh-key-strategy applied 2026-05-14T02:42:25Z; see applied_packets[]
       - action: fedora-top-known-hosts-reconciliation
         state: approval-required
         approval_phrase: "See docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md 'Required Approval Phrase' section. MacBook-side only; adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts using the verified ED25519 fingerprint SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w."
