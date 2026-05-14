@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-13T23:45:00Z
+last_updated: 2026-05-14T00:10:00Z
 
 devices:
   - device: fedora-top
@@ -116,6 +116,18 @@ devices:
           Cloudflare WARP/cloudflared cutover, Tailscale
           login-with-ACL, Tailscale remove-after-Cloudflare); each
           will quote its own approval phrase when drafted.
+      - name: known-hosts-reconciliation
+        packet_doc: docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
+        prepared_at: 2026-05-14T00:10:00Z
+        state: approval-required
+        approval_phrase_excerpt: >-
+          "I approve applying the MacBook known_hosts reconciliation
+          for fedora-top.home.arpa: back up ~/.ssh/known_hosts; sanity
+          check ... run ssh-keyscan -t ed25519 -H
+          fedora-top.home.arpa, verify the fetched key's fingerprint
+          matches SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w
+          ... MacBook-side only; do not touch fedora-top, sshd, ..."
+          (see packet for full text).
 
     blocked_items:
       - item: cloudflare-dns-handback-needed
@@ -160,9 +172,13 @@ devices:
       - item: macbook-known-hosts-reconciliation
         owner: human
         notes: >-
-          Reconcile the MacBook `known_hosts` entry for
-          `fedora-top.home.arpa` so the `HostKeyAlias=192.168.0.206`
-          workaround can be retired from routine SSH commands.
+          Packet prepared 2026-05-14
+          (docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md);
+          awaiting guardian approval. Adds a single
+          fedora-top.home.arpa entry to MacBook ~/.ssh/known_hosts
+          using the verified ED25519 host-key fingerprint
+          SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w.
+          MacBook-side only; no fedora-top change.
 
     approval_required:
       - action: remote-admin-routing-design
@@ -177,12 +193,14 @@ devices:
           Tailscale remove-after-Cloudflare. Each will quote its
           own live-action approval phrase when drafted.
       - action: fedora-top-known-hosts-reconciliation
-        state: planned
+        state: approval-required
         approval_phrase: >-
-          Small standalone packet; preferred next live action after
-          this design packet lands. Phrase will be drafted with the
-          packet. Will operate only on MacBook ~/.ssh/known_hosts,
-          will not touch fedora-top.
+          See
+          docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
+          "Required Approval Phrase" section. MacBook-side only;
+          adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts
+          using the verified ED25519 fingerprint
+          SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w.
       - action: docker-hygiene-packet
         state: planned
         approval_phrase: >-
@@ -200,22 +218,20 @@ devices:
 
     next_recommended_action:
       summary: >-
-        Hand the prepared remote-admin routing design to the human
-        and to cloudflare-dns. The next live-action packet is
-        fedora-top-known-hosts-reconciliation (small, scoped, no
-        cross-repo dependency). In parallel, request a cloudflare-dns
-        handback covering Zero Trust org structure, WARP enrollment
-        posture, Access policy posture, Tunnel naming, and the
-        device-profile recommendation for fedora-top (Wyn user,
-        verlyn13 administrator) so the Cloudflare WARP/cloudflared
-        cutover packet can be authored.
+        Apply the prepared known_hosts reconciliation packet
+        (MacBook-side only, scoped, no fedora-top change). In
+        parallel, request a cloudflare-dns handback covering Zero
+        Trust org structure, WARP enrollment posture, Access policy
+        posture, Tunnel naming, and the device-profile recommendation
+        for fedora-top so the Cloudflare WARP/cloudflared cutover
+        packet can be authored.
       preferred_packet: fedora-top-known-hosts-reconciliation
-      preferred_packet_status: planned
+      preferred_packet_status: approval-required
       preferred_packet_blockers:
-        - slug: doc-authoring
+        - slug: guardian-approval-required
           note: >-
-            Small standalone packet; no external blocker.
+            Approval phrase quoted in the packet doc.
       handback_to_human: true
 
     last_verified: 2026-05-13T23:18:14Z
-    latest_system_config_commit: 4135970
+    latest_system_config_commit: 9f76b91
