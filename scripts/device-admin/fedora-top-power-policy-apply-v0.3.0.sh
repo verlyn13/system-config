@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
-# fedora-top-power-policy-apply-v0.2.0.sh
+# fedora-top-power-policy-apply-v0.3.0.sh
+#
+# v0.3.0 (2026-05-15): Fix two issues from v0.2.0's first real run:
+# (1) `dropin_mode='0644'` compared against `stat -c '%a'` output
+#     '644' (no leading zero) and hard-stopped at S2 with
+#     "drop-in mode/owner mismatch: 644 / root:root". The file was
+#     installed correctly with mode 0644 root:root, but the string
+#     comparison failed. v0.3.0 changes `dropin_mode='644'` to match
+#     `%a` output exactly.
+# (2) The drop-in body heredoc still referenced
+#     scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh
+#     (a leftover from the v0.1.0 copy). The header was bumped in
+#     v0.2.0 but the heredoc body was not. v0.3.0 updates the
+#     reference to v0.3.0.sh.
 #
 # v0.2.0 (2026-05-15): Fix logind property reader. v0.1.0 used
 # `systemctl show systemd-logind --property X --value` in the S4
@@ -60,7 +73,7 @@ dropin_path='/etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf'
 dropin_body=$(cat <<'EOF'
 # Managed by system-config:
 #   docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md
-#   scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh
+#   scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh
 #
 # Goal: keep fedora-top reachable on the LAN admin lane while plugged
 # in. Lid-close on AC will not suspend; idle will not suspend.
@@ -73,7 +86,7 @@ HandleLidSwitchDocked=ignore
 IdleAction=ignore
 EOF
 )
-dropin_mode='0644'
+dropin_mode='644'
 dropin_owner='root:root'
 
 # -------- evidence directory --------------------------------------

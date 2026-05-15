@@ -207,26 +207,34 @@ devices:
 
       - name: fedora-top-power-policy-apply
         packet_doc: docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md
-        executable: scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh
-        executable_sha256: a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2
+        executable: scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh
+        executable_sha256: e28302253de495343e5adcb73f205f6ad4f1a4c24c986c167f1c497261d6c6e8
         executable_encoding: ASCII
         executable_shell: bash on fedora-top
         prepared_at: 2026-05-15T22:30:00Z
-        revised_at: 2026-05-15T17:00:00Z
-        state: approval-required-blocked-on-baseline
-        packet_version: 0.2.0
-        supersedes_version: 0.1.0
+        revised_at: 2026-05-15T17:30:00Z
+        state: approval-required
+        packet_version: 0.3.0
+        supersedes_version: 0.2.0
         supersession_reason: >-
-          v0.1.0's step S4 read-back used
-          `systemctl show systemd-logind --property X --value` which
-          on systemd 259 (Fedora 44) returns empty for every
-          org.freedesktop.login1.Manager property. v0.1.0 was never
-          run end-to-end against a real host; the defect was
-          surfaced by the parallel baseline v0.2.0 -> v0.3.0
-          investigation. v0.2.0 switches read_logind_prop to the
-          same busctl helper used in baseline v0.3.0. Drop-in body,
-          target values, snapshot, reload (SIGHUP), and GNOME apply
-          logic are unchanged.
+          v0.2.0 was the first end-to-end real run of the apply
+          script. Two issues surfaced. (1) `dropin_mode='0644'` was
+          compared against `stat -c '%a'` output `'644'` (no leading
+          zero per GNU coreutils) and hard-stopped at S2 with
+          "drop-in mode/owner mismatch: 644 / root:root" even though
+          the file was installed correctly. (2) The drop-in body
+          heredoc still referenced
+          scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh
+          (leftover from v0.1.0 source copy). v0.3.0 fixes the mode
+          string (`'644'` to match %a output) and updates the
+          heredoc reference. Drop-in target values, snapshot,
+          reload (SIGHUP), and GNOME apply logic unchanged. v0.2.0
+          left the drop-in installed on host
+          (/etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf
+          mode 0644 root:root content correct apart from stale
+          comment); v0.3.0's re-run will detect content drift on
+          the comment line, re-write, pass mode check, and proceed
+          S3..S6.
         session_class: scoped-live-change
         prerequisite: >-
           fedora-top-power-policy-baseline apply record committed,
@@ -235,7 +243,7 @@ devices:
           Mutates /etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf
           + per-user gsettings for wyn and verlyn13.
         approval_phrase_excerpt: >-
-          Apply fedora-top-power-policy-apply-v0.2.0.sh via SSH from
+          Apply fedora-top-power-policy-apply-v0.3.0.sh via SSH from
           MacBook as verlyn13. Drops logind config to ignore lid-close
           on AC and never idle-suspend; battery lid-close keeps the
           default suspend behavior. systemctl reload systemd-logind
@@ -356,9 +364,9 @@ devices:
         packet_version: 0.4.0
         approval_phrase: "See docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md 'Approval Phrase' section. Read-only via SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-baseline-v0.4.0.sh (sha256 b0c411b06eae09a616a25ba1d65eba3f91e6a014ee4a3bc102c693b78feea2ae). Returns 08-summary.json. Prerequisite: fedora-top reachable (currently suspended; operator wakes physically)."
       - action: fedora-top-power-policy-apply
-        state: approval-required-blocked-on-baseline
-        packet_version: 0.2.0
-        approval_phrase: "See docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md 'Approval Phrase' section. SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh (sha256 a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2). Drops logind no-suspend config; idempotent; snapshot-backed."
+        state: approval-required
+        packet_version: 0.3.0
+        approval_phrase: "See docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md 'Approval Phrase' section. SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh (sha256 e28302253de495343e5adcb73f205f6ad4f1a4c24c986c167f1c497261d6c6e8). Drops logind no-suspend config; idempotent; snapshot-backed."
 
     next_recommended_action:
       summary: >-
@@ -391,7 +399,7 @@ devices:
           note: "fedora-top has been off the LAN since 2026-05-14T19:23:29 AKDT. Operator wakes physically before the baseline can run."
       secondary_packet: fedora-top-power-policy-apply
       secondary_packet_status: approval-required-blocked-on-baseline
-      secondary_packet_version: 0.2.0
+      secondary_packet_version: 0.3.0
       secondary_packet_blockers:
         - slug: baseline-apply-record-required
           note: "Apply only after fedora-top-power-policy-baseline-apply-2026-05-15.md is committed and the 08-summary.json review confirms expected state."

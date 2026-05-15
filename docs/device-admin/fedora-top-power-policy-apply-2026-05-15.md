@@ -3,7 +3,7 @@ title: fedora-top Power Policy Apply Packet - 2026-05-15
 category: operations
 component: device_admin
 status: prepared
-version: 0.2.0
+version: 0.3.0
 last_updated: 2026-05-15
 tags: [device-admin, fedora-top, linux, power, suspend, logind, harden]
 priority: high
@@ -24,6 +24,24 @@ It conforms to
 
 ## Version History
 
+- **v0.3.0 (2026-05-15)**: Fix two issues from v0.2.0's first real
+  run end-to-end on fedora-top. (1) `dropin_mode='0644'` was
+  compared against `stat -c '%a'` output `'644'` (no leading zero
+  per GNU coreutils) and hard-stopped at S2 with `"drop-in
+  mode/owner mismatch: 644 / root:root"` even though the file was
+  installed correctly. v0.3.0 changes `dropin_mode='644'`. (2) The
+  drop-in body heredoc still referenced
+  `scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh`
+  (leftover from the v0.1.0 source copy; v0.2.0 bumped the header
+  comment but missed the heredoc body). v0.3.0 updates the
+  reference to `v0.3.0.sh`. The file installed during v0.2.0's
+  failed run is left on host
+  (`/etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf`,
+  mode 0644 root:root, content correct apart from the stale
+  comment); v0.3.0's re-run will detect the content drift (one
+  comment line), re-write, pass the mode check, and proceed
+  through S3-S6. Snapshot, reload, target values, and GNOME apply
+  logic unchanged.
 - **v0.2.0 (2026-05-15)**: Fix step S4 logind property reader.
   v0.1.0's `read_logind_prop` used
   `systemctl show systemd-logind --property X --value`. On systemd 259
@@ -61,9 +79,9 @@ DNS, DHCP, OPNsense, Cloudflare, WARP, Tailscale, 1Password.
 ## Executable Artifact
 
 ```text
-script:     scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh
-sha256:     a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2
-encoding:   ASCII (python: 14266 bytes, 0 bytes > 0x7F; 391 lines)
+script:     scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh
+sha256:     e28302253de495343e5adcb73f205f6ad4f1a4c24c986c167f1c497261d6c6e8
+encoding:   ASCII (python: 14962 bytes, 0 bytes > 0x7F; 404 lines)
 shell:      /usr/bin/bash on fedora-top
 session:    SSH from MacBook as verlyn13
 sudo:       required (verlyn13 NOPASSWD via /etc/sudoers.d/ansible-automation)
@@ -94,7 +112,7 @@ tools:      jq, systemctl, install, busctl
 
 ## Approval Phrase
 
-> Apply the `fedora-top-power-policy-apply-v0.2.0` script on
+> Apply the `fedora-top-power-policy-apply-v0.3.0` script on
 > fedora-top via SSH from the MacBook as `verlyn13`. The script
 > installs `/etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf`
 > with `HandleLidSwitchExternalPower=ignore`, `HandleLidSwitchDocked=ignore`,
@@ -119,26 +137,26 @@ tools:      jq, systemctl, install, busctl
 
 ```bash
 # From the MacBook, in the system-config checkout:
-scp scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh \
+scp scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh \
     fedora-top:/var/tmp/
 
 ssh fedora-top
 # On the host:
 cd /var/tmp
-expected='a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2'
-actual=$(sha256sum fedora-top-power-policy-apply-v0.2.0.sh | awk '{print $1}')
+expected='e28302253de495343e5adcb73f205f6ad4f1a4c24c986c167f1c497261d6c6e8'
+actual=$(sha256sum fedora-top-power-policy-apply-v0.3.0.sh | awk '{print $1}')
 if [ "$actual" != "$expected" ]; then
     echo "sha256 mismatch: $actual vs $expected" >&2
     exit 1
 fi
-bash fedora-top-power-policy-apply-v0.2.0.sh
+bash fedora-top-power-policy-apply-v0.3.0.sh
 ```
 
 Stdin-piped form is also acceptable for this packet because the
 script is idempotent and produces evidence regardless:
 
 ```bash
-ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh
+ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh
 ```
 
 ## What The Script Does
