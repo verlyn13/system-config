@@ -1,0 +1,18 @@
+# fedora-top remote administration
+# Managed by chezmoi
+#
+# Admin path: MacBook -> fedora-top.home.arpa over LAN SSH.
+# 1Password is installed on the MacBook only; the private half of
+# id_ed25519_personal.1password.pub is served by the MacBook's 1P
+# SSH agent (configured globally in ~/.ssh/config).
+#
+# HostKeyAlias 192.168.0.206 is kept while the FQDN
+# fedora-top.home.arpa has no known_hosts entry. A future
+# fedora-top-known-hosts-reconciliation packet adds the FQDN form,
+# at which point this directive can be dropped.
+
+Host fedora-top fedora-top.home.arpa 192.168.0.206
+  HostName 192.168.0.206
+  User verlyn13
+  IdentityFile ~/.ssh/id_ed25519_personal.1password.pub
+  HostKeyAlias 192.168.0.206

@@ -1,40 +1,27 @@
-{{- $identityAgent := .ssh.identity_agent | default "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" -}}
-{{- $identityAgentPath := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $identityAgent)) $identityAgent (hasPrefix "~/" $identityAgent) -}}
-{{- $use1PasswordAgent := and (.ssh.use_1password_agent | default false) (not (empty (stat $identityAgentPath))) -}}
-{{- $hostMigrations := .ssh.host_migrations | default dict -}}
-{{- $dadAdminMigratedPath := index $hostMigrations "windows_dad_admin" | default "" -}}
-{{- $dadAdminMigratedResolved := ternary (joinPath .chezmoi.homeDir (trimPrefix "~/" $dadAdminMigratedPath)) $dadAdminMigratedPath (hasPrefix "~/" $dadAdminMigratedPath) -}}
-{{- $dadAdminMigrated := and $use1PasswordAgent (ne $dadAdminMigratedPath "") (not (empty (stat $dadAdminMigratedResolved))) -}}
-{{- $dadAdminKey := ternary $dadAdminMigratedPath "~/.ssh/dad_admin" $dadAdminMigrated -}}
-# Windows PC remote administration
+# MAMAWORK Windows PC remote administration
 # Managed by chezmoi
+#
+# Admin path: MacBook -> mamawork.home.arpa over LAN SSH or RDP.
+# 1Password is installed on the MacBook only; the private half of
+# id_ed25519_mamawork_admin.1password.pub is served by the MacBook's
+# 1P SSH agent. The administrative identity is MAMAWORK\jeffr
+# (Microsoft Account, member of Administrators); the legacy local
+# DadAdmin account and its DadAdmin_WinNet key are deliberately
+# retired by the mamawork-admin-streamline packet.
+#
+# HostKeyAlias 192.168.0.101 is kept while the FQDN
+# mamawork.home.arpa has no known_hosts entry. A future
+# mamawork-known-hosts-reconciliation packet adds the FQDN form,
+# at which point this directive can be dropped.
+#
+# Prior placeholder Host stanzas for wyn-pc, ila-pc, axel-pc,
+# bedroom-tv, and ahnie-laptop (all pointed at HostName 0.0.0.0
+# with the dead ~/.ssh/dad_admin IdentityFile) were removed by the
+# macbook-ssh-conf-d-streamline packet. They had no live targets
+# and no working private key.
 
-Host wyn-pc
-  HostName 0.0.0.0
-  User DadAdmin
-  IdentityFile {{ $dadAdminKey }}
-
-Host ila-pc
-  HostName 0.0.0.0
-  User DadAdmin
-  IdentityFile {{ $dadAdminKey }}
-
-Host axel-pc
-  HostName 0.0.0.0
-  User DadAdmin
-  IdentityFile {{ $dadAdminKey }}
-
-Host bedroom-tv
-  HostName 0.0.0.0
-  User DadAdmin
-  IdentityFile {{ $dadAdminKey }}
-
-Host ahnie-laptop
-  HostName 0.0.0.0
-  User DadAdmin
-  IdentityFile {{ $dadAdminKey }}
-
-Host mama-work
+Host mamawork mamawork.home.arpa 192.168.0.101
   HostName 192.168.0.101
-  User DadAdmin
-  IdentityFile {{ $dadAdminKey }}
+  User jeffr
+  IdentityFile ~/.ssh/id_ed25519_mamawork_admin.1password.pub
+  HostKeyAlias 192.168.0.101
