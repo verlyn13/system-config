@@ -2,12 +2,33 @@
 title: MAMAWORK SSH Key Bootstrap Packet - 2026-05-14
 category: operations
 component: device_admin
-status: prepared
-version: 0.1.0
-last_updated: 2026-05-14
+status: applied
+version: 0.3.0
+last_updated: 2026-05-15
 tags: [device-admin, mamawork, windows, openssh, admin-key, 1password]
 priority: high
 ---
+
+> **2026-05-15 v0.3.0 status note**: this packet is applied. See
+> [mamawork-ssh-key-bootstrap-apply-2026-05-14.md](./mamawork-ssh-key-bootstrap-apply-2026-05-14.md)
+> and `current-status.yaml`. Later packets changed the operational
+> posture: the active admin lane is now MacBook -> `MAMAWORK\jeffr`
+> using the same canonical 1Password-backed key, the legacy
+> `DadAdmin_WinNet` line has been removed, and the sshd admin
+> Match block has been restored. The original approved procedure
+> text below is preserved as historical packet content.
+>
+> **2026-05-14 v0.2.0 changes**: corrected two locations that
+> wrongly implied 1Password runs on a managed device. 1Password
+> (Desktop, CLI, SSH agent) lives on the operator's MacBook only;
+> managed devices (`fedora-top`, MAMAWORK) do not have 1P
+> installed. The "private half" description in Verified Current
+> State now points to the MacBook's 1P SSH agent, and the
+> Out-Of-Band Verification section now runs from the MacBook
+> instead of `fedora-top`. The packet's apply procedure
+> (operator-pastes-the-public-key on MAMAWORK) was already
+> correct and is unchanged. No new approval required for the
+> existing approved apply; this is a docs-only clarification.
 
 # MAMAWORK SSH Key Bootstrap Packet - 2026-05-14
 
@@ -110,10 +131,14 @@ new admin key to install:
   1Password item:          op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13
   expected fingerprint:    SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY
   public-key body:         ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN2FlNNQ337TaP51lwouo/5+ZIG2WGy431b4UxtYIHnH verlyn13@mamawork-admin
-  private half:            held in 1Password Dev vault, served by
-                           the 1Password SSH agent on fedora-top
-                           (and on any other operator device the
-                           operator chooses to attach)
+  private half:            held in 1Password Dev vault, served at
+                           SSH-client time by the 1Password SSH
+                           agent on the operator MacBook. 1Password
+                           is NOT installed on MAMAWORK; the public
+                           key body above is what the operator pastes
+                           into the apply procedure on MAMAWORK, and
+                           the private half never leaves the MacBook's
+                           1Password agent.
 
 SSH username form
   for verlyn13 -> MAMAWORK
@@ -389,33 +414,28 @@ Do NOT paste private keys, OAuth tokens, OpenSSH session secrets,
 Defender exclusion contents, Wi-Fi PSKs, BitLocker recovery
 material, or credential-manager values into the hand-back.
 
-## Out-Of-Band Verification (after MAMAWORK SSH is reachable)
+## Out-Of-Band Verification
 
-Once the [mamawork-ssh-investigation-packet-2026-05-14.md](./mamawork-ssh-investigation-packet-2026-05-14.md)
-diagnoses + remediates the TCP/22 timeout, run from `fedora-top`:
+This packet's original DadAdmin-oriented verification path has been
+superseded by the later inbound-TCP remediation, admin-streamline,
+sshd Match-block, and MacBook SSH conf.d streamline applies.
+
+Current proof command from the operator MacBook:
 
 ```bash
-ssh \
-  -i "$HOME/.ssh/<public-key-file-served-by-1password-agent>.pub" \
-  -o IdentityAgent="$HOME/.1password-ssh-agent.sock" \
-  -o IdentitiesOnly=yes \
-  -o PreferredAuthentications=publickey \
-  -o ControlMaster=no \
-  -o ControlPath=none \
-  DadAdmin@mamawork.home.arpa 'hostname; whoami'
+ssh mamawork 'cmd /c "hostname && whoami"'
 ```
 
-`(public-key-file-served-by-1password-agent).pub` refers to the
-on-disk public-key file the operator deploys on `fedora-top` whose
-matching private half lives in
-`op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13`. The
-private key never leaves the 1Password SSH agent.
+Expected output:
 
-Expected output: `MAMAWORK` / `DadAdmin`.
+```text
+MamaWork
+mamawork\jeffr
+```
 
-When this succeeds, the new bootstrap is end-to-end verified and
-the small follow-up packet to **remove the legacy DadAdmin_WinNet
-line** from `administrators_authorized_keys` becomes drafteable.
+The private half of the key is served by the MacBook's 1Password SSH
+agent from `op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13`.
+It is not installed on MAMAWORK or fedora-top.
 
 ## Related
 
