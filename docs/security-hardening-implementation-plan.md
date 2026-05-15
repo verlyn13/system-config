@@ -87,6 +87,10 @@ to entries under `~/Library/Logs/security-audit/2026-05-02-ua-wired/`.
     point to `~/workspace/mcp-control-plane/` (Doppler-era tree).
   - `com.happy-devkit.mcp-server` — exit `EX_CONFIG` after 3,027 restart
     attempts; path under `~/Development/business-org/happy-devkit/`.
+    **Resolved 2026-05-15**: agent unloaded, plist removed from
+    `~/Library/LaunchAgents/`, and the abandoned `~/.config/happy-devkit/`
+    state dir removed. Source tree never existed at the referenced path
+    on this host.
   - `com.jefahnierocks.host-capability-substrate.measure` — exit `127`,
     hard-codes `mise installs/just/1.46.0` path that breaks on `just` upgrade.
 - 2 with invalid plist XML (`com.workspace.budgeteer.{api,ingest}`) — raw
@@ -861,7 +865,7 @@ Disposition (Appendix C is the authoritative table):
 | `com.mcp.models` | EX_CONFIG | unload + delete plist | none |
 | `com.mcp.control` | EX_CONFIG | unload + delete plist | none |
 | `com.mcp.daily-refresh` | EX_CONFIG | unload + delete plist | none |
-| `com.happy-devkit.mcp-server` | EX_CONFIG (3027 restarts) | unload; investigate Doppler-era origin in `~/Development/business-org/happy-devkit/` | external repo |
+| `com.happy-devkit.mcp-server` | **resolved 2026-05-15** (was EX_CONFIG, 3027 restarts) | done: unload + plist removal + `~/.config/happy-devkit/` removal. Source tree `~/Development/business-org/happy-devkit/` never reachable on this host. | n/a |
 | `com.jefahnierocks.host-capability-substrate.measure` | exit 127 | fix hard-coded `mise installs/just/1.46.0` path; switch to `$(mise which just)` or PATH-derived | `~/Organizations/jefahnierocks/host-capability-substrate/` |
 | `com.workspace.budgeteer.api` | invalid plist (raw `&&`) | fix XML (escape `&` as `&amp;`) or refactor to a launcher script | `~/workspace/business-manager/` |
 | `com.workspace.budgeteer.ingest` | invalid plist (raw `&&`) | same as above | `~/workspace/business-manager/` |
@@ -1240,11 +1244,12 @@ risk:
    - P1 → `~/ai/flux/`, `~/ai/flux-agent-b/`,
      `~/Development/personal/authentik/` (one PR each adding loopback
      bindings); plus an ad hoc fix for `budget-triage-db-local`.
-   - P6 → `~/Development/business-org/happy-devkit/`,
-     `~/Organizations/jefahnierocks/host-capability-substrate/`,
+   - P6 → `~/Organizations/jefahnierocks/host-capability-substrate/`,
      `~/workspace/business-manager/` for source-side fixes; for the four
-     `com.mcp.*` agents whose origin tree is gone, simply unload + remove
-     plist (no source repo to update).
+     `com.mcp.*` agents and `com.happy-devkit.mcp-server` whose origin
+     tree is gone, simply unload + remove plist (no source repo to
+     update). `com.happy-devkit.mcp-server` was handled this way on
+     2026-05-15.
 
 4. **Host actions (operator)**:
    - P2 listener decisions (Continuity / Resolve).
@@ -1378,7 +1383,7 @@ remediation workflow.
 | `com.mcp.models` | EX_CONFIG | unload + delete plist | none |
 | `com.mcp.control` | EX_CONFIG | unload + delete plist | none |
 | `com.mcp.daily-refresh` | EX_CONFIG | unload + delete plist | none |
-| `com.happy-devkit.mcp-server` | EX_CONFIG (3027 restarts) | unload + investigate | external repo |
+| `com.happy-devkit.mcp-server` | **resolved 2026-05-15** | done: unload + plist + state-dir removal | n/a |
 | `com.jefahnierocks.host-capability-substrate.measure` | exit 127 | fix mise path | HCS repo |
 | `com.workspace.budgeteer.api` | invalid plist | escape `&` or refactor | external repo |
 | `com.workspace.budgeteer.ingest` | invalid plist | escape `&` or refactor | external repo |
