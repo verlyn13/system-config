@@ -46,7 +46,7 @@
 #                             stays in `blocked_items`.
 
 schema_version: 1
-last_updated: 2026-05-15T06:35:00Z
+last_updated: 2026-05-15T17:01:00Z
 
 devices:
   - device: fedora-top
@@ -75,20 +75,29 @@ devices:
         target: verlyn13@fedora-top.home.arpa
         notes: >-
           LAN-only. publickey-only via 1Password SSH agent on MacBook.
-          `allowusers verlyn13`. Until the MacBook `known_hosts` entry
-          for `fedora-top.home.arpa` is reconciled, all SSH commands
-          must include `-o HostKeyAlias=192.168.0.206`.
+          `allowusers verlyn13`. As of 2026-05-15 reconciliation,
+          known_hosts has both fedora-top.home.arpa (hashed) and
+          192.168.0.206 entries pinned to the verified ED25519 key
+          SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w;
+          HostKeyAlias workaround is no longer required.
       - kind: ssh
         target: verlyn13@192.168.0.206
         notes: >-
-          Same SSH target reached by IP. Stable for `HostKeyAlias` use.
+          Same SSH target reached by IP. Both names work natively;
+          alias workaround no longer needed but the IP form remains
+          stable.
 
     current_management_status: >-
       remote-admin-ready over LAN SSH only; not fully managed.
       SSH hardened, privileges cleaned, Infisical/Redis retired,
-      firewalld narrowed. Tailscale / WARP / cloudflared / LUKS /
-      power / 1Password device-admin items and a future review of
-      verlyn13 NOPASSWD: ALL remain pending.
+      firewalld narrowed, power-policy applied
+      (HandleLidSwitchExternalPower=ignore, HandleLidSwitchDocked=ignore,
+      IdleAction=ignore via 20-jefahnierocks-no-suspend.conf;
+      battery lid-close still suspends by intent),
+      macbook known_hosts reconciled (FQDN entry added; HostKeyAlias
+      workaround dropped from chezmoi-managed conf.d). Tailscale /
+      WARP / cloudflared / LUKS / 1Password device-admin items and
+      a future review of verlyn13 NOPASSWD: ALL remain pending.
 
     applied_packets:
       - name: ssh-hardening
@@ -142,6 +151,80 @@ devices:
           firewalld passage, no upgrade, no daemon restart, no
           auth URL recording in repo.
 
+      - name: fedora-top-power-policy-baseline
+        packet_doc: docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md
+        apply_record: docs/device-admin/fedora-top-power-policy-baseline-apply-2026-05-15.md
+        executable: scripts/device-admin/fedora-top-power-policy-baseline-v0.4.0.sh
+        executable_sha256: b0c411b06eae09a616a25ba1d65eba3f91e6a014ee4a3bc102c693b78feea2ae
+        packet_version: 0.4.0
+        packet_commit: a2e3f90
+        apply_commit: 39407d6
+        applied_at: 2026-05-15T16:54:15Z
+        outcome: ok
+        notes: >-
+          Read-only Phase 4 baseline. Confirmed pre-apply state:
+          HandleLidSwitchExternalPower="" (default; falls through to
+          HandleLidSwitch=suspend) so lid_close_on_ac_will_suspend=true;
+          HandleLidSwitch=suspend, HandleLidSwitchDocked=ignore,
+          IdleAction=ignore; on AC, battery 80% pending-charge. Three
+          packet revisions in one session (v0.1.0 ARG_MAX -> v0.2.0
+          systemctl/busctl -> v0.3.0 -> v0.4.0 empty-fallback
+          semantics); see baseline apply record §Packet-Defect History
+          and supersession_reason in this YAML's prior revisions.
+
+      - name: fedora-top-power-policy-apply
+        packet_doc: docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md
+        apply_record: docs/device-admin/fedora-top-power-policy-apply-apply-2026-05-15.md
+        executable: scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh
+        executable_sha256: e28302253de495343e5adcb73f205f6ad4f1a4c24c986c167f1c497261d6c6e8
+        packet_version: 0.3.0
+        packet_commit: e437a2b
+        apply_commit: c0abb4b
+        applied_at: 2026-05-15T16:59:09Z
+        outcome: ok
+        notes: >-
+          Phase 4 scoped-live-change. Installed
+          /etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf
+          (mode 0644 root:root) with HandleLidSwitchExternalPower=ignore,
+          HandleLidSwitchDocked=ignore, IdleAction=ignore. systemctl
+          reload systemd-logind via SIGHUP did not drop sessions; all
+          three multi-user sessions (verlyn13, ila, wyn) remained intact.
+          Post-reload effective state: lid_close_on_ac_will_suspend=false,
+          idle_will_suspend=false, lid_close_on_battery_will_suspend=true
+          (preserved by intent). GNOME sleep-inactive-ac-type='nothing'
+          applied for verlyn13 (session bus available); recorded as
+          session_bus_available=false for wyn (no GNOME login at apply
+          time; per-user setting will apply on her next GNOME login;
+          logind-level policy already covers her). Two packet revisions
+          to reach v0.3.0 (v0.1.0 systemctl/busctl latent defect ->
+          v0.2.0 first-run mode-string compare halt + heredoc stale
+          reference -> v0.3.0).
+
+      - name: known-hosts-reconciliation
+        packet_doc: docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
+        apply_record: docs/device-admin/fedora-top-known-hosts-reconciliation-apply-2026-05-15.md
+        packet_commit: 2adb7d8
+        apply_commit: 8d7359a
+        applied_at: 2026-05-15T17:00:40Z
+        outcome: ok
+        notes: >-
+          MacBook-side only; no fedora-top mutation. Added hashed
+          fedora-top.home.arpa entry to ~/.ssh/known_hosts using the
+          verified ED25519 fingerprint
+          SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w (matched
+          against IP-form entry and fresh ssh-keyscan). Validated with
+          ssh -o StrictHostKeyChecking=yes -o BatchMode=yes
+          verlyn13@fedora-top.home.arpa returning fedora-top / verlyn13
+          (no HostKeyAlias). Packet markdown's `Apply Commands` block
+          used Linux-style ssh-keygen -l output parsing
+          (`awk '{print $2}'`) which fails on macOS (whose output is
+          `<host> <type> <fp>`); adapted inline with
+          `grep -oE 'SHA256:[A-Za-z0-9+/=]+'` for portability. Backup
+          at ~/.ssh/known_hosts.pre-fedora-top-reconciliation-20260515T170040Z.
+          Follow-on: HostKeyAlias 192.168.0.206 and stale comments
+          dropped from home/dot_ssh/conf.d/fedora-top.conf.tmpl;
+          target-scoped chezmoi apply ran.
+
     prepared_packets:
       - name: remote-admin-routing-design
         packet_doc: docs/device-admin/fedora-top-remote-admin-routing-design-2026-05-13.md
@@ -154,129 +237,7 @@ devices:
           Cloudflare WARP/cloudflared cutover, Tailscale
           login-with-ACL, Tailscale remove-after-Cloudflare); each
           will quote its own approval phrase when drafted.
-      - name: known-hosts-reconciliation
-        packet_doc: docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
-        prepared_at: 2026-05-14T00:10:00Z
-        state: approval-required
-        approval_phrase_excerpt: "See packet for full text. MacBook-side only; adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts using the verified ED25519 fingerprint SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w."
-# admin-backup-ssh-key-strategy moved to applied_packets[] above on 2026-05-14T02:42:25Z
-
-      - name: fedora-top-power-policy-baseline
-        packet_doc: docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md
-        executable: scripts/device-admin/fedora-top-power-policy-baseline-v0.4.0.sh
-        executable_sha256: b0c411b06eae09a616a25ba1d65eba3f91e6a014ee4a3bc102c693b78feea2ae
-        executable_encoding: ASCII
-        executable_shell: bash on fedora-top
-        prepared_at: 2026-05-15T22:30:00Z
-        revised_at: 2026-05-15T17:20:00Z
-        state: approval-required
-        packet_version: 0.4.0
-        supersedes_version: 0.3.0
-        supersession_reason: >-
-          v0.3.0 captured the correct raw logind values via busctl
-          but the `lid_close_on_ac_will_suspend` diagnostic only
-          matched the literal value of HandleLidSwitchExternalPower.
-          When that property is empty (the systemd default, AND the
-          root cause of the 2026-05-14 19:23 incident),
-          logind.conf(5) says behavior falls through to
-          HandleLidSwitch. v0.3.0 reported lid_close_on_ac_will_suspend
-          = false despite the actual behavior being suspend. v0.4.0
-          resolves the empty value to HandleLidSwitch before
-          evaluating the diagnostic case, so the boolean matches
-          observed behavior. Pure annotation fix; apply script
-          v0.2.0 does not gate on baseline diagnostics so apply is
-          unaffected. v0.3.0 evidence preserved on host at
-          /var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-20260515T165052Z/.
-          Per linux-terminal-admin-spec.md §Packet-Defect Halt Rule:
-          state-normalization defect -> halt -> hand back for new
-          packet version.
-        session_class: read-only-probe
-        prerequisite: >-
-          fedora-top must be online (TCP/22 reachable). Currently
-          suspended since 2026-05-14T19:23:29 AKDT; operator wakes
-          physically. First packet under linux-terminal-admin-spec.md
-          v0.1.0.
-        approval_phrase_excerpt: >-
-          Run fedora-top-power-policy-baseline-v0.4.0.sh via SSH from
-          MacBook as verlyn13. Read-only; writes structured JSON
-          evidence to /var/tmp/jefahnierocks-device-admin/.../. Return
-          08-summary.json verbatim. Captures effective logind config,
-          sleep targets, upower AC/battery, GNOME power gsettings for
-          wyn and verlyn13, kernel cmdline, systemd-inhibit, last-7d
-          suspend/resume events.
-
-      - name: fedora-top-power-policy-apply
-        packet_doc: docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md
-        executable: scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh
-        executable_sha256: e28302253de495343e5adcb73f205f6ad4f1a4c24c986c167f1c497261d6c6e8
-        executable_encoding: ASCII
-        executable_shell: bash on fedora-top
-        prepared_at: 2026-05-15T22:30:00Z
-        revised_at: 2026-05-15T17:30:00Z
-        state: approval-required
-        packet_version: 0.3.0
-        supersedes_version: 0.2.0
-        supersession_reason: >-
-          v0.2.0 was the first end-to-end real run of the apply
-          script. Two issues surfaced. (1) `dropin_mode='0644'` was
-          compared against `stat -c '%a'` output `'644'` (no leading
-          zero per GNU coreutils) and hard-stopped at S2 with
-          "drop-in mode/owner mismatch: 644 / root:root" even though
-          the file was installed correctly. (2) The drop-in body
-          heredoc still referenced
-          scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh
-          (leftover from v0.1.0 source copy). v0.3.0 fixes the mode
-          string (`'644'` to match %a output) and updates the
-          heredoc reference. Drop-in target values, snapshot,
-          reload (SIGHUP), and GNOME apply logic unchanged. v0.2.0
-          left the drop-in installed on host
-          (/etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf
-          mode 0644 root:root content correct apart from stale
-          comment); v0.3.0's re-run will detect content drift on
-          the comment line, re-write, pass mode check, and proceed
-          S3..S6.
-        session_class: scoped-live-change
-        prerequisite: >-
-          fedora-top-power-policy-baseline apply record committed,
-          08-summary.json reviewed. Reads back logind state and
-          per-user GNOME settings; idempotent and snapshot-backed.
-          Mutates /etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf
-          + per-user gsettings for wyn and verlyn13.
-        approval_phrase_excerpt: >-
-          Apply fedora-top-power-policy-apply-v0.3.0.sh via SSH from
-          MacBook as verlyn13. Drops logind config to ignore lid-close
-          on AC and never idle-suspend; battery lid-close keeps the
-          default suspend behavior. systemctl reload systemd-logind
-          (SIGHUP, no session drop). Read-back validation via busctl.
-          Snapshot-backed rollback.
-
     blocked_items:
-      - item: fedora-top-suspend-mid-ssh-incident-2026-05-14
-        owner: documented
-        notes: >-
-          On 2026-05-14T19:23:29 AKDT (03:23:29Z 2026-05-15), an
-          active SSH session from the MacBook was dropped when
-          fedora-top broadcast 'The system will suspend now!' and
-          suspended. The MacBook's existing TCPKeepAlive+ServerAliveInterval=30
-          detected the dead transport and closed cleanly; no host
-          data was corrupted, but a mid-edit Claude session on
-          ~/Projects/shelltutor was interrupted. Root cause: lid-close
-          or idle suspend with no power policy applied. Pre-existing
-          docs (fedora-44-laptop.md:460,
-          fedora-top-complete-instructions.md:539, this YAML's
-          luks-remote-reboot-strategy blocked_item) had recorded the
-          intent 'No sleep on AC while remotely administered' but
-          never applied it. Two packets prepared 2026-05-15 to close
-          this: fedora-top-power-policy-baseline and
-          fedora-top-power-policy-apply (see prepared_packets[]).
-          Workstation-side mitigation already applied:
-          ~/.ssh/conf.d/fedora-top.conf now includes
-          ServerAliveCountMax=3 explicitly so future dead sessions
-          die in ~90 s instead of waiting for OS TCP timeout (commit
-          to follow). Reachability check at 2026-05-15T06:28:12Z
-          showed TCP/22 still timing out (host still suspended);
-          operator wakes physically before the baseline can run.
-
       - item: fedora-top-admin-backup-first-use-verification
         owner: human
         notes: "The Fedora admin-backup ED25519 key (fingerprint SHA256:VUu4nr5J+JjTpwFzRw+l2WQoKbfLhQhXAwGQmdlL6qU, item op://Dev/jefahnierocks-device-fedora-top-admin-backup-verlyn13) is installed in fedora-top authorized_keys as of 2026-05-14T02:42:25Z. First-use verification (operator logs in to fedora-top from a non-MacBook context that holds the backup private key in its 1Password SSH agent) is the next step. The server-side single-MacBook dependency is already closed; this is just confirming the operator side works as expected."
@@ -318,17 +279,6 @@ devices:
           and `jefahnierocks-device-fedora-top-recovery-key` are
           planned but not created. Required before any non-LAN
           break-glass story.
-      - item: macbook-known-hosts-reconciliation
-        owner: human
-        notes: >-
-          Packet prepared 2026-05-14
-          (docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md);
-          awaiting guardian approval. Adds a single
-          fedora-top.home.arpa entry to MacBook ~/.ssh/known_hosts
-          using the verified ED25519 host-key fingerprint
-          SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w.
-          MacBook-side only; no fedora-top change.
-
     approval_required:
       - action: remote-admin-routing-design
         state: prepared
@@ -343,8 +293,9 @@ devices:
           own live-action approval phrase when drafted.
 # fedora-top-admin-backup-ssh-key-strategy applied 2026-05-14T02:42:25Z; see applied_packets[]
       - action: fedora-top-known-hosts-reconciliation
-        state: approval-required
-        approval_phrase: "See docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md 'Required Approval Phrase' section. MacBook-side only; adds a fedora-top.home.arpa entry to ~/.ssh/known_hosts using the verified ED25519 fingerprint SHA256:0dqRCxVLpssRFdRjgHKkWy5lS31IUiZF7DFZj8cFm2w."
+        state: applied
+        applied_at: 2026-05-15T17:00:40Z
+        notes: "See applied_packets[]."
       - action: docker-hygiene-packet
         state: planned
         approval_phrase: >-
@@ -360,58 +311,54 @@ devices:
           sudoers grant for the specific remote-apply commands).
           Packet to be drafted separately.
       - action: fedora-top-power-policy-baseline
-        state: approval-required
-        packet_version: 0.4.0
-        approval_phrase: "See docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md 'Approval Phrase' section. Read-only via SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-baseline-v0.4.0.sh (sha256 b0c411b06eae09a616a25ba1d65eba3f91e6a014ee4a3bc102c693b78feea2ae). Returns 08-summary.json. Prerequisite: fedora-top reachable (currently suspended; operator wakes physically)."
+        state: applied
+        applied_at: 2026-05-15T16:54:15Z
+        notes: "See applied_packets[]."
       - action: fedora-top-power-policy-apply
-        state: approval-required
-        packet_version: 0.3.0
-        approval_phrase: "See docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md 'Approval Phrase' section. SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-apply-v0.3.0.sh (sha256 e28302253de495343e5adcb73f205f6ad4f1a4c24c986c167f1c497261d6c6e8). Drops logind no-suspend config; idempotent; snapshot-backed."
+        state: applied
+        applied_at: 2026-05-15T16:59:09Z
+        notes: "See applied_packets[]."
 
     next_recommended_action:
       summary: >-
-        fedora-top suspended mid-SSH on 2026-05-14T19:23:29 AKDT
-        because no power policy was applied (the intent was recorded
-        in docs since 2026-05-13 but never packetized). Workstation
-        mitigation already applied: MacBook ~/.ssh/conf.d/fedora-top.conf
-        now declares ServerAliveCountMax=3 explicitly. Two new packets
-        prepared 2026-05-15: fedora-top-power-policy-baseline (read-only)
-        and fedora-top-power-policy-apply (logind drop-in to ignore
-        lid-close on AC + ignore idle, plus per-user GNOME settings
-        for wyn and verlyn13). Both reference executable .sh artifacts
-        in scripts/device-admin/ by sha256. Next operator step on the
-        host: wake the laptop physically, then run the baseline script
-        via SSH from MacBook; return 08-summary.json. After
-        system-config commits the baseline apply record, run the apply
-        script. The fedora-top-known-hosts-reconciliation packet
-        remains approval-gated and independent (MacBook-side only,
-        no fedora-top change). In
-        parallel, request a cloudflare-dns handback covering Zero
-        Trust org structure, WARP enrollment posture, Access policy
-        posture, Tunnel naming, and the device-profile recommendation
-        for fedora-top so the Cloudflare WARP/cloudflared cutover
-        packet can be authored.
-      preferred_packet: fedora-top-power-policy-baseline
-      preferred_packet_status: approval-required
-      preferred_packet_version: 0.4.0
+        Power-policy chain and known_hosts reconciliation both applied
+        on 2026-05-15. fedora-top no longer suspends on AC lid-close or
+        idle; battery lid-close still suspends by intent. MacBook can
+        reach the host as fedora-top, fedora-top.home.arpa, or
+        192.168.0.206 without HostKeyAlias workaround. The two highest-
+        impact phase-4 + workstation deliverables are closed.
+        Remaining open work, none imminently runnable without external
+        input or operator decision:
+        (1) LUKS remote-reboot strategy (luks-remote-reboot-strategy
+            blocked_item) - operator choice between no-remote-reboot /
+            TPM2 auto-unlock / FIDO2 / initramfs SSH unlock.
+        (2) Cloudflare WARP / Tunnel cutover for off-LAN access -
+            blocked on cloudflare-dns Pulumi commits + operator profile
+            placement decision (Kids profile / wynrjohnson@gmail.com).
+        (3) fedora-top-admin-backup-first-use-verification - operator
+            logs in from a non-MacBook context holding the backup
+            private key to confirm the server-side change.
+        (4) 1Password device-admin items (`local-admin`, `recovery-key`)
+            not yet created.
+        (5) Docker hygiene packet not yet authored.
+        (6) verlyn13 NOPASSWD: ALL review packet (requires a working
+            narrow non-NOPASSWD admin path first).
+      preferred_packet: luks-remote-reboot-strategy-decision
+      preferred_packet_status: pending-operator-decision
       preferred_packet_blockers:
-        - slug: host-suspended-since-2026-05-14
-          note: "fedora-top has been off the LAN since 2026-05-14T19:23:29 AKDT. Operator wakes physically before the baseline can run."
-      secondary_packet: fedora-top-power-policy-apply
-      secondary_packet_status: approval-required-blocked-on-baseline
-      secondary_packet_version: 0.3.0
+        - slug: operator-strategy-decision
+          note: "Operator chooses between no-remote-reboot / TPM2 auto-unlock / FIDO2 / initramfs SSH unlock; subsequent packet drafting follows the choice."
+      secondary_packet: fedora-top-warp-enrollment-cutover
+      secondary_packet_status: blocked-on-cloudflare-dns
       secondary_packet_blockers:
-        - slug: baseline-apply-record-required
-          note: "Apply only after fedora-top-power-policy-baseline-apply-2026-05-15.md is committed and the 08-summary.json review confirms expected state."
-      tertiary_packet: fedora-top-known-hosts-reconciliation
-      tertiary_packet_status: approval-required
-      tertiary_packet_blockers:
-        - slug: guardian-approval-required
-          note: "MacBook-side only; independent of the power-policy chain."
+        - slug: cloudflare-dns-windows-multi-user-rebaseline-pending
+          note: "cloudflare-dns-windows-multi-user-rebaseline handback request still open; separate from fedora-top (Linux), but the wider WARP profile framework lands together."
+        - slug: kids-profile-placement-confirmation
+          note: "Operator confirms (1) Kids profile placement, (2) wynrjohnson@gmail.com as enrollment identity for fedora-top."
       handback_to_human: true
 
-    last_verified: 2026-05-15T06:28:12Z
-    latest_system_config_commit: 2adb7d8
+    last_verified: 2026-05-15T17:01:00Z
+    latest_system_config_commit: 8d7359a
 
   - device: mamawork
     owner: Jefahnierocks
