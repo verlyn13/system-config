@@ -3,7 +3,7 @@ title: DESKTOP-2JJ3187 SSH Lane Install Packet - 2026-05-15
 category: operations
 component: device_admin
 status: prepared
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-05-15
 tags: [device-admin, desktop-2jj3187, windows, openssh, admin-key, firewall, sshd-config, phase-3]
 priority: high
@@ -33,22 +33,21 @@ Confirm before scheduling apply:
    See [desktop-2jj3187-terminal-admin-baseline-2026-05-15.md](./desktop-2jj3187-terminal-admin-baseline-2026-05-15.md)
    and its apply record. The baseline's "Expected Findings" must match;
    if any expected fact differs, this install packet may need revision.
-2. **1Password admin key item created.** Operator-side prerequisite.
-   The item must exist before apply:
+2. **1Password admin key item created.** ✅ Done 2026-05-14 19:05 AKDT
+   (system-config v0.2.0 update). The item is in the operator MacBook's
+   1Password Dev vault:
    ```text
    item:        op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
    account:     my.1password.com
    vault:       Dev
-   key type:    ED25519
-   fields:      private key, public key, fingerprint, comment
-   public key:  ssh-ed25519 AAAA... verlyn13@desktop-2jj3187-admin
+   key type:    ED25519 (generated in-place by 1Password; no on-disk private)
+   fingerprint: SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s
+   public key:  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFRgw1xN2rjmlIFbAPsp7cc6SJcm0h5IMvrL8o6CyLh9
    ```
-   Generate the keypair locally on the operator MacBook with
-   `ssh-keygen -t ed25519 -C verlyn13@desktop-2jj3187-admin`, store
-   the private key + public key in 1Password through the GUI or the
-   approved edited-template workflow per `docs/secrets.md`, then
-   delete the on-disk private key from the MacBook. The private half
-   never lives outside 1Password.
+   The private half lives only in 1Password on the operator MacBook.
+   It is served at SSH-client time by the 1Password SSH agent at
+   `~/.1password-ssh-agent.sock`. The Windows host never sees the
+   private key; it only authorizes the public key body above.
 3. **Operator decision:** confirm `jeffr` is the intended admin SSH
    user (or supply the actual Windows admin account name).
 4. **Operator decision:** confirm `192.168.0.0/24` is the intended
@@ -320,20 +319,25 @@ if ($LASTEXITCODE -ne 0) {
 
 ## Step S5 — Install Admin Public Key
 
-The operator pastes the public key body in line as `$PublicKeyBody`.
-Do NOT have the script read 1Password from the Windows host —
-1Password is not installed there, and the spec forbids it.
+The public key body is pinned in this packet for paste-and-run. The
+1Password item is the source of truth; this packet snapshots the
+non-secret public-key body and fingerprint to keep the host-side
+script self-contained. Do NOT have the script read 1Password from
+the Windows host — 1Password is not installed there, and the spec
+forbids it.
 
 ```powershell
 "step:      S5 install admin public key" | Write-Evidence -File '00-run.txt'
 
-# === OPERATOR: REPLACE THIS LINE WITH THE EXACT PUBLIC KEY BODY ===
-# Copy from 1Password item
-# op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13/public key
-$PublicKeyBody = '<paste-from-1password-here>'
-# ==================================================================
+# Public key body and fingerprint from 1Password item
+# op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
+# (generated 2026-05-14T19:05:13Z, ID rld3rxqcg5dvjz6mrwthg2cgoi).
+$PublicKeyBody       = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFRgw1xN2rjmlIFbAPsp7cc6SJcm0h5IMvrL8o6CyLh9'
+$ExpectedFingerprint = 'SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s'
 
-if ($PublicKeyBody -notmatch '^ssh-ed25519 \S+ \S+$') {
+# Accept either "ssh-ed25519 <body>" (1Password-generated form, no
+# comment) or "ssh-ed25519 <body> <comment>" (ssh-keygen form).
+if ($PublicKeyBody -notmatch '^ssh-ed25519 \S+( \S+)?$') {
   "public key body does not look like ed25519 — halt" | Write-Evidence -File '00-run.txt'
   throw "Invalid public key body."
 }
@@ -367,9 +371,15 @@ Set-Acl -Path $authKeysPath -AclObject $acl
 (Get-Acl -Path $authKeysPath) | Format-List | Out-String |
   Write-Evidence -File '00-run.txt'
 
-# Compute and record the fingerprint for evidence (non-secret).
+# Compute and record the fingerprint for evidence (non-secret), and
+# verify it matches the expected value from 1Password.
 $fp = (& 'C:\Windows\System32\OpenSSH\ssh-keygen.exe' -lf $authKeysPath 2>&1) -join "`n"
-$fp | Write-Evidence -File '00-run.txt'
+"recorded fingerprint: $fp" | Write-Evidence -File '00-run.txt'
+"expected fingerprint: $ExpectedFingerprint" | Write-Evidence -File '00-run.txt'
+if ($fp -notmatch [regex]::Escape($ExpectedFingerprint)) {
+  "fingerprint mismatch — halt" | Write-Evidence -File '00-run.txt'
+  throw "Installed-key fingerprint does not match 1Password-source fingerprint."
+}
 ```
 
 ## Step S6 — Replace Default Firewall Rule

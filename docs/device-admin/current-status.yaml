@@ -46,7 +46,7 @@
 #                             stays in `blocked_items`.
 
 schema_version: 1
-last_updated: 2026-05-15T02:45:00Z
+last_updated: 2026-05-15T03:10:00Z
 
 devices:
   - device: fedora-top
@@ -529,7 +529,24 @@ devices:
       confirmed: TCP/3389 reachable, TCP/22 timed out, FQDN resolves,
       no ssh-client conf.d stanza yet.
 
-    applied_packets: []
+    applied_packets:
+      - name: macbook-ssh-conf-d-desktop-2jj3187
+        packet_doc: docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md
+        apply_record: docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-apply-2026-05-15.md
+        packet_commit: 3eea6e1
+        apply_commit: pending
+        applied_at: 2026-05-15T03:08:00Z
+        outcome: >-
+          MacBook-side only. Modified home/dot_ssh/conf.d/windows.conf.tmpl
+          to add desktop-2jj3187 Host stanza alongside MAMAWORK and
+          added home/dot_ssh/id_ed25519_desktop_2jj3187_admin.1password.pub.tmpl
+          chezmoi template. Applied via target-scoped chezmoi for the
+          two paths only; on-disk public-key fingerprint matches
+          1P-source fingerprint
+          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s.
+          `ssh -G desktop-2jj3187` resolves to jeffr / 192.168.0.217 /
+          HostKeyAlias 192.168.0.217 / new IdentityFile.
+
     # Historical 2026-05-12 RDP/power apply and 2026-05-13 HomeNetOps
     # DHCP/DNS/WoL are recorded in docs/device-admin/windows-pc.md and
     # docs/device-admin/onboarding-2026-05-12.md. They predate this
@@ -553,52 +570,31 @@ devices:
       - name: desktop-2jj3187-ssh-lane-install
         packet_doc: docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md
         prepared_at: 2026-05-15T02:30:00Z
+        last_updated: 2026-05-15T03:08:00Z
         state: approval-required
+        packet_version: 0.2.0
         prerequisite: >-
           1Password item
           op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
-          must exist (operator creates before apply). Phase 0 baseline
-          apply record should be committed first.
+          must exist. ✅ Done 2026-05-14T19:05:13-08:00 (1P-generated
+          ED25519, fingerprint
+          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s).
+          Public key body now pinned inline in §S5 of the packet for
+          paste-and-run. Phase 0 baseline apply record should still
+          land before this install applies.
         approval_phrase_excerpt: >-
           Apply the desktop-2jj3187-ssh-lane-install packet on
           DESKTOP-2JJ3187 from an elevated PowerShell session as
           jeffr. Installs OpenSSH.Server capability, starts sshd
           Automatic, adds Jefahnierocks SSH LAN TCP 22 Private rule,
           ensures the Match Group administrators block, installs the
-          hardening drop-in, pastes the operator-supplied public key
-          into administrators_authorized_keys with the
-          Administrators+SYSTEM ACL, sshd -t passes, sshd restarted,
+          hardening drop-in, pastes the pinned public key into
+          administrators_authorized_keys with the
+          Administrators+SYSTEM ACL, fingerprint match verified
+          against the 1P-source value, sshd -t passes, sshd restarted,
           MacBook real-auth probe verifies hostname/username.
 
-      - name: macbook-ssh-conf-d-desktop-2jj3187
-        packet_doc: docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md
-        prepared_at: 2026-05-15T02:30:00Z
-        state: approval-required
-        prerequisite: >-
-          1Password item
-          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
-          must exist so the chezmoi public-key template can render.
-        approval_phrase_excerpt: >-
-          Target-scoped chezmoi diff / dry-run / apply for exactly
-          ~/.ssh/conf.d/windows.conf and
-          ~/.ssh/id_ed25519_desktop_2jj3187_admin.1password.pub. Adds
-          a desktop-2jj3187 Host stanza alongside MAMAWORK. No
-          Windows-side change.
-
     blocked_items:
-      - item: desktop-2jj3187-1password-admin-key-item-pending
-        owner: human
-        notes: >-
-          1Password item
-          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
-          must be created before the ssh-lane-install or
-          macbook-ssh-conf-d packets can apply. Generate keypair
-          locally with ssh-keygen -t ed25519 -C
-          verlyn13@desktop-2jj3187-admin, store both private and
-          public key fields in 1Password via GUI or the approved
-          edited-template workflow per docs/secrets.md, then delete
-          the on-disk private key from the MacBook.
-
       - item: desktop-2jj3187-baseline-apply-record-pending
         owner: human + system-config
         notes: >-
@@ -642,11 +638,12 @@ devices:
 
       - action: desktop-2jj3187-ssh-lane-install
         state: approval-required
-        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md 'Approval Phrase' section. Greenfield Windows OpenSSH install + admin key + Match block + firewall rule. Prerequisite: 1Password item must exist."
+        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md v0.2.0 'Approval Phrase' section. Greenfield Windows OpenSSH install + admin key (pinned inline, fingerprint SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s) + Match block + firewall rule. 1Password item prerequisite is satisfied."
 
       - action: macbook-ssh-conf-d-desktop-2jj3187
-        state: approval-required
-        approval_phrase: "See docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md 'Approval Phrase' section. Target-scoped chezmoi apply for two paths only. Prerequisite: 1Password item must exist for chezmoi template to render."
+        state: applied
+        applied_at: 2026-05-15T03:08:00Z
+        notes: "See applied_packets[]."
 
       - action: desktop-2jj3187-ssh-hardening
         state: planned-after-install
@@ -658,30 +655,30 @@ devices:
 
     next_recommended_action:
       summary: >-
-        Apply desktop-2jj3187-terminal-admin-baseline first
-        (read-only, no risk). Use the evidence to confirm assumptions
-        in the install packet before applying it. Create the 1Password
-        admin key item in parallel. Once baseline + 1P item are
-        ready, apply the SSH lane install on the host, then the
-        MacBook conf.d packet, then real-auth probe. WARP enrollment
-        is blocked on cloudflare-dns Windows multi-user rebaseline
-        and is independent of the SSH lane work.
+        MacBook-side prep complete (1P item minted, chezmoi conf.d
+        applied, ssh -G resolves correctly, on-disk public-key
+        fingerprint matches 1P-source). Next: hand off
+        desktop-2jj3187-terminal-admin-baseline (read-only Phase 0)
+        and desktop-2jj3187-ssh-lane-install (Phase 3 greenfield)
+        to an agent or operator running on the DESKTOP-2JJ3187
+        Windows host. Baseline first so install assumptions are
+        confirmed against actual state. WARP enrollment is blocked
+        on cloudflare-dns Windows multi-user rebaseline and is
+        independent of the SSH lane work.
       preferred_packet: desktop-2jj3187-terminal-admin-baseline
       preferred_packet_status: approval-required
       preferred_packet_blockers:
-        - slug: guardian-approval-required
-          note: "Approval phrase quoted in the packet doc."
+        - slug: hand-off-to-windows-side-agent
+          note: "Run from elevated PowerShell on DESKTOP-2JJ3187. Read-only; no Windows host change."
       secondary_packet: desktop-2jj3187-ssh-lane-install
       secondary_packet_status: approval-required
       secondary_packet_blockers:
-        - slug: 1password-item-pending
-          note: "Operator creates op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13 before apply."
         - slug: baseline-apply-record-pending
           note: "Phase 0 baseline apply record should be committed before this lane install applies."
       handback_to_human: true
 
-    last_verified: 2026-05-15T02:25:00Z
-    latest_system_config_commit: 3eea6e1
+    last_verified: 2026-05-15T03:08:00Z
+    latest_system_config_commit: pending
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns

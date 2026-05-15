@@ -1,27 +1,46 @@
-# MAMAWORK Windows PC remote administration
+# Windows fleet remote administration (MacBook side)
 # Managed by chezmoi
 #
-# Admin path: MacBook -> mamawork.home.arpa over LAN SSH or RDP.
-# 1Password is installed on the MacBook only; the private half of
-# id_ed25519_mamawork_admin.1password.pub is served by the MacBook's
-# 1P SSH agent. The administrative identity is MAMAWORK\jeffr
-# (Microsoft Account, member of Administrators); the legacy local
-# DadAdmin account and its DadAdmin_WinNet key are deliberately
-# retired by the mamawork-admin-streamline packet.
-#
-# HostKeyAlias 192.168.0.101 is kept while the FQDN
-# mamawork.home.arpa has no known_hosts entry. A future
-# mamawork-known-hosts-reconciliation packet adds the FQDN form,
-# at which point this directive can be dropped.
+# 1Password is installed on the operator MacBook only. The private
+# half of every device-scoped admin key is served by the MacBook's
+# 1P SSH agent at ~/.1password-ssh-agent.sock. No managed Windows
+# host runs 1Password.
 #
 # Prior placeholder Host stanzas for wyn-pc, ila-pc, axel-pc,
 # bedroom-tv, and ahnie-laptop (all pointed at HostName 0.0.0.0
 # with the dead ~/.ssh/dad_admin IdentityFile) were removed by the
 # macbook-ssh-conf-d-streamline packet. They had no live targets
 # and no working private key.
+#
+# MAMAWORK
+#   Admin path: MacBook -> mamawork.home.arpa over LAN SSH or RDP.
+#   Admin identity: MAMAWORK\jeffr (Microsoft Account, member of
+#   Administrators). Legacy local DadAdmin account and its
+#   DadAdmin_WinNet key were retired by mamawork-admin-streamline.
+#   HostKeyAlias 192.168.0.101 is kept while mamawork.home.arpa has
+#   no known_hosts entry; mamawork-known-hosts-reconciliation will
+#   drop it.
 
 Host mamawork mamawork.home.arpa 192.168.0.101
   HostName 192.168.0.101
   User jeffr
   IdentityFile ~/.ssh/id_ed25519_mamawork_admin.1password.pub
   HostKeyAlias 192.168.0.101
+
+# DESKTOP-2JJ3187
+#   Admin path: MacBook -> desktop-2jj3187.home.arpa over LAN SSH
+#   (after the desktop-2jj3187-ssh-lane-install packet applies on
+#   the host) or RDP.
+#   Admin identity: DESKTOP-2JJ3187\jeffr.
+#   1Password item: op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
+#   (ED25519, generated in-place by 1Password 2026-05-14;
+#   fingerprint SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s).
+#   HostKeyAlias 192.168.0.217 is kept while
+#   desktop-2jj3187.home.arpa has no known_hosts entry; a future
+#   desktop-2jj3187-known-hosts-reconciliation packet drops it.
+
+Host desktop-2jj3187 desktop-2jj3187.home.arpa 192.168.0.217
+  HostName 192.168.0.217
+  User jeffr
+  IdentityFile ~/.ssh/id_ed25519_desktop_2jj3187_admin.1password.pub
+  HostKeyAlias 192.168.0.217
