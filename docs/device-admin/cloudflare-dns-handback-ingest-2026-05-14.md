@@ -66,6 +66,20 @@ Citation: system-config follow-up packets that touch Cloudflare
 should cite cloudflare-dns commit `b5b9460` (or a later commit if
 the source advances).
 
+## 2026-05-15 Windows Multi-User Addendum
+
+The original handback below treated MAMAWORK as a single-registration
+Windows WARP device. That is superseded for the MAMAWORK target by
+[Cloudflare Windows multi-user WARP addendum (2026-05-15)](./cloudflare-windows-multi-user-ingest-2026-05-15.md).
+
+For MAMAWORK, the current target is Windows multi-user mode:
+administrative/adult accounts should register into Adults or a future
+Admin profile, Mama / Litecky should register into an adult/work
+profile, and kid accounts should register into Kids. The previous
+"pick one kid email for the whole machine" model is retained only as
+historical context or fallback if Windows multi-user mode is not
+available.
+
 ## WARP / Device Enrollment Posture
 
 ```text
@@ -107,15 +121,16 @@ split-tunnel excludes and resolve `.local` + `.home.arpa` via
 existing fedora-top.home.arpa SSH admin path is unaffected by WARP
 enrollment.**
 
-### Critical Fact: WARP Is System-Level
+### Prior Assumption: Single-Registration WARP
 
-WARP enrollment is system-level on macOS/Windows/Linux: **one
-identity per machine**. The OS user account that initiates
-`warp-cli registration new` is irrelevant; the WARP daemon
-registers the entire host. Shared devices like MAMAWORK (which
-has separate Windows user accounts per family member) carry **one
-WARP identity for the whole machine**. This is the foundation of
-the MAMAWORK trade-off recorded below.
+The original handback described WARP enrollment as one identity per
+machine across macOS/Windows/Linux. Keep that as the default
+single-registration model and for platforms that do not support
+Cloudflare One Client multi-user mode.
+
+For the MAMAWORK Windows target, do not use this as the desired
+cutover model without first ruling out Windows multi-user mode. The
+2026-05-15 addendum supersedes this section for MAMAWORK.
 
 ## Access Policy Posture
 
@@ -196,40 +211,37 @@ First Linux enrollment:   yes (no prior Linux WARP enrollment
                           browser OAuth as wynrjohnson@gmail.com.
 ```
 
-### MAMAWORK -> Kids (with explicit trade-off)
+### MAMAWORK -> Windows Multi-User Profile Separation
 
 ```text
+Supersedes:               The original single-registration
+                          recommendation to choose one kid identity
+                          for the whole Windows device.
+Target mode:              Windows multi-user mode via MDM
+                          multi_user=true.
 Device users (shared):    Mama (primary owner, Litecky Editing
                           Services workload), Axel/Wyn/Ila
-                          (school + learning workloads); each
-                          family member has their own Windows user
-                          account, but WARP is system-level so one
-                          identity applies machine-wide.
+                          (school + learning workloads), and
+                          intentional admin/operator accounts.
 Administrator:            verlyn13 (via DadAdmin path today;
                           1Password-managed replacement planned)
-Recommended WARP identity: primary kid user's Google email
-                          (likely axelptjohnson@gmail.com if the
-                          school workload is the daily driver;
-                          wynrjohnson@gmail.com if Wyn is the
-                          most frequent user during school year).
-                          Final pick documented in the cutover
-                          packet.
-Profile match:            existing Kids profile (no Pulumi change
-                          needed)
-Trade-off (MUST be in
-  cutover packet):
-  - Kids profile applies kids-controls + compliance band to EVERY
-    DNS query on MAMAWORK, including Mama's Litecky work.
-  - Litecky-required domains may be incidentally blocked by
-    09-content-block / 07-ytrestricted / 08-safesearch and must be
-    allow-listed via the cloudflare-dns custom-allow list
-    (01-custom-allow, precedence 10) BEFORE the cutover lands.
-  - Kids profile is locked; Mama cannot disconnect WARP on her own
-    user. The alternative (enroll MAMAWORK with an adult identity
-    -> Adults profile, unlocked) loses kids controls for the kids'
-    school workload. Choosing kids-locked is the household stance
-    default; choosing adults-unlocked requires explicit deviation
-    from that stance.
+Profile match:            Per Windows user registration:
+                          - admin/operator accounts -> Adults or
+                            future Admin profile
+                          - Mama / ahnie / Litecky -> Adults,
+                            Litecky, or another adult-work profile
+                          - kid accounts -> Kids profile
+                          - optional pre-login -> Headless/MDM or
+                            pre-login profile
+Trade-off now tracked:
+  - The old Kids-for-whole-machine trade-off should not be accepted
+    unless multi-user mode is unavailable.
+  - Litecky allow-listing remains relevant only for Litecky domains
+    that must work from a Kids-profile session; Mama's normal
+    Litecky workload should run under an adult/work profile.
+  - Fast user switching and pre-login registration need explicit
+    cloudflare-dns guidance because attribution follows the active
+    interactive Windows desktop when multiple users are logged in.
 Future migration:         MAMAWORK may migrate to a separate
                           Litecky Cloudflare org later. When that
                           happens, profile placement revisits: a
@@ -239,12 +251,9 @@ Future migration:         MAMAWORK may migrate to a separate
                           forcing kids onto an adult-DNS lane in
                           the Jefahnierocks org.
 First Windows enrollment: yes (no prior Windows WARP enrollment
-                          in this fleet). Enrollment recipe:
-                          Install Cloudflare WARP from 1.1.1.1
-                          downloads page; WARP UI -> Settings ->
-                          Account -> Login with Cloudflare Zero
-                          Trust; team homezerotrust; browser OAuth
-                          as the chosen kid Google email.
+                          in this fleet). Enrollment recipe is now
+                          blocked on the cloudflare-dns Windows
+                          multi-user rebaseline.
 ```
 
 ## 1Password Item Naming
@@ -288,7 +297,8 @@ Pre-existing items system-config
 | Access app naming convention for SSH | cloudflare-dns | Working candidate `access-app-ssh-<host>` recorded; authoritative when cloudflare-dns lands the first SSH Access app |
 | Default Access session duration / posture / country | cloudflare-dns | Working candidates 8h / WARP+home-network / US recorded; authoritative when the first SSH Access app is authored |
 | MAMAWORK migration to a separate Litecky Cloudflare org | human + cloudflare-dns | If migration happens, MAMAWORK profile placement revisits; kids on Jefahnierocks org, Mama's Litecky workload on the Litecky org with its own profile separation |
-| MAMAWORK Litecky-required domain allow-list | human + cloudflare-dns | Before any MAMAWORK Kids-profile WARP cutover, every Litecky-required domain that gets blocked by kids-controls must be added to `01-custom-allow` (precedence 10) in cloudflare-dns |
+| MAMAWORK Windows multi-user WARP rebaseline | cloudflare-dns | Required before any MAMAWORK WARP cutover. Confirm MDM `multi_user=true`, pre-login posture, profile map, and per-user enrollment recipe |
+| MAMAWORK Litecky-required domain allow-list | human + cloudflare-dns | No longer a hard prerequisite for Mama's normal Litecky account if Windows multi-user mode places her in an adult/work profile. Still required for any Litecky domains that must work from a Kids-profile session |
 | 1Password mirror for WARP MDM service token | human | Optional; only if system-config wants a break-glass copy outside Pulumi state |
 
 ## Implications For system-config Next Packets
@@ -302,7 +312,7 @@ What this handback unlocks:
 
   | Lane | system-config side | cloudflare-dns side | What it unlocks |
   |---|---|---|---|
-  | **WARP-enrollment-only** | install Cloudflare WARP client on the device; `warp-cli registration new homezerotrust`; browser OAuth as the recommended kid Google email | NONE (no IaC change; the Kids profile already matches by `identity.email`) | Kids-controls / compliance band / DNS protection for the device; does NOT add an off-LAN SSH admin path |
+  | **Windows multi-user WARP** | install Cloudflare One Client / WARP on MAMAWORK after cloudflare-dns confirms the MDM and enrollment recipe; register each Windows account with its intended identity | cloudflare-dns rebaseline required for `multi_user=true`, profile policy, optional pre-login registration, and validation evidence | Admin/adult accounts avoid Kids controls; kid accounts keep Kids controls; does NOT add an off-LAN SSH admin path |
   | **WARP + cloudflared Tunnel + Access** | install + start `cloudflared`; verify outbound 443 to Cloudflare edge | Pulumi commit adding the SSH Access application + the Tunnel + connector token | Off-LAN SSH admin path (`ssh ssh-<host>.homezerotrust.cloudflareaccess.com`); supersedes any need for Tailscale break-glass once verified |
 
 - **Tailscale retain decision can be reaffirmed**: the cloudflare-dns
@@ -317,15 +327,13 @@ What this handback unlocks:
 
 What this handback does NOT change:
 
-- The Fedora admin-backup SSH key strategy packet still depends on
-  operator 1Password input. Unrelated to Cloudflare.
-- The MAMAWORK SSH investigation packet still depends on the
-  operator-run elevated PowerShell on MAMAWORK. The SSH-over-Tunnel
-  cutover packet would replace the LAN-only SSH admin path
-  eventually, but only after MAMAWORK's local SSH service is
-  working (the investigation packet diagnoses why it isn't today).
-- The MAMAWORK DHCP source-of-truth packet remains deferred (per
-  guardian) until MAMAWORK SSH stabilizes.
+- LAN admin readiness is separate from Cloudflare. Fedora and
+  MAMAWORK SSH are now operational on the LAN; MAMAWORK's next local
+  admin step is the read-only terminal-admin baseline, not WARP.
+- The MAMAWORK DHCP source-of-truth packet remains optional and
+  deferred until the operator wants the brief reconnect window.
+- SSH-over-Tunnel remains future work after WARP/profile placement
+  is correct and local SSH is already proven.
 
 ## Decisions System-Config Needs From The Operator Now
 
@@ -334,30 +342,20 @@ cutover packets. None of them require live changes.
 
 1. **Confirm Kids profile placement for fedora-top.** (Default per
    household stance; the cloudflare-dns recommendation matches.)
-2. **Confirm Kids profile placement for MAMAWORK** AND acknowledge
-   the Mama/Litecky trade-off:
-   - Kids-locked WARP means Mama cannot disconnect on her Windows
-     account.
-   - Litecky-required domains must be allow-listed in
-     `01-custom-allow` BEFORE the cutover, via a cloudflare-dns
-     commit. system-config can ask cloudflare-dns for that commit
-     as a follow-up inbound request.
-   - Alternative: enroll MAMAWORK in Adults profile (unlocked),
-     losing kids-controls for the kids' school workload. This is an
-     explicit deviation from the household stance.
-3. **Pick the MAMAWORK WARP enrollment identity** between
-   `axelptjohnson@gmail.com` and `wynrjohnson@gmail.com` (whichever
-   kid uses the machine most often).
+2. **Confirm MAMAWORK Windows multi-user mode** as the target rather
+   than the old one-identity device model. Default recommendation:
+   yes.
+3. **Supply Mama / Litecky Cloudflare registration identity** so
+   cloudflare-dns can place `MAMAWORK\ahnie` in an adult/work
+   profile instead of Kids.
 4. **Decide whether to mirror the WARP MDM service token to
    1Password** (`jefahnierocks-cloudflare-warp-mdm-service-token`)
    for break-glass.
-5. **Sequencing**: WARP-enrollment-only cutover first (small, no
-   cloudflare-dns IaC change, no operator-side prerequisite beyond
-   running the WARP client install) vs. waiting for the SSH-over-
-   Tunnel cutover (larger, requires cloudflare-dns Pulumi commit
-   first). Recommendation: do WARP-enrollment-only first per device;
-   then add SSH-over-Tunnel as a separate later packet for each
-   device.
+5. **Sequencing**: MAMAWORK Windows multi-user WARP cutover first
+   after cloudflare-dns answers, vs. waiting for the SSH-over-Tunnel
+   cutover. Recommendation: finish LAN SSH first, ask cloudflare-dns
+   for the multi-user rebaseline, then draft the WARP cutover as a
+   separate packet before any Tunnel/Access work.
 
 Once these are answered, system-config can draft:
 
