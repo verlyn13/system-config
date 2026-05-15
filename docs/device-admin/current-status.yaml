@@ -46,7 +46,7 @@
 #                             stays in `blocked_items`.
 
 schema_version: 1
-last_updated: 2026-05-15T02:30:00Z
+last_updated: 2026-05-15T02:45:00Z
 
 devices:
   - device: fedora-top
@@ -471,6 +471,218 @@ devices:
     last_verified: 2026-05-15T01:16:03Z
     latest_system_config_commit: 98e2b1b
 
+  - device: desktop-2jj3187
+    owner: Jefahnierocks
+    hostname: DESKTOP-2JJ3187
+    fqdn: desktop-2jj3187.home.arpa
+    ip: 192.168.0.217
+
+    lifecycle_phase: 2
+    # Phases 0-2 effectively complete from the 2026-05-12 -> 2026-05-13 RDP
+    # onboarding era (BIOS prep, RDP enable with NLA, custom Private-profile
+    # firewall rules scoped to 192.168.0.0/24, HomeNetOps static DHCP +
+    # Unbound override + WoL, MacBook Windows App profile). Those applies
+    # predate the lifecycle_phase / classification schema and the current
+    # packet-format YAML, so they are recorded in current_management_status
+    # rather than back-filled into applied_packets[].
+    #
+    # 2026-05-15 operator decision: lift the previous "phase 3 intentionally
+    # skipped" stance. Three Phase 3 packets are now prepared and approval-
+    # gated; once applied, this device moves to lifecycle_phase 3 and
+    # classification reference-ssh-host.
+    classification: rdp-only-host
+    # Will move to reference-ssh-host once the Phase 3 install chain applies.
+    # Secondary state cloudflare-blocked is implicit (no WARP enrollment
+    # before the cloudflare-dns Windows multi-user rebaseline).
+
+    remote_admin_paths:
+      - kind: rdp
+        target: desktop-2jj3187.home.arpa
+        client_source: MacBook (Windows App)
+        notes: >-
+          LAN-only primary admin lane today. NLA enabled, custom
+          Private-profile TCP/UDP 3389 rules scoped to 192.168.0.0/24,
+          built-in Remote Desktop rules disabled. Static DHCP via
+          OPNsense for wired MAC 18:C0:4D:39:7F:49; FQDN via Unbound.
+          OPNsense os-wol UUID 93980551-709a-40d3-83e7-a708ee616373
+          for cold-to-wake-to-RDP smoke.
+      - kind: ssh
+        target: jeffr@desktop-2jj3187.home.arpa
+        client_source: MacBook
+        state: planned-after-install
+        notes: >-
+          Planned. Reachable once
+          desktop-2jj3187-ssh-lane-install-2026-05-15.md and
+          macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md are both
+          applied. Will use 1Password item
+          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
+          (operator must create the item before apply).
+
+    current_management_status: >-
+      RDP-only-managed as of 2026-05-13 (HEAD 087fdbb era). Three
+      Phase 3 packets prepared 2026-05-15: terminal-admin-baseline
+      (read-only), ssh-lane-install (greenfield OpenSSH install +
+      admin key + Match block + firewall rule), and
+      macbook-ssh-conf-d (Host alias + chezmoi public-key template).
+      Once the install chain applies, this device moves to
+      reference-ssh-host. 2026-05-15 probe from system-config session
+      confirmed: TCP/3389 reachable, TCP/22 timed out, FQDN resolves,
+      no ssh-client conf.d stanza yet.
+
+    applied_packets: []
+    # Historical 2026-05-12 RDP/power apply and 2026-05-13 HomeNetOps
+    # DHCP/DNS/WoL are recorded in docs/device-admin/windows-pc.md and
+    # docs/device-admin/onboarding-2026-05-12.md. They predate this
+    # YAML's packet shape and are not back-filled.
+
+    prepared_packets:
+      - name: desktop-2jj3187-terminal-admin-baseline
+        packet_doc: docs/device-admin/desktop-2jj3187-terminal-admin-baseline-2026-05-15.md
+        prepared_at: 2026-05-15T02:30:00Z
+        state: approval-required
+        approval_phrase_excerpt: >-
+          Run the desktop-2jj3187-terminal-admin-baseline packet
+          read-only from an elevated PowerShell session on
+          DESKTOP-2JJ3187. Capture services, firewall, accounts,
+          OpenSSH state (expected: not installed), scheduled tasks
+          by principal, optional features, BitLocker (expected: off)
+          / Defender / Secure Boot posture, and power/wake state.
+          Write evidence to local jefahnierocks-device-admin path.
+          No live host change.
+
+      - name: desktop-2jj3187-ssh-lane-install
+        packet_doc: docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md
+        prepared_at: 2026-05-15T02:30:00Z
+        state: approval-required
+        prerequisite: >-
+          1Password item
+          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
+          must exist (operator creates before apply). Phase 0 baseline
+          apply record should be committed first.
+        approval_phrase_excerpt: >-
+          Apply the desktop-2jj3187-ssh-lane-install packet on
+          DESKTOP-2JJ3187 from an elevated PowerShell session as
+          jeffr. Installs OpenSSH.Server capability, starts sshd
+          Automatic, adds Jefahnierocks SSH LAN TCP 22 Private rule,
+          ensures the Match Group administrators block, installs the
+          hardening drop-in, pastes the operator-supplied public key
+          into administrators_authorized_keys with the
+          Administrators+SYSTEM ACL, sshd -t passes, sshd restarted,
+          MacBook real-auth probe verifies hostname/username.
+
+      - name: macbook-ssh-conf-d-desktop-2jj3187
+        packet_doc: docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md
+        prepared_at: 2026-05-15T02:30:00Z
+        state: approval-required
+        prerequisite: >-
+          1Password item
+          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
+          must exist so the chezmoi public-key template can render.
+        approval_phrase_excerpt: >-
+          Target-scoped chezmoi diff / dry-run / apply for exactly
+          ~/.ssh/conf.d/windows.conf and
+          ~/.ssh/id_ed25519_desktop_2jj3187_admin.1password.pub. Adds
+          a desktop-2jj3187 Host stanza alongside MAMAWORK. No
+          Windows-side change.
+
+    blocked_items:
+      - item: desktop-2jj3187-1password-admin-key-item-pending
+        owner: human
+        notes: >-
+          1Password item
+          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
+          must be created before the ssh-lane-install or
+          macbook-ssh-conf-d packets can apply. Generate keypair
+          locally with ssh-keygen -t ed25519 -C
+          verlyn13@desktop-2jj3187-admin, store both private and
+          public key fields in 1Password via GUI or the approved
+          edited-template workflow per docs/secrets.md, then delete
+          the on-disk private key from the MacBook.
+
+      - item: desktop-2jj3187-baseline-apply-record-pending
+        owner: human + system-config
+        notes: >-
+          Phase 0 baseline packet is prepared; operator runs it on
+          DESKTOP-2JJ3187 from elevated PowerShell, returns the
+          redacted evidence, and system-config records an apply doc.
+          Apply record commit goes here.
+
+      - item: desktop-2jj3187-warp-enrollment-cutover-pending
+        owner: cloudflare-dns + human
+        notes: >-
+          Same gate as MAMAWORK: blocked on cloudflare-dns Windows
+          multi-user rebaseline
+          (handback-request-cloudflare-dns-windows-multi-user-2026-05-15.md).
+          Apply ssh + RDP lanes today; WARP enrollment is a separate
+          future packet.
+
+      - item: desktop-2jj3187-bitlocker-decision
+        owner: human
+        notes: >-
+          BitLocker is off by operator attestation; not in current
+          target state for this slice. Separate future packet if/when
+          recovery posture becomes a requirement.
+
+      - item: desktop-2jj3187-backup-plan
+        owner: human
+        notes: >-
+          No backup plan in scope yet. Separate future packet.
+
+      - item: desktop-2jj3187-cloudflared-cleanup
+        owner: human
+        notes: >-
+          Duplicate stopped cloudflared services from the original
+          intake report still exist. Cleanup deferred to a follow-up
+          packet after Cloudflare ownership is confirmed.
+
+    approval_required:
+      - action: desktop-2jj3187-terminal-admin-baseline
+        state: approval-required
+        approval_phrase: "See docs/device-admin/desktop-2jj3187-terminal-admin-baseline-2026-05-15.md 'Approval Phrase' section. Read-only Phase 0 from elevated PowerShell on the host. No live change."
+
+      - action: desktop-2jj3187-ssh-lane-install
+        state: approval-required
+        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md 'Approval Phrase' section. Greenfield Windows OpenSSH install + admin key + Match block + firewall rule. Prerequisite: 1Password item must exist."
+
+      - action: macbook-ssh-conf-d-desktop-2jj3187
+        state: approval-required
+        approval_phrase: "See docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md 'Approval Phrase' section. Target-scoped chezmoi apply for two paths only. Prerequisite: 1Password item must exist for chezmoi template to render."
+
+      - action: desktop-2jj3187-ssh-hardening
+        state: planned-after-install
+        approval_phrase: "Phrase will be drafted with the packet, after the install apply record is landed."
+
+      - action: desktop-2jj3187-known-hosts-reconciliation
+        state: planned-after-install
+        approval_phrase: "Phrase will be drafted; MacBook-side reconciliation to drop HostKeyAlias 192.168.0.217 once FQDN known_hosts entry is added."
+
+    next_recommended_action:
+      summary: >-
+        Apply desktop-2jj3187-terminal-admin-baseline first
+        (read-only, no risk). Use the evidence to confirm assumptions
+        in the install packet before applying it. Create the 1Password
+        admin key item in parallel. Once baseline + 1P item are
+        ready, apply the SSH lane install on the host, then the
+        MacBook conf.d packet, then real-auth probe. WARP enrollment
+        is blocked on cloudflare-dns Windows multi-user rebaseline
+        and is independent of the SSH lane work.
+      preferred_packet: desktop-2jj3187-terminal-admin-baseline
+      preferred_packet_status: approval-required
+      preferred_packet_blockers:
+        - slug: guardian-approval-required
+          note: "Approval phrase quoted in the packet doc."
+      secondary_packet: desktop-2jj3187-ssh-lane-install
+      secondary_packet_status: approval-required
+      secondary_packet_blockers:
+        - slug: 1password-item-pending
+          note: "Operator creates op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13 before apply."
+        - slug: baseline-apply-record-pending
+          note: "Phase 0 baseline apply record should be committed before this lane install applies."
+      handback_to_human: true
+
+    last_verified: 2026-05-15T02:25:00Z
+    latest_system_config_commit: pending
+
 outbound_handback_requests:
   - target_repo: cloudflare-dns
     target_path: /Users/verlyn13/Repos/local/cloudflare-dns
@@ -541,10 +753,22 @@ current_device_admin_priorities_2026_05_15:
     state: planned
     notes: "First SSH-driven Windows admin session from the MacBook; read-only, evidence-shaped, and governed by windows-terminal-admin-spec.md."
   - priority: 2
+    item: desktop-2jj3187-terminal-admin-baseline
+    state: approval-required
+    notes: "Prepared 2026-05-15. Phase 0 read-only baseline for DESKTOP-2JJ3187 from elevated PowerShell on the host. Pre-requisite for the SSH lane install."
+  - priority: 3
+    item: desktop-2jj3187-ssh-lane-install
+    state: approval-required
+    notes: "Prepared 2026-05-15. Greenfield Windows OpenSSH install + admin key + Match block + LAN firewall rule + hardening drop-in. Promotes DESKTOP-2JJ3187 to reference-ssh-host."
+  - priority: 4
+    item: macbook-ssh-conf-d-desktop-2jj3187
+    state: approval-required
+    notes: "Prepared 2026-05-15. MacBook-side Host stanza + chezmoi public-key template; target-scoped chezmoi apply."
+  - priority: 5
     item: cloudflare-dns-windows-multi-user-rebaseline
     state: open-handback-request
-    notes: "Required before MAMAWORK WARP enrollment so admin/adult, Mama/Litecky, and kids land in separate Zero Trust profiles."
-  - priority: 3
+    notes: "Required before MAMAWORK and DESKTOP-2JJ3187 WARP enrollment so admin/adult and kid accounts land in separate Zero Trust profiles."
+  - priority: 6
     item: mamawork-ssh-hardening
     state: planned-after-baseline
     notes: "Draft from the read-only baseline; keep separate from DadAdmin, WARP, BitLocker, and backup work."

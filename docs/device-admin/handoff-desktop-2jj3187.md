@@ -3,7 +3,7 @@ title: Device Agent Handoff - DESKTOP-2JJ3187
 category: operations
 component: device_admin
 status: draft
-version: 0.2.0
+version: 0.3.0
 last_updated: 2026-05-15
 tags: [device-admin, handoff, windows, rdp, ssh, cloudflare, warp]
 priority: high
@@ -16,8 +16,26 @@ This is the handoff for an agent running locally on the Windows PC
 
 ## Mission
 
-Prepare a fresh, repo-safe readiness report for Jefahnierocks device
-administration. This is a prep pass, not an implementation pass.
+DESKTOP-2JJ3187 is moving from Phase 2 `rdp-only-host` to Phase 3
+`reference-ssh-host` per the Windows fleet spec. There are now three
+prepared packets that the operator can apply in sequence:
+
+1. [desktop-2jj3187-terminal-admin-baseline-2026-05-15.md](./desktop-2jj3187-terminal-admin-baseline-2026-05-15.md)
+   — Phase 0 read-only baseline. Run first to capture current state.
+2. [desktop-2jj3187-ssh-lane-install-2026-05-15.md](./desktop-2jj3187-ssh-lane-install-2026-05-15.md)
+   — Phase 3 greenfield install: OpenSSH Server capability, sshd
+   service, `Jefahnierocks SSH LAN TCP 22` firewall rule, hardening
+   drop-in, `administrators_authorized_keys` with the operator's
+   1Password-backed public key, `Match Group administrators` block.
+3. [macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md](./macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md)
+   — MacBook-side: chezmoi conf.d Host stanza + 1Password public-key
+   template. Independent of the host packet but completes the lane.
+
+If you are running an agent locally on the device, your tasks are
+either (a) the read-only baseline if it has not yet applied, or
+(b) zero — the install packet runs in elevated PowerShell on the host
+itself, not via an autonomous agent. Bound your work to the packets
+above.
 
 The local source plan on this Windows machine contains useful facts, but it is
 not authoritative. Jefahnierocks owns device administration from
@@ -55,10 +73,16 @@ Stop and ask before any of these:
 - Creating, editing, reading broadly, or reorganizing 1Password items.
 - Printing passwords, private keys, recovery keys, bearer tokens, tunnel
   credential JSON, OAuth credentials, or sensitive environment variables.
-- Installing or enabling OpenSSH Server.
-- Enabling RDP.
-- Changing Windows Firewall rules.
-- Installing or enrolling WARP.
+- Installing or enabling OpenSSH Server outside the prepared
+  `desktop-2jj3187-ssh-lane-install-2026-05-15.md` packet. That packet
+  is approval-gated; once approved by the operator and applied per its
+  exact procedure, OpenSSH install is in-scope.
+- Enabling RDP. (Already enabled by 2026-05-12 apply; do not broaden
+  exposure.)
+- Changing Windows Firewall rules outside the prepared install packet.
+- Installing or enrolling WARP. (Cloudflare Windows multi-user
+  rebaseline blocked on `cloudflare-dns`; see system-config
+  `handback-request-cloudflare-dns-windows-multi-user-2026-05-15.md`.)
 - Creating, deleting, or reconfiguring Cloudflare Tunnel, Access, Gateway,
   WARP, or DNS state.
 - Changing OPNsense, Wake-on-LAN, DHCP, DNS, or firewall state.
