@@ -776,7 +776,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-15T03:35:00Z
-    latest_system_config_commit: pending
+    latest_system_config_commit: 7f23f3e
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns
