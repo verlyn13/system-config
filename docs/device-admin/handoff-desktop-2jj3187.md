@@ -3,8 +3,8 @@ title: Device Agent Handoff - DESKTOP-2JJ3187
 category: operations
 component: device_admin
 status: draft
-version: 0.1.0
-last_updated: 2026-05-13
+version: 0.2.0
+last_updated: 2026-05-15
 tags: [device-admin, handoff, windows, rdp, ssh, cloudflare, warp]
 priority: high
 ---
@@ -37,6 +37,12 @@ Follow these rules:
 - Treat Jefahnierocks as the device owner/administrator. Device-specific
   management accounts may be created only if the approved implementation phase
   requires them.
+- Treat
+  [windows-terminal-admin-spec.md](./windows-terminal-admin-spec.md)
+  as the shared Windows fleet procedure for any future OpenSSH or terminal
+  administration design. DESKTOP-2JJ3187 should converge with MAMAWORK's
+  management approach where possible, but OpenSSH is still not authorized by
+  this prep handoff.
 - Treat BitLocker as intentionally out of target state for this slice. Verify
   status if asked, but do not enable it or create recovery material.
 - Return redacted evidence and recommended next steps to the Jefahnierocks

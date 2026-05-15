@@ -3,8 +3,8 @@ title: Windows PC Device Administration Record
 category: operations
 component: device_admin
 status: draft
-version: 0.1.0
-last_updated: 2026-05-13
+version: 0.2.0
+last_updated: 2026-05-15
 tags: [device-admin, windows, rdp, bitlocker, firewall, 1password]
 priority: high
 ---
@@ -144,6 +144,10 @@ Current approved shell posture:
 - Do not enable PowerShell Remoting or WinRM yet.
 - Do not expose PowerShell Remoting, WinRM, OpenSSH, or another shell service
   outside the LAN or a future approved private overlay.
+- Keep the future terminal-admin design aligned with
+  [windows-terminal-admin-spec.md](./windows-terminal-admin-spec.md), which
+  now records the shared Windows fleet approach from the first MAMAWORK SSH
+  implementation.
 
 Preferred future shell path:
 
@@ -158,6 +162,10 @@ Preferred future shell path:
 - Human interactive keys may be used for human sessions through the approved
   1Password SSH-agent posture. Do not reuse a human workstation key for
   unattended automation.
+- Use the same fleet conventions as MAMAWORK where possible: one
+  device-scoped 1Password SSH key item, a MacBook `~/.ssh/conf.d/` host stanza,
+  a `Jefahnierocks SSH LAN TCP 22` firewall rule, and the standard Windows
+  OpenSSH `Match Group administrators` block for local administrators.
 
 PowerShell Remoting / WinRM remains a later exception path:
 

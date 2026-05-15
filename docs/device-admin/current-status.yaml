@@ -31,7 +31,7 @@
 #                             change for this device's posture
 
 schema_version: 1
-last_updated: 2026-05-14T18:00:00Z
+last_updated: 2026-05-15T01:31:43Z
 
 devices:
   - device: fedora-top
@@ -239,104 +239,135 @@ devices:
 
     remote_admin_paths:
       - kind: ssh
-        target: DadAdmin@192.168.0.101
+        target: jeffr@mamawork.home.arpa
+        client_source: MacBook
         notes: >-
-          LAN-only. OpenSSH SSH Server inherited from the prior
-          primary dev box. Pubkey-only (PasswordAuthentication no).
-          Authorized admin key fingerprint
-          SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk
-          (ED25519, labeled DadAdmin_WinNet). Whether the matching
-          private half is on fedora-top after the prior workstation
-          migration is an open operator question. mamawork.home.arpa
-          does not resolve on the LAN yet; HomeNetOps reservation +
-          Unbound override are pending.
+          LAN-only primary admin lane. `ssh mamawork` from the
+          MacBook authenticates as MAMAWORK\jeffr using the
+          1Password-backed device admin key
+          SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY.
+          Windows OpenSSH reads the system-wide
+          administrators_authorized_keys file through the standard
+          `Match Group administrators` block. No 1Password runtime
+          is installed on MAMAWORK.
       - kind: ssh
-        target: DadAdmin@mamawork.home.arpa
+        target: jeffr@192.168.0.101
+        client_source: MacBook
         notes: >-
-          Will become the stable FQDN admin path once HomeNetOps
-          adds the Unbound host override (see outbound HomeNetOps
-          handback request 2026-05-13).
+          Same SSH lane by IP. Kept while known_hosts reconciliation
+          still relies on HostKeyAlias 192.168.0.101.
+      - kind: rdp
+        target: mamawork.home.arpa
+        client_source: MacBook (Windows App)
+        notes: >-
+          LAN-only GUI fallback. Works through Windows App with NLA
+          and custom Private-profile TCP/UDP 3389 rules scoped to
+          192.168.0.0/24. Secondary because it prompts the active
+          console user to log out.
 
     current_management_status: >-
-      inventory-pending; not fully managed. Elevated read-only intake
-      was captured 2026-05-13 (operator-side bundle at
-      /Users/verlyn13/Downloads/mamaworkpc/, not committed). OpenSSH
-      is running but not yet hardened from system-config; the
-      "Dad Remote Management" Windows Firewall rule is Profile=Any
-      (planned to scope to Private). RDP, WinRM, and PSRemoting are
-      all disabled. Defender is fully enabled; BitLocker and Secure
-      Boot are off (decisions deferred). No third-party remote-admin
-      agent, no VPN/overlay (PIA was uninstalled by the operator
-      2026-05-13). 16 operator questions captured in
-      handoff-mamawork.md must be answered before any live
-      elevated change.
+      Partially managed, not hardened. MacBook SSH and LAN RDP are
+      operational; SSH is the preferred concurrent-admin lane. WinRM
+      and native PowerShell remoting are intentionally disabled/not
+      configured. OpenSSH hardening, DadAdmin cleanup, known_hosts
+      reconciliation, backup, BitLocker/Secure Boot, Defender
+      exclusions, and Cloudflare WARP remain future packets.
 
     applied_packets:
+      - name: mamawork-ssh-key-bootstrap
+        packet_doc: docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md
+        apply_record: docs/device-admin/mamawork-ssh-key-bootstrap-apply-2026-05-14.md
+        packet_commit: 037f62f
+        apply_commit: pending
+        applied_at: 2026-05-14T08:40:59-08:00
+        outcome: "Installed the canonical 1Password-backed admin public key in C:\\ProgramData\\ssh\\administrators_authorized_keys. DadAdmin per-user mirror failed Access denied; operationally inert for admin users once the Match block is active."
       - name: mamawork-lan-rdp-implementation
         packet_doc: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
         apply_record: docs/device-admin/mamawork-lan-rdp-implementation-apply-2026-05-14.md
         packet_commit: 98e2b1b
         apply_commit: 61819ae
         applied_at: 2026-05-14T08:56:39-08:00
-        outcome: "Host-side state PASS (NetworkCategory Private; fDenyTSConnections=0; UserAuthentication=1; TermService Running+Automatic; custom Jefahnierocks RDP LAN TCP 3389 + UDP 3389 rules Inbound Allow Profile=Private RemoteAddress=192.168.0.0/24; built-in Remote Desktop group all disabled; powercfg hibernate off; Magic Packet/Pattern Match/S0ix-magic-packet on NIC Enabled; Test-NetConnection 127.0.0.1:3389 TcpTestSucceeded=True; listener bound on 0.0.0.0:3389 and [::]:3389). LAN inbound reachability FAIL from BOTH MacBook and fedora-top - every TCP probe (3389, 22, 445, 135, 139) times out; L2 ARP REACHABLE; DNS PASS. Same shape as the SSH TCP/22 problem; the cause is a layer above the per-rule allow (Block rule, ASR, third-party WFP, or network-identity drift). RDP is host-side-correct but not yet usable for remote administration; gated on the read-only inbound investigation packet."
-        notes: "Operator note: the packet's Write-Evidence helper (Tee-Object) dropped multi-line strings during the apply; operator re-captured via Set-Content. Packet helper patched in v0.2.0 in the same commit as this apply record so the bug does not recur."
+        outcome: "Configured LAN-only RDP with NLA, custom Private-profile TCP/UDP 3389 rules scoped to 192.168.0.0/24, and power/WoL settings. Later MacBook Windows App smoke test passed."
+      - name: mamawork-inbound-tcp-blackhole-remediation
+        packet_doc: docs/device-admin/mamawork-inbound-tcp-blackhole-remediation-packet-2026-05-14.md
+        apply_record: docs/device-admin/mamawork-inbound-tcp-blackhole-remediation-apply-2026-05-14.md
+        packet_commit: pending
+        apply_commit: pending
+        applied_at: 2026-05-14T14:47:40-08:00
+        verified_at: 2026-05-15T00:15:00Z
+        outcome: "Restored LAN inbound reachability by setting the live wired profile Private and adding `Jefahnierocks SSH LAN TCP 22` for Private / 192.168.0.0/24. MacBook TCP/22 and TCP/3389 probes pass by IP and FQDN."
+      - name: mamawork-admin-streamline
+        packet_doc: docs/device-admin/mamawork-admin-streamline-packet-2026-05-14.md
+        apply_record: docs/device-admin/mamawork-admin-streamline-apply-2026-05-14.md
+        operator_handback: docs/device-admin/handback-mamawork-admin-streamline-2026-05-14.md
+        packet_commit: pending
+        apply_commit: pending
+        applied_at: 2026-05-14T15:44:01-08:00
+        outcome: "Removed legacy DadAdmin_WinNet public-key line, disabled legacy `Dad Remote Management` SSH firewall rule, confirmed ahnie is intentional admin, and left DadAdmin enabled because OneDrive scheduled tasks still run under its SID."
+      - name: mamawork-sshd-admin-match-block
+        packet_doc: docs/device-admin/mamawork-sshd-admin-match-block-packet-2026-05-14.md
+        apply_record: docs/device-admin/mamawork-sshd-admin-match-block-apply-2026-05-14.md
+        operator_handback: docs/device-admin/handback-mamawork-sshd-admin-match-block-2026-05-14.md
+        packet_commit: pending
+        apply_commit: pending
+        applied_at: 2026-05-14T16:12:32-08:00
+        verified_at: 2026-05-15T00:33:00Z
+        outcome: "Added standard Windows OpenSSH admin Match block, passed sshd syntax check, restarted sshd, and verified MacBook real auth as MamaWork / mamawork\\jeffr."
+      - name: macbook-ssh-conf-d-streamline
+        packet_doc: docs/device-admin/macbook-ssh-conf-d-streamline-packet-2026-05-14.md
+        apply_record: docs/device-admin/macbook-ssh-conf-d-streamline-apply-2026-05-14.md
+        packet_commit: pending
+        apply_commit: pending
+        applied_at: 2026-05-15T01:16:03Z
+        outcome: "Target-scoped MacBook chezmoi apply for ~/.ssh/conf.d/windows.conf, ~/.ssh/conf.d/fedora-top.conf, and ~/.ssh/id_ed25519_mamawork_admin.1password.pub. `ssh mamawork` now uses the intended user, host, key, and HostKeyAlias."
 
     prepared_packets:
-      - name: mamawork-intake-ingest
-        packet_doc: docs/device-admin/windows-pc-mamawork.md
-        prepared_at: 2026-05-14T00:25:00Z
-        state: prepared
-        approval_phrase_excerpt: "This record is repo-only intake ingest; no live host change is authorized by approving it. Future mamawork-ssh-key-bootstrap, mamawork-ssh-hardening, mamawork-privilege-cleanup, mamawork-defender-exclusions-audit, mamawork-backup-plan, mamawork-bitlocker-securboot, and mamawork-cloudflare-warp-cloudflared-cutover packets will quote their own approval phrases when drafted."
-      - name: mamawork-ssh-key-bootstrap
-        packet_doc: docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md
-        prepared_at: 2026-05-14T02:50:00Z
-        state: prepared
-        approval_phrase_excerpt: "Operator-applied on MAMAWORK from elevated PowerShell. Snapshots administrators_authorized_keys + DadAdmin per-user authorized_keys, verifies the new operator-supplied public-key fingerprint matches SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY (1Password item op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13), appends to administrators_authorized_keys, mirrors into DadAdmin per-user authorized_keys, refuses duplicates. Does NOT remove the legacy DadAdmin_WinNet line. Does NOT touch sshd_config, Windows Firewall, RDP, WinRM, accounts/groups, the duplicate DadAdmin.MamaWork profile, or C:\\Users\\jeffr\\.ssh\\authorized_keys.txt. Remote verification deferred to after the MAMAWORK SSH investigation packet remediates TCP/22."
-# mamawork-lan-rdp-implementation moved to applied_packets[] (state: applied-host-side-lan-unreachable). See apply record for the LAN-inbound-TCP-blackhole finding.
       - name: windows-app-mamawork-profile
         packet_doc: docs/device-admin/windows-app-mamawork.md
         prepared_at: 2026-05-14T03:00:00Z
         state: prepared
-        approval_phrase_excerpt: "Documentation-only profile for the MacBook Windows App: PC name mamawork.home.arpa; friendly name MAMAWORK - Jefahnierocks Admin; credentials Ask when required (NEVER saved); gateway No gateway; reconnect checked; admin-session unchecked; no redirected folders; no public IP/DNS target. Approval inherent in the RDP implementation packet's GUI smoke test step; no separate apply doc needed."
-      - name: mamawork-ssh-investigation
-        packet_doc: docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md
-        prepared_at: 2026-05-14T17:30:00Z
-        approved_at: 2026-05-14T18:30:00Z
-        state: approved-blocked-on-operator-run
-        blocking_input: "Operator runs the documented procedure on MAMAWORK in an elevated PowerShell 7+ session (as MAMAWORK\\jeffr). Output goes to C:\\Users\\Public\\Documents\\jefahnierocks-device-admin\\mamawork-ssh-investigation-<ts>\\. Operator returns a non-secret SUMMARY.md to system-config; agent then ingests findings into a small evidence doc. The PowerShell run is operator-local because fedora-top -> MAMAWORK SSH currently times out (that is the problem the investigation diagnoses)."
-        approval_phrase_excerpt: "Read-only Windows-side investigation of why TCP/22 from fedora-top times out despite HomeNetOps PASS. From an elevated PowerShell session, captures hostname/identity/elevation, network category, sshd service state, listener binding for port 22, firewall rules touching TCP/22 (incl. the Dad Remote Management rule), sshd_config directives, authorized_keys posture, and OpenSSH/Operational + Security 4625 events. Writes output to C:\\Users\\Public\\Documents\\jefahnierocks-device-admin\\mamawork-ssh-investigation-<timestamp>\\. Does not start/stop/edit any service or rule. Does not touch sshd_config or authorized_keys."
+        approval_phrase_excerpt: "Documentation-only Windows App profile. No saved credentials; no gateway; LAN FQDN target."
       - name: mamawork-switch-to-dhcp-source-of-truth
         packet_doc: docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md
         prepared_at: 2026-05-14T17:30:00Z
         approved_at: 2026-05-14T18:30:00Z
         state: approved-deferred-by-operator
-        deferral_reason: "Guardian approved but explicitly said this can wait and must NOT be bundled with the SSH investigation packet. Sequencing: run AFTER the SSH investigation is complete and its remediation packet has landed (so MAMAWORK SSH access is stable before introducing a brief reconnect window from the DHCP switch). The packet remains ready to apply when the operator schedules a separate window."
-        approval_phrase_excerpt: "Optional. Switches the MAMAWORK wired adapter from host-side static IP (192.168.0.101 manual) to DHCP, so the existing OPNsense reservation owns the address and ISC static-ARP defense can activate. Brief reconnect window (2-10 seconds). Intentionally separate from the SSH investigation packet so connectivity changes are not bundled with debugging."
+        deferral_reason: "Optional. Switches wired adapter from host-static IP to DHCP so the OPNsense reservation owns the address. Brief reconnect window; keep separate from admin-lane work."
 
     blocked_items:
-      - item: mamawork-operator-questions
+      - item: mamawork-fedora-top-probes-deferred
         owner: human
-        notes: >-
-          16 operator answers tracked in handoff-mamawork.md gate
-          the future MAMAWORK packets (SSH key continuity, family
-          MS-Account mapping, admin reduction, sandbox-account
-          identities, Defender exclusions, BitLocker / Secure Boot
-          stance, backup, workload constraints).
-      - item: mamawork-ssh-investigation-operator-run
+        notes: "Optional second-vantage LAN probe when fedora-top is online. Not blocking MacBook admin."
+      - item: mamawork-dadadmin-per-user-authorized-keys-acl-gap
+        owner: human + future packet
+        notes: "Operationally inert for admin SSH. Keep for future DadAdmin/profile cleanup decision."
+      - item: mamawork-network-identity-name-still-unidentified
+        owner: human + future packet
+        notes: "Live Ethernet 2 category is Private, but profile name remains Unidentified network. Future registry cleanup packet only if recurrence matters."
+      - item: mamawork-powershell-over-ssh-subsystem
+        owner: human + future packet
+        notes: "Optional. Explicit PowerShell over SSH works now; native `New-PSSession -HostName` needs a stable PowerShell 7 path and sshd subsystem line."
+      - item: mamawork-onedrive-scheduled-tasks-decision
         owner: human
-        notes: "MAMAWORK SSH investigation packet was approved 2026-05-14 (read-only). Apply is blocked on the operator running the documented elevated PowerShell procedure ON MAMAWORK (not from fedora-top, since SSH to MAMAWORK is the broken path the investigation diagnoses) and returning a non-secret SUMMARY.md. Once SUMMARY arrives, system-config ingests findings into a small evidence doc and a follow-up remediation packet is drafted per the investigation's hypothesis-tree outcomes."
+        notes: "DadAdmin remains enabled because two OneDrive scheduled tasks run as its SID. Decide re-register tasks, unregister tasks, or keep account with reduced privilege."
       - item: mamawork-warp-enrollment-cutover-pending
         owner: human + cloudflare-dns
-        notes: "cloudflare-dns recommends MAMAWORK -> Kids profile but flags an explicit trade-off: Kids profile is LOCKED, so Mama (primary user with Litecky Editing Services workload) cannot disconnect WARP. Before MAMAWORK enrolls, every Litecky-required domain that the Kids-controls Gateway policies (06-adult-themes, 07-ytrestricted, 08-safesearch, 09-content-block, 13-kids-social-block) would block MUST be added to the cloudflare-dns 01-custom-allow list (precedence 10) via a cloudflare-dns Pulumi commit. Operator must pick MAMAWORK enrollment identity between axelptjohnson@gmail.com and wynrjohnson@gmail.com. WARP is system-level so one identity applies to all Windows accounts on the machine. Cited cloudflare-dns commit: b5b9460."
+        notes: "Do not use the old single Kids identity model. Blocked on cloudflare-dns Windows multi-user rebaseline plus Mama/Litecky registration identity."
+      - item: mamawork-cloudflare-windows-multi-user-rebaseline
+        owner: cloudflare-dns
+        notes: "Open handback request asks for MDM multi_user=true, pre-login decision, profile map, and operator enrollment recipe. No Cloudflare mutation authorized here."
+      - item: mamawork-fast-user-switching-attribution-decision
+        owner: human + cloudflare-dns
+        notes: "Cloudflare attributes traffic to the active interactive desktop user when fast user switching is in play. Decide with cloudflare-dns."
+      - item: mamawork-warp-local-dns-log-privacy
+        owner: human + future packet
+        notes: "Keep local WARP DNS query logging disabled by default on shared Windows devices."
       - item: mamawork-litecky-allow-list-required-before-warp
         owner: cloudflare-dns
-        notes: "Hard prerequisite to the MAMAWORK Kids-profile WARP cutover. cloudflare-dns must add Litecky-required domains to 01-custom-allow (precedence 10) BEFORE the cutover. Inbound request to cloudflare-dns will be filed once the operator enumerates the Litecky domain set."
+        notes: "Only required for Litecky domains that must work from Kids-profile sessions or if multi-user mode is unavailable."
       - item: mamawork-litecky-org-migration-future
         owner: human + cloudflare-dns + Litecky
-        notes: "Long-term: MAMAWORK may migrate to a separate Litecky Cloudflare org. At that point MAMAWORK profile placement revisits - a Litecky org would let Mama run an adults-equivalent profile under Litecky's Zero Trust posture without forcing kids-controls on her work. Tracked here as a future consideration, not a current packet."
-      - item: mamawork-ssh-key-continuity-verification
-        owner: resolved
-        notes: "RESOLVED 2026-05-14. Operator checked 8 private-key files under /home/verlyn13/.ssh on fedora-top; the legacy DadAdmin_WinNet fingerprint SHA256:7WrWkYGE4aRGSXm2Sih5o+m+yUpMobpjM0Nd32CRXTk is NOT present. A fresh MAMAWORK admin key was minted in 1Password (op://Dev/jefahnierocks-device-mamawork-admin-ssh-verlyn13, fingerprint SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY) and the mamawork-ssh-key-bootstrap packet now uses that key. The legacy DadAdmin_WinNet line remains in administrators_authorized_keys but its private half is missing, so the dangling line is effectively harmless and will be cleaned up in a small follow-up packet after the new key is verified end-to-end."
+        notes: "Future consideration only."
       - item: mamawork-pwsh51-optional-features-rerun
         owner: human
         notes: >-
@@ -349,74 +380,49 @@ devices:
       - item: mamawork-host-static-vs-dhcp-source-of-truth
         owner: human + future packet
         notes: >-
-          MAMAWORK currently uses a host-side static IP; OPNsense
-          static reservation exists but arp permanent=false because
-          the host did not lease the address from OPNsense. The
-          OPNsense ISC static-ARP defense layer therefore does not
-          activate. Optional packet
-          mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md
-          addresses this; intentionally separate from the SSH
-          investigation packet so connectivity disruption is not
-          bundled with debugging.
+          MAMAWORK is host-static today. Optional packet switches the
+          wired adapter to DHCP so the OPNsense reservation becomes
+          source of truth and static-ARP defense can activate.
 
     approval_required:
-      - action: mamawork-ssh-investigation
-        state: approved-blocked-on-operator-run
-        approved_at: 2026-05-14T18:30:00Z
-        approval_phrase: "See docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md 'Required Approval Phrase' section. Read-only Windows-side investigation; no service or rule changes. Approval received 2026-05-14; awaiting operator to run the elevated PowerShell procedure on MAMAWORK and return a non-secret SUMMARY.md."
       - action: mamawork-switch-to-dhcp-source-of-truth
         state: approved-deferred-by-operator
         approved_at: 2026-05-14T18:30:00Z
-        approval_phrase: "See docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md 'Required Approval Phrase' section. Optional; carries a brief reconnect window; intentionally NOT bundled with the SSH investigation packet. Approved 2026-05-14 but explicitly deferred until after SSH investigation + its remediation packet are complete."
-      - action: mamawork-ssh-key-bootstrap
-        state: prepared
-        approval_phrase: "See docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md 'Required Approval Phrase' section. Operator-applied on MAMAWORK from elevated PowerShell using the fresh 1Password key SHA256:qilvkR7/539qqRoWurVdAgoXL1Wol7WzbD0tHlha0QY."
-# mamawork-lan-rdp-implementation applied 2026-05-14T08:56:39-08:00; see applied_packets[]
+        approval_phrase: "Optional. Switches MAMAWORK wired adapter from host-static IP to DHCP; brief reconnect window; deferred until operator schedules it."
+      - action: mamawork-terminal-admin-baseline
+        state: planned
+        approval_phrase: "Phrase will be drafted with the packet. Read-only over `ssh mamawork`; capture services, firewall, accounts, OpenSSH effective config, and Windows PowerShell 5.1 optional-feature inventory."
       - action: mamawork-ssh-hardening
         state: planned
-        approval_phrase: >-
-          Phrase will be drafted with the packet. Mirrors the
-          fedora-top SSH hardening pattern; includes scoping the
-          Dad Remote Management firewall rule to Profile=Private
-          and tightening sshd_config (LogLevel, StrictModes,
-          AllowGroups, removal of dead HostKey reference,
-          reconciling C:\Users\jeffr\.ssh\authorized_keys.txt).
+        approval_phrase: "Phrase will be drafted with the packet after the read-only baseline."
       - action: mamawork-privilege-cleanup
         state: planned
-        approval_phrase: >-
-          Phrase will be drafted with the packet. Gated on the
-          operator-questions answers (admin reduction, sandbox
-          accounts, WsiAccount).
+        approval_phrase: "Phrase will be drafted after DadAdmin, sandbox-account, and WsiAccount decisions."
       - action: mamawork-defender-exclusions-audit
         state: planned
-        approval_phrase: >-
-          Phrase will be drafted with the packet; expect this audit
-          to be operator-led via the Defender GUI.
+        approval_phrase: "Phrase will be drafted with the packet; likely operator-led through Defender GUI."
       - action: mamawork-backup-plan
         state: planned
-        approval_phrase: >-
-          Phrase will be drafted with the packet.
+        approval_phrase: "Phrase will be drafted with the packet."
       - action: mamawork-bitlocker-securboot
         state: planned
-        approval_phrase: >-
-          Phrase will be drafted with the packet; significant
-          operator interaction required.
+        approval_phrase: "Phrase will be drafted with the packet; significant operator interaction required."
 
     next_recommended_action:
-      summary: "Run the inbound-TCP-blackhole investigation on MAMAWORK. The 2026-05-14 RDP apply succeeded host-side but proved that ALL inbound TCP (3389, 22, 445, 135, 139) times out from BOTH MacBook and fedora-top despite correct firewall posture. Until that is diagnosed, MAMAWORK has no remote-admin path. The existing mamawork-ssh-investigation-packet-2026-05-14.md procedure should be re-run on MAMAWORK with two scope additions: (a) enumerate ALL Block rules (Get-NetFirewallRule -Action Block -Direction Inbound -Enabled True), and (b) run Set-NetFirewallProfile -Name Private -LogBlocked True for ~60 seconds while a fresh external probe runs, then tail %SystemRoot%\\System32\\LogFiles\\Firewall\\pfirewall.log to see the actual drop decision, then revert LogBlocked. Once the cause is identified, a small follow-up remediation packet closes the gap and SSH+RDP both become reachable. The SSH key bootstrap packet remains prepared; it is operator-applicable in parallel because it only writes authorized_keys files - it does not depend on LAN reachability."
-      preferred_packet: mamawork-ssh-investigation
-      preferred_packet_status: approved-blocked-on-operator-run
+      summary: "MAMAWORK is ready for terminal administration from the MacBook. `ssh mamawork` uses jeffr, 192.168.0.101, the device-scoped 1Password admin key, and HostKeyAlias 192.168.0.101; cmd and pwsh proofs return MamaWork / mamawork\\jeffr. Next work is a read-only terminal-admin baseline using windows-terminal-admin-spec.md, especially Windows PowerShell 5.1 optional-feature inventory and current service/firewall/account/OpenSSH state. Use that baseline to draft ssh hardening and cleanup packets. Cloudflare WARP remains blocked on cloudflare-dns Windows multi-user rebaseline."
+      preferred_packet: mamawork-terminal-admin-baseline
+      preferred_packet_status: planned
       preferred_packet_blockers:
-        - slug: operator-elevated-powershell-on-mamawork
-          note: "Operator runs the read-only investigation procedure on MAMAWORK plus the two scope additions above; returns non-secret SUMMARY.md."
-      secondary_packet: mamawork-ssh-key-bootstrap
-      secondary_packet_status: prepared
+        - slug: draft-readonly-baseline-scope
+          note: "Use windows-terminal-admin-spec.md. Read-only over `ssh mamawork`; no account/firewall/service/config changes. Capture optional features via Windows PowerShell 5.1 and use the result to draft hardening packets."
+      secondary_packet: cloudflare-dns-windows-multi-user-rebaseline
+      secondary_packet_status: open-handback-request
       secondary_packet_blockers:
-        - slug: operator-elevated-powershell-on-mamawork
-          note: "Independent of inbound TCP reachability; installs the new 1Password admin key into administrators_authorized_keys + DadAdmin per-user authorized_keys. Remote verification waits until inbound TCP is restored."
+        - slug: cloudflare-dns-answers-mamawork-multi-user
+          note: "cloudflare-dns answers handback-request-cloudflare-dns-windows-multi-user-2026-05-15.md before any MAMAWORK WARP cutover."
       handback_to_human: true
 
-    last_verified: 2026-05-13T15:00:11-08:00
+    last_verified: 2026-05-15T01:16:03Z
     latest_system_config_commit: 98e2b1b
 
 outbound_handback_requests:
@@ -430,8 +436,16 @@ outbound_handback_requests:
     cited_source_commit: b5b9460
     cited_source_path: docs/handback-system-config-2026-05-13.md
     summary: "Org structure, WARP/device enrollment posture, Access policy posture, Tunnel posture, naming conventions, and per-device Zero Trust profile recommendation for fedora-top (Wyn user, verlyn13 administrator) and MAMAWORK (kids' learning device, verlyn13 administrator)."
-    answered_summary: "Single Cloudflare account (team homezerotrust, team domain homezerotrust.cloudflareaccess.com); IaC is Pulumi TypeScript (NOT OpenTofu); tokens live in gopass not 1Password. WARP already enrolled on 7 fleet devices; fedora-top and MAMAWORK would be first Linux/Windows enrollments. Identity providers: Google OAuth + email OTP. Four profiles: Default + Kids (locked, full tunnel) + Adults (unlocked) + Headless (MDM, locked). WARP is system-level on macOS/Windows/Linux: one identity per machine. RECOMMENDATION: Kids profile for BOTH fedora-top (user Wyn) and MAMAWORK (kids' learning + shared school workload). MAMAWORK trade-off: Kids profile is locked so Mama cannot disconnect; Litecky-required domains must be allow-listed in cloudflare-dns 01-custom-allow BEFORE cutover; MAMAWORK may migrate to a Litecky org later. No Access app or Tunnel exists today (both TBD; working naming candidates recorded). Per-device 1Password admin items: cloudflare-dns does not own them; system-config naming candidates accepted unchanged."
-    note: "Supersedes the earlier mistakenly-circulated system-config-side draft response. The Hetzner advisory (commit 009c091) quoted some cloudflare-dns state for context; this handback is the authoritative source on all Cloudflare-policy questions and overrides any conflict with the Hetzner advisory."
+    answered_summary: "Single Cloudflare account (team homezerotrust, team domain homezerotrust.cloudflareaccess.com); IaC is Pulumi TypeScript (NOT OpenTofu); tokens live in gopass not 1Password. WARP already enrolled on 7 fleet devices; fedora-top and MAMAWORK would be first Linux/Windows enrollments. Identity providers: Google OAuth + email OTP. Four profiles: Default + Kids (locked, full tunnel) + Adults (unlocked) + Headless (MDM, locked). Original b5b9460 handback said WARP is system-level and recommended Kids for both fedora-top and MAMAWORK. 2026-05-15 correction: MAMAWORK target is now Windows multi-user WARP, not one kid identity for the whole machine; admin/operator accounts should be Adults/Admin, ahnie/Mama/Litecky should be adult/work, and kid accounts should be Kids. fedora-top remains Kids profile / wynrjohnson@gmail.com. No Access app or Tunnel exists today (both TBD; working naming candidates recorded). Per-device 1Password admin items: cloudflare-dns does not own them; system-config naming candidates accepted unchanged."
+    note: "Supersedes the earlier mistakenly-circulated system-config-side draft response. The Hetzner advisory (commit 009c091) quoted some cloudflare-dns state for context; this handback is the authoritative source on Cloudflare-policy questions except where the 2026-05-15 Windows multi-user addendum explicitly supersedes the MAMAWORK single-registration recommendation."
+
+  - target_repo: cloudflare-dns
+    target_path: /Users/verlyn13/Repos/local/cloudflare-dns
+    request_doc: docs/device-admin/handback-request-cloudflare-dns-windows-multi-user-2026-05-15.md
+    requested_at: 2026-05-15T00:27:38Z
+    state: open
+    summary: "Follow-up request after official Cloudflare Windows multi-user docs review. Ask cloudflare-dns to rebaseline MAMAWORK WARP around MDM multi_user=true, per-Windows-user registrations, admin/adult vs kid profile separation, Mama/Litecky adult/work profile placement, optional pre-login registration, fast-user-switching attribution, local DNS log privacy, and exact operator enrollment/validation steps."
+    note: "No live Cloudflare mutation authorized by system-config. This request supersedes the old MAMAWORK 'pick axelptjohnson@gmail.com vs wynrjohnson@gmail.com for the whole machine' cutover model."
 
   - target_repo: homenetops
     target_path: ~/Repos/verlyn13/HomeNetOps
@@ -441,9 +455,12 @@ outbound_handback_requests:
     state: answered
     answered_doc: docs/device-admin/mamawork-homenetops-lan-identity-2026-05-14.md
     summary: "Two items. (1) Posture confirmation for fedora-top - no new rule requested. (2) New MAMAWORK static DHCP reservation for the wired MAC plus Unbound host override for mamawork.home.arpa."
-    answered_summary: "PASS. MAMAWORK static DHCP reservation bound on the OPNsense appliance; Unbound override for mamawork.home.arpa is active and resolves to 192.168.0.101; LAN/igc1 ARP confirms the IP-to-MAC binding; dig from the LAN resolver returns 192.168.0.101. TCP/22 from fedora-top to MAMAWORK times out, but the HomeNetOps report explicitly notes this is a Windows-side issue and OPNsense is not gating same-subnet TCP/22. ARP permanent=false because MAMAWORK is currently using a host-side static IP; the ISC static-ARP defense layer will not activate until MAMAWORK switches to DHCP (separate optional packet flagged). Fedora-top posture confirmation is implicit in the same handback - LAN routing PASS and SSH from fedora-top reaches the MAMAWORK end-of-network."
+    answered_summary: "PASS. MAMAWORK static DHCP reservation bound on the OPNsense appliance; Unbound override for mamawork.home.arpa is active and resolves to 192.168.0.101; LAN/igc1 ARP confirms the IP-to-MAC binding; dig from the LAN resolver returns 192.168.0.101. At handback time, TCP/22 from fedora-top to MAMAWORK timed out, but the HomeNetOps report showed OPNsense was not gating same-subnet TCP/22; later Windows-side remediation restored the MacBook SSH/RDP admin lane. A fedora-top second-vantage probe remains deferred until fedora-top is online. ARP permanent=false because MAMAWORK is currently using a host-side static IP; the ISC static-ARP defense layer will not activate until MAMAWORK switches to DHCP (separate optional packet flagged)."
 
 cross_cutting_tbd_items:
+  - item: windows-terminal-admin-spec-adoption
+    owner: system-config
+    notes: "Established 2026-05-15 in docs/device-admin/windows-terminal-admin-spec.md. Windows fleet default: MacBook as admin client, OpenSSH + explicit PowerShell as primary terminal lane, RDP as GUI fallback, WinRM exception-only, device-scoped 1Password SSH keys, standard Windows OpenSSH administrators_authorized_keys Match block, target-scoped chezmoi applies for MacBook SSH config, and shared evidence/stop rules. MAMAWORK is the first SSH implementation; DESKTOP-2JJ3187 remains RDP-only until an OpenSSH packet is explicitly drafted; future Windows PCs should follow the same pattern."
   - item: tunnel-naming-convention
     owner: cloudflare-dns
     notes: "Working candidate (tunnel-<host>) recorded in the cloudflare-dns handback. Authoritative when cloudflare-dns lands the first Tunnel via Pulumi."
@@ -472,60 +489,16 @@ advisory_ingests:
       - Tailscale stays transition / break-glass only.
       - Treating Hetzner as a device bastion is a new design lane that has not been started.
 
-recommended_packet_order_2026_05_14:
-  - step: A
-    description: "Ingest HomeNetOps + Hetzner facts and correct cloudflare-dns as still open."
-    state: done
-    landed_in_commit: 0664e2a
-  - step: B
-    description: "Prepare Fedora admin backup SSH key strategy packet."
-    state: done
-    landed_in_commit: a3ab575
-    artifact: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-packet-2026-05-14.md
-  - step: C
-    description: "Prepare MAMAWORK Windows-side SSH investigation / remediation packet."
-    state: done
-    landed_in_commit: 5f650f9
-    artifact: docs/device-admin/mamawork-ssh-investigation-packet-2026-05-14.md
-  - step: D
-    description: "Prepare optional MAMAWORK DHCP source-of-truth packet."
-    state: done
-    landed_in_commit: 5f650f9
-    artifact: docs/device-admin/mamawork-switch-to-dhcp-source-of-truth-packet-2026-05-14.md
-  - step: E
-    description: "Await actual cloudflare-dns handback before drafting WARP / cloudflared cutover packets for fedora-top or MAMAWORK."
-    state: superseded
-    superseded_at: 2026-05-14T19:15:00Z
-    superseded_note: "cloudflare-dns handback received and ingested in commit cb6aeba (citing cloudflare-dns commit b5b9460). WARP enrollment for fedora-top + MAMAWORK is now drafteable, BUT the 2026-05-14 priority refresh below sequences SSH-key + RDP before WARP."
-  - step: F
-    description: "Keep fedora-top known_hosts reconciliation available as a small MacBook-side cleanup packet, but do not let it distract from the broader backup-admin requirement (step B)."
-    state: prepared
-    artifact: docs/device-admin/fedora-top-known-hosts-reconciliation-packet-2026-05-13.md
-
-recommended_packet_order_2026_05_14_priority_refresh:
-  note: "2026-05-14 priority refresh from the operator. The cloudflare-dns handback unblocked WARP-enrollment cutovers, but the operator's explicit request was to prioritize practical remote administration (SSH key + RDP) over WARP/Tunnel work for this packet series."
-  steps:
-    - step: A
-      description: "Apply fedora-top admin-backup SSH key packet (LIVE)."
-      state: done
-      landed_in_commit: 1d3a520
-      artifact_apply: docs/device-admin/fedora-top-admin-backup-ssh-key-strategy-apply-2026-05-14.md
-    - step: B
-      description: "Prepare/apply MAMAWORK SSH key bootstrap packet using the new 1Password-backed key."
-      state: prepared
-      landed_in_commit: 037f62f
-      artifact: docs/device-admin/mamawork-ssh-key-bootstrap-packet-2026-05-14.md
-    - step: C
-      description: "Prepare/apply MAMAWORK LAN RDP bootstrap packet, modeled on windows-lan-rdp-implementation-2026-05-13.md, scoped to 192.168.0.0/24 on Private profile, NLA, no WAN exposure."
-      state: prepared
-      landed_in_commit: 98e2b1b
-      artifact: docs/device-admin/mamawork-lan-rdp-implementation-2026-05-14.md
-    - step: D
-      description: "Prepare MAMAWORK Windows App profile guidance for the MacBook."
-      state: prepared
-      landed_in_commit: 98e2b1b
-      artifact: docs/device-admin/windows-app-mamawork.md
-    - step: E
-      description: "WARP / Tunnel work for fedora-top and MAMAWORK is deferred until LAN admin paths (SSH-key + RDP) are stable. cloudflare-dns handback at b5b9460 unblocks the cutover packet authoring whenever the operator is ready."
-      state: deferred-by-operator
-      step_note: "Per 2026-05-14 operator priority refresh."
+current_device_admin_priorities_2026_05_15:
+  - priority: 1
+    item: mamawork-terminal-admin-baseline
+    state: planned
+    notes: "First SSH-driven Windows admin session from the MacBook; read-only, evidence-shaped, and governed by windows-terminal-admin-spec.md."
+  - priority: 2
+    item: cloudflare-dns-windows-multi-user-rebaseline
+    state: open-handback-request
+    notes: "Required before MAMAWORK WARP enrollment so admin/adult, Mama/Litecky, and kids land in separate Zero Trust profiles."
+  - priority: 3
+    item: mamawork-ssh-hardening
+    state: planned-after-baseline
+    notes: "Draft from the read-only baseline; keep separate from DadAdmin, WARP, BitLocker, and backup work."
