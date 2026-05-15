@@ -10,9 +10,19 @@
 # fedora-top.home.arpa has no known_hosts entry. A future
 # fedora-top-known-hosts-reconciliation packet adds the FQDN form,
 # at which point this directive can be dropped.
+#
+# Keepalive: fedora-top is a laptop and suspended mid-session on
+# 2026-05-14 19:23:29 AKDT. Until the power-policy apply packet
+# lands and lid/idle suspend are disabled on AC, force-detect dead
+# transports inside ~90 s instead of waiting for the OS TCP timeout.
+# ServerAliveInterval=30 + ServerAliveCountMax=3 means the MacBook
+# sends a keepalive every 30 s and gives up after 3 missed responses.
 
 Host fedora-top fedora-top.home.arpa 192.168.0.206
   HostName 192.168.0.206
   User verlyn13
   IdentityFile ~/.ssh/id_ed25519_personal.1password.pub
   HostKeyAlias 192.168.0.206
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+  TCPKeepAlive yes
