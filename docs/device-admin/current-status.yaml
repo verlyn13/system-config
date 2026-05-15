@@ -163,13 +163,28 @@ devices:
 
       - name: fedora-top-power-policy-baseline
         packet_doc: docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md
-        executable: scripts/device-admin/fedora-top-power-policy-baseline-v0.1.0.sh
-        executable_sha256: 3294f168d428067eb60c3936f2b6104ca51727632306d31eeaf9a47f9831970d
+        executable: scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh
+        executable_sha256: 680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094
         executable_encoding: ASCII
         executable_shell: bash on fedora-top
         prepared_at: 2026-05-15T22:30:00Z
+        revised_at: 2026-05-15T16:30:00Z
         state: approval-required
-        packet_version: 0.1.0
+        packet_version: 0.2.0
+        supersedes_version: 0.1.0
+        supersession_reason: >-
+          v0.1.0 failed first run on fedora-top with
+          `jq: Argument list too long` (E2BIG) in step 10. The 7-day
+          journalctl -u systemd-logind output was passed whole as a
+          single `jq --arg raw "$events_raw"` and exceeded
+          getconf ARG_MAX. v0.2.0 truncates events_raw to the last
+          500 lines in shell BEFORE passing to jq. Counts still come
+          from the full output and remain accurate. Partial v0.1.0
+          evidence preserved on host at
+          /var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-20260515T162313Z/.
+          Per linux-terminal-admin-spec.md §Packet-Defect Halt Rule:
+          serialization failure -> halt -> hand back for new packet
+          version.
         session_class: read-only-probe
         prerequisite: >-
           fedora-top must be online (TCP/22 reachable). Currently
@@ -177,7 +192,7 @@ devices:
           physically. First packet under linux-terminal-admin-spec.md
           v0.1.0.
         approval_phrase_excerpt: >-
-          Run fedora-top-power-policy-baseline-v0.1.0.sh via SSH from
+          Run fedora-top-power-policy-baseline-v0.2.0.sh via SSH from
           MacBook as verlyn13. Read-only; writes structured JSON
           evidence to /var/tmp/jefahnierocks-device-admin/.../. Return
           08-summary.json verbatim. Captures effective logind config,
@@ -321,7 +336,7 @@ devices:
       - action: fedora-top-power-policy-baseline
         state: approval-required
         packet_version: 0.1.0
-        approval_phrase: "See docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md 'Approval Phrase' section. Read-only via SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-baseline-v0.1.0.sh (sha256 3294f168d428067eb60c3936f2b6104ca51727632306d31eeaf9a47f9831970d). Returns 08-summary.json. Prerequisite: fedora-top reachable (currently suspended; operator wakes physically)."
+        approval_phrase: "See docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md 'Approval Phrase' section. Read-only via SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh (sha256 680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094). Returns 08-summary.json. Prerequisite: fedora-top reachable (currently suspended; operator wakes physically)."
       - action: fedora-top-power-policy-apply
         state: approval-required-blocked-on-baseline
         packet_version: 0.1.0

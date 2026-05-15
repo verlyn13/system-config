@@ -3,11 +3,35 @@ title: fedora-top Power Policy Baseline Packet - 2026-05-15
 category: operations
 component: device_admin
 status: prepared
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-05-15
 tags: [device-admin, fedora-top, linux, power, suspend, logind, baseline, read-only]
 priority: high
 ---
+
+## Version History
+
+- **v0.2.0 (2026-05-15)**: Fix step 10 ARG_MAX overflow. v0.1.0 failed
+  on first run on fedora-top with
+  `fedora-top-power-policy-baseline-v0.2.0.sh: line 47: /usr/bin/jq: Argument list too long`.
+  Root cause: step 10 captures `journalctl -u systemd-logind --since '7 days ago'`
+  into `events_raw`, then passes it whole as a single `jq --arg raw "$events_raw"`.
+  On a laptop that suspends frequently the journal exceeds
+  `getconf ARG_MAX` (~128 KB on stock Fedora) and `execve("jq", ...)`
+  fails with `E2BIG`. v0.2.0 truncates `events_raw` to the last 500
+  lines in shell BEFORE passing to jq. Suspend/resume counts continue
+  to be computed from the full pre-truncation output, so they remain
+  accurate; only `raw_log_tail` is bounded. The inner jq filter's
+  `.[-100:]` is preserved, so observed evidence shape is unchanged.
+  Postmortem evidence (partial v0.1.0 run): on-host directory
+  `/var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-20260515T162313Z/`
+  with files `00..09` intact and `10-recent-suspend-events.json` zero-byte.
+  Per [linux-terminal-admin-spec.md](./linux-terminal-admin-spec.md)
+  §Packet-Defect Halt Rule and inherited Windows
+  §Packet-Defect Halt Rule: serialization failure -> halt -> hand back
+  for new packet version (this revision).
+- **v0.1.0 (2026-05-15)**: Initial drop. Failed first run on fedora-top
+  with E2BIG; superseded by v0.2.0.
 
 # fedora-top Power Policy Baseline Packet - 2026-05-15
 
@@ -62,9 +86,9 @@ The agent runs the named script directly. Do not transcribe content
 from this Markdown into a separate file.
 
 ```text
-script:     scripts/device-admin/fedora-top-power-policy-baseline-v0.1.0.sh
-sha256:     3294f168d428067eb60c3936f2b6104ca51727632306d31eeaf9a47f9831970d
-encoding:   ASCII (python: 17385 bytes, 0 bytes > 0x7F; 439 lines)
+script:     scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh
+sha256:     680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094
+encoding:   ASCII (python: 18372 bytes, 0 bytes > 0x7F; 455 lines)
 shell:      /usr/bin/bash on fedora-top (any modern bash)
 session:    SSH from MacBook as verlyn13
 sudo:       only for journalctl -u systemd-logind (optional)
@@ -77,26 +101,26 @@ spec-conforming flows:
 
 ```bash
 # From the MacBook, in the system-config checkout:
-scp scripts/device-admin/fedora-top-power-policy-baseline-v0.1.0.sh \
+scp scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh \
     fedora-top:/var/tmp/
 
 ssh fedora-top
 # On the host:
 cd /var/tmp
-expected='3294f168d428067eb60c3936f2b6104ca51727632306d31eeaf9a47f9831970d'
-actual=$(sha256sum fedora-top-power-policy-baseline-v0.1.0.sh | awk '{print $1}')
+expected='680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094'
+actual=$(sha256sum fedora-top-power-policy-baseline-v0.2.0.sh | awk '{print $1}')
 if [ "$actual" != "$expected" ]; then
     echo "sha256 mismatch: $actual vs $expected" >&2
     exit 1
 fi
-bash fedora-top-power-policy-baseline-v0.1.0.sh
+bash fedora-top-power-policy-baseline-v0.2.0.sh
 ```
 
 **Option B — pipe via stdin (no on-host persistence):**
 
 ```bash
 # From the MacBook:
-ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-baseline-v0.1.0.sh
+ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh
 ```
 
 Both are read-only. Option A leaves an inspectable copy on the host;
@@ -117,7 +141,7 @@ mutating packet.
 
 ## Approval Phrase
 
-> Run the `fedora-top-power-policy-baseline-v0.1.0` script on
+> Run the `fedora-top-power-policy-baseline-v0.2.0` script on
 > fedora-top via SSH from the MacBook as `verlyn13`. The script is
 > read-only and writes a JSON evidence directory under
 > `/var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-<timestamp>/`.

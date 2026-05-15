@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
-# fedora-top-power-policy-baseline-v0.1.0.sh
+# fedora-top-power-policy-baseline-v0.2.0.sh
 #
 # Read-only baseline of fedora-top power/suspend posture, prompted by
 # the 2026-05-14 19:23:29 AKDT suspend mid-SSH-session that dropped
 # an in-progress shelltutor edit. No host mutation.
+#
+# v0.2.0 (2026-05-15): Fix step 10 ARG_MAX overflow. v0.1.0 passed
+# the full 7-day `journalctl -u systemd-logind` output as a single
+# --arg to jq. On a host that suspends often, the output exceeds
+# getconf ARG_MAX (~128 KB on stock Fedora) and execve("jq", ...)
+# fails with E2BIG ("Argument list too long"). v0.2.0 truncates
+# events_raw to the last 500 lines in shell before passing it to
+# jq. Suspend/resume counts are computed from the full output and
+# remain accurate; only the raw_log_tail field is bounded.
 #
 # Required shell: bash on fedora-top (any modern bash).
 # Encoding:       UTF-8 without BOM (ASCII-only in practice).
@@ -360,6 +369,13 @@ events_count_resume=0
 if events_raw=$(sudo -n journalctl -u systemd-logind --since '7 days ago' --no-pager 2>/dev/null); then
     events_count_suspend=$(printf '%s\n' "$events_raw" | grep -cE 'Suspending system|System is going to sleep|Lid closed' || true)
     events_count_resume=$(printf '%s\n' "$events_raw" | grep -cE 'System resumed|Lid opened' || true)
+    # v0.2.0 fix: truncate to last 500 lines before passing to jq.
+    # The full 7-day output can exceed getconf ARG_MAX (~128 KB) and
+    # fail execve("jq", ...) with E2BIG. The inner jq filter on
+    # raw_log_tail already trims to the last 100 lines, so 500 here
+    # gives a comfortable margin while staying well under ARG_MAX.
+    # Counts above are computed BEFORE truncation and remain accurate.
+    events_raw=$(printf '%s\n' "$events_raw" | tail -n 500)
 fi
 
 emit_json 10-recent-suspend-events.json -n \

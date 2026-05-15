@@ -91,10 +91,10 @@ The packet:
 
 ```bash
 # From the MacBook, in the system-config checkout:
-script='scripts/device-admin/fedora-top-power-policy-baseline-v0.1.0.sh'
+script='scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh'
 
 # 1. Verify the local copy matches the declared sha256.
-expected='3294f168d428067eb60c3936f2b6104ca51727632306d31eeaf9a47f9831970d'
+expected='680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094'
 actual=$(shasum -a 256 "$script" | awk '{print $1}')
 [ "$actual" = "$expected" ] || { echo "local sha256 mismatch"; exit 1; }
 
@@ -105,13 +105,13 @@ scp "$script" fedora-top:/var/tmp/
 ssh fedora-top <<'EOF'
 set -euo pipefail
 cd /var/tmp
-expected='3294f168d428067eb60c3936f2b6104ca51727632306d31eeaf9a47f9831970d'
-actual=$(sha256sum fedora-top-power-policy-baseline-v0.1.0.sh | awk '{print $1}')
+expected='680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094'
+actual=$(sha256sum fedora-top-power-policy-baseline-v0.2.0.sh | awk '{print $1}')
 if [ "$actual" != "$expected" ]; then
     echo "host sha256 mismatch: $actual vs $expected" >&2
     exit 1
 fi
-bash fedora-top-power-policy-baseline-v0.1.0.sh
+bash fedora-top-power-policy-baseline-v0.2.0.sh
 EOF
 ```
 
