@@ -29,9 +29,24 @@
 #     latest_system_config_commit
 #                             commit short SHA that records the most recent
 #                             change for this device's posture
+#     lifecycle_phase         integer 0..6 per
+#                             docs/device-admin/windows-terminal-admin-spec.md
+#                             Device Lifecycle section. Highest phase whose
+#                             named packet is applied AND its apply record is
+#                             committed. Transition / blocker detail belongs
+#                             in `current_management_status` and
+#                             `blocked_items`. Labels are platform-agnostic
+#                             until a Linux-specific spec ships; the only
+#                             Windows-only classification label is
+#                             `rdp-only-host`.
+#     classification          short label per windows-terminal-admin-spec.md
+#                             Classification Labels section. One primary
+#                             label per device. Secondary state (for example
+#                             cloudflare-blocked alongside reference-ssh-host)
+#                             stays in `blocked_items`.
 
 schema_version: 1
-last_updated: 2026-05-15T01:31:43Z
+last_updated: 2026-05-15T02:30:00Z
 
 devices:
   - device: fedora-top
@@ -39,6 +54,21 @@ devices:
     hostname: fedora-top
     fqdn: fedora-top.home.arpa
     ip: 192.168.0.206
+
+    lifecycle_phase: 4
+    # Highest completed phase. 0 intake, 1 classify, 2 normalize-network,
+    # and 3 install-shell-lane are complete from the 2026-05-13 work. 4
+    # harden is complete (ssh-hardening, privilege-cleanup,
+    # infisical-redis-retirement, firewalld-narrowing, admin-backup ssh key
+    # all applied). 5 off-lan is blocked on cloudflare-dns Pulumi rebaseline
+    # for Tunnel + Access app + WARP enrollment. 6 recovery is partially
+    # complete (admin-backup ssh key); LUKS/power strategy and 1Password
+    # device-admin items remain pending.
+    classification: reference-ssh-host
+    # Linux SSH host on the same packet/apply/MacBook-admin-client pattern as
+    # MAMAWORK. Secondary state cloudflare-blocked is captured in
+    # blocked_items[] (fedora-top-ssh-over-tunnel-cutover-pending and
+    # fedora-top-warp-enrollment-cutover-pending) rather than in this field.
 
     remote_admin_paths:
       - kind: ssh
@@ -236,6 +266,22 @@ devices:
     hostname: MAMAWORK
     fqdn: mamawork.home.arpa
     ip: 192.168.0.101
+
+    lifecycle_phase: 3
+    # Phases 0-3 complete. 0 intake (2026-05-13 elevated PowerShell 7 read
+    # plus the optional-features rerun still pending on Windows PowerShell
+    # 5.1). 1 classify (reference-ssh-host). 2 normalize-network (HomeNetOps
+    # static DHCP + Unbound override; LAN-inbound-TCP blackhole remediated;
+    # firewall scoped to Private / 192.168.0.0/24). 3 install-shell-lane
+    # (mamawork-ssh-key-bootstrap + mamawork-sshd-admin-match-block +
+    # macbook-ssh-conf-d-streamline all applied; MacBook real-auth as
+    # mamawork\jeffr verified). Next packet
+    # `mamawork-terminal-admin-baseline` opens phase 4 harden.
+    classification: reference-ssh-host
+    # MAMAWORK is the canonical Windows SSH implementation against which
+    # future Windows hosts converge. Phase 5 off-lan is cloudflare-blocked
+    # pending the Cloudflare Windows multi-user rebaseline (captured in
+    # blocked_items[] and outbound_handback_requests).
 
     remote_admin_paths:
       - kind: ssh
