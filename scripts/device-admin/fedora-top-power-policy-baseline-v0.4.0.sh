@@ -1,9 +1,20 @@
 #!/usr/bin/env bash
-# fedora-top-power-policy-baseline-v0.3.0.sh
+# fedora-top-power-policy-baseline-v0.4.0.sh
 #
 # Read-only baseline of fedora-top power/suspend posture, prompted by
 # the 2026-05-14 19:23:29 AKDT suspend mid-SSH-session that dropped
 # an in-progress shelltutor edit. No host mutation.
+#
+# v0.4.0 (2026-05-15): Fix diagnostic fallback semantics.
+# logind.conf(5): when HandleLidSwitchExternalPower is empty (the
+# systemd default), behavior falls through to HandleLidSwitch.
+# v0.3.0 captured the correct raw values but its case statement
+# only matched the LITERAL value of HandleLidSwitchExternalPower,
+# so an empty value (which is the actual cause of the 2026-05-14
+# 19:23 suspend incident) wrongly reported
+# lid_close_on_ac_will_suspend=false. v0.4.0 resolves the empty
+# value to HandleLidSwitch before evaluating the case. This makes
+# the diagnostic match observed behavior.
 #
 # v0.3.0 (2026-05-15): Fix logind property reader. v0.2.0 used
 # `systemctl show systemd-logind --no-pager` and parsed `key=value`
@@ -186,8 +197,14 @@ suspend_state=$(get_prop SuspendState)
 # Diagnostic: is HandleLidSwitchExternalPower currently set to a
 # value that would cause suspend on lid close? Capture both the
 # raw value and a boolean for outer consumers.
+#
+# logind.conf(5): empty HandleLidSwitchExternalPower falls through
+# to HandleLidSwitch. v0.4.0: resolve empty to HandleLidSwitch
+# before evaluating, so the diagnostic reflects observed behavior.
+lid_ext_effective="$handle_lid_switch_ext"
+[ -z "$lid_ext_effective" ] && lid_ext_effective="$handle_lid_switch"
 lid_ext_will_suspend=false
-case "$handle_lid_switch_ext" in
+case "$lid_ext_effective" in
     suspend|suspend-then-hibernate|hibernate|hybrid-sleep) lid_ext_will_suspend=true ;;
 esac
 
