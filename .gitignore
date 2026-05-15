@@ -38,3 +38,11 @@ package-lock.json
 
 # Working reference material for in-flight migrations (not committed)
 github-mcp-docs/
+
+# Device-admin live-host evidence directories
+# (e.g. docs/device-admin/<device>-baseline-yyyymmddThhmmssZ/).
+# Per docs/device-admin/windows-terminal-admin-spec.md, raw evidence
+# stays outside the repo. This pattern prevents accidental commits if
+# an operator copies an evidence dir into the working tree for review.
+# Apply records (*.md) are unaffected; they belong in git.
+docs/device-admin/*-[0-9]*T[0-9]*Z/

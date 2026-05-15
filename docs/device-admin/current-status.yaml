@@ -551,7 +551,7 @@ devices:
         packet_doc: docs/device-admin/desktop-2jj3187-terminal-admin-baseline-2026-05-15.md
         apply_record: docs/device-admin/desktop-2jj3187-terminal-admin-baseline-apply-2026-05-15.md
         packet_commit: 3eea6e1
-        apply_commit: pending
+        apply_commit: 00ee787
         applied_at: 2026-05-15T03:26:52Z
         applied_by: "DESKTOP-2JJ3187\\jeffr (elevated PowerShell, pwsh 7.6.1)"
         outcome: >-
@@ -718,7 +718,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-15T03:35:00Z
-    latest_system_config_commit: pending
+    latest_system_config_commit: 00ee787
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns
