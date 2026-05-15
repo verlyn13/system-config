@@ -46,7 +46,7 @@
 #                             stays in `blocked_items`.
 
 schema_version: 1
-last_updated: 2026-05-15T03:10:00Z
+last_updated: 2026-05-15T03:40:00Z
 
 devices:
   - device: fedora-top
@@ -547,62 +547,75 @@ devices:
           `ssh -G desktop-2jj3187` resolves to jeffr / 192.168.0.217 /
           HostKeyAlias 192.168.0.217 / new IdentityFile.
 
+      - name: desktop-2jj3187-terminal-admin-baseline
+        packet_doc: docs/device-admin/desktop-2jj3187-terminal-admin-baseline-2026-05-15.md
+        apply_record: docs/device-admin/desktop-2jj3187-terminal-admin-baseline-apply-2026-05-15.md
+        packet_commit: 3eea6e1
+        apply_commit: pending
+        applied_at: 2026-05-15T03:26:52Z
+        applied_by: "DESKTOP-2JJ3187\\jeffr (elevated PowerShell, pwsh 7.6.1)"
+        outcome: >-
+          Read-only Phase 0 baseline ran cleanly. Confirmed: admin token
+          high-integrity, OpenSSH Server absent (no sshd.exe, no
+          sshd_config, no administrators_authorized_keys), TCP/22 absent
+          and TCP/3389 listening, network profile Private on the live
+          Ethernet, Jefahnierocks RDP LAN rules present, no SSH/WinRM
+          rules, BitLocker Off, Defender RealTimeProtection on with
+          current signatures, hibernation unavailable, wake-armed
+          devices include the Intel I211 NIC. Findings that differ
+          from baseline §Known Facts: OS build is 26200 (was 26100
+          at intake; Windows Update advanced — benign), SecureBootUEFI
+          is False (informational, out of scope here), two cloudflared
+          services (pre-existing, separate future packet),
+          Get-WindowsCapability "Class not registered" under pwsh 7.6.1
+          (anticipated by baseline §Stop Rules; addressed in install
+          v0.3.0). Evidence directory on the host
+          C:\Users\Public\Documents\jefahnierocks-device-admin\desktop-2jj3187-baseline-20260515T032652Z\
+          (00-run.txt … 11-security.txt). Stop rules observed; no
+          live-host change.
+
     # Historical 2026-05-12 RDP/power apply and 2026-05-13 HomeNetOps
     # DHCP/DNS/WoL are recorded in docs/device-admin/windows-pc.md and
     # docs/device-admin/onboarding-2026-05-12.md. They predate this
     # YAML's packet shape and are not back-filled.
 
     prepared_packets:
-      - name: desktop-2jj3187-terminal-admin-baseline
-        packet_doc: docs/device-admin/desktop-2jj3187-terminal-admin-baseline-2026-05-15.md
-        prepared_at: 2026-05-15T02:30:00Z
-        state: approval-required
-        approval_phrase_excerpt: >-
-          Run the desktop-2jj3187-terminal-admin-baseline packet
-          read-only from an elevated PowerShell session on
-          DESKTOP-2JJ3187. Capture services, firewall, accounts,
-          OpenSSH state (expected: not installed), scheduled tasks
-          by principal, optional features, BitLocker (expected: off)
-          / Defender / Secure Boot posture, and power/wake state.
-          Write evidence to local jefahnierocks-device-admin path.
-          No live host change.
-
       - name: desktop-2jj3187-ssh-lane-install
         packet_doc: docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md
         prepared_at: 2026-05-15T02:30:00Z
-        last_updated: 2026-05-15T03:08:00Z
+        last_updated: 2026-05-15T03:35:00Z
         state: approval-required
-        packet_version: 0.2.0
+        packet_version: 0.3.0
         prerequisite: >-
           1Password item
           op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
-          must exist. ✅ Done 2026-05-14T19:05:13-08:00 (1P-generated
-          ED25519, fingerprint
-          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s).
-          Public key body now pinned inline in §S5 of the packet for
-          paste-and-run. Phase 0 baseline apply record should still
-          land before this install applies.
+          exists (1P-generated ED25519, fingerprint
+          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s, created
+          2026-05-14T19:05:13-08:00). Public key body pinned inline in
+          §S5. Phase 0 baseline apply record committed
+          (desktop-2jj3187-terminal-admin-baseline-apply-2026-05-15.md).
+        shell_choice: >-
+          v0.3.0 adds a §Shell Choice section directing operators to
+          launch from Windows PowerShell 5.1 (powershell.exe), not pwsh
+          7. The Phase 0 baseline confirmed Get-WindowsCapability and
+          Add-WindowsCapability throw "Class not registered" under
+          pwsh 7.6.1 on build 26200. §S1 rewritten to shell DISM-backed
+          cmdlets through powershell.exe defensively so the packet
+          works regardless of which shell the operator launched.
         approval_phrase_excerpt: >-
-          Apply the desktop-2jj3187-ssh-lane-install packet on
-          DESKTOP-2JJ3187 from an elevated PowerShell session as
-          jeffr. Installs OpenSSH.Server capability, starts sshd
-          Automatic, adds Jefahnierocks SSH LAN TCP 22 Private rule,
-          ensures the Match Group administrators block, installs the
-          hardening drop-in, pastes the pinned public key into
-          administrators_authorized_keys with the
-          Administrators+SYSTEM ACL, fingerprint match verified
-          against the 1P-source value, sshd -t passes, sshd restarted,
-          MacBook real-auth probe verifies hostname/username.
+          Apply the desktop-2jj3187-ssh-lane-install v0.3.0 packet on
+          DESKTOP-2JJ3187 from an elevated Windows PowerShell 5.1
+          session as jeffr. Installs OpenSSH.Server capability via
+          WinPS 5.1, starts sshd Automatic, ensures the Match Group
+          administrators block, installs the hardening drop-in, pastes
+          the pinned public key into administrators_authorized_keys
+          with the Administrators+SYSTEM ACL, fingerprint match
+          verified against the 1P-source value, adds Jefahnierocks SSH
+          LAN TCP 22 Private rule, sshd -t passes, sshd restarted.
+          Operator MacBook then runs ssh desktop-2jj3187 'cmd /c
+          "hostname && whoami"' for the real-auth probe.
 
     blocked_items:
-      - item: desktop-2jj3187-baseline-apply-record-pending
-        owner: human + system-config
-        notes: >-
-          Phase 0 baseline packet is prepared; operator runs it on
-          DESKTOP-2JJ3187 from elevated PowerShell, returns the
-          redacted evidence, and system-config records an apply doc.
-          Apply record commit goes here.
-
       - item: desktop-2jj3187-warp-enrollment-cutover-pending
         owner: cloudflare-dns + human
         notes: >-
@@ -619,6 +632,14 @@ devices:
           target state for this slice. Separate future packet if/when
           recovery posture becomes a requirement.
 
+      - item: desktop-2jj3187-secure-boot-decision
+        owner: human
+        notes: >-
+          Phase 0 baseline 2026-05-15 reported SecureBootUEFI=False.
+          Out of scope for the Phase 3 SSH lane install. Decide
+          intentional / defer / future-enable as part of a separate
+          hardening packet.
+
       - item: desktop-2jj3187-backup-plan
         owner: human
         notes: >-
@@ -627,18 +648,41 @@ devices:
       - item: desktop-2jj3187-cloudflared-cleanup
         owner: human
         notes: >-
-          Duplicate stopped cloudflared services from the original
-          intake report still exist. Cleanup deferred to a follow-up
-          packet after Cloudflare ownership is confirmed.
+          Two cloudflared services present (case-different names
+          `cloudflared` and `Cloudflared`, both Stopped/Automatic).
+          Re-confirmed in Phase 0 baseline. Cleanup deferred to a
+          follow-up packet after Cloudflare ownership is confirmed.
+
+      - item: desktop-2jj3187-baseline-template-scheduled-tasks-elision
+        owner: system-config + future packet
+        notes: >-
+          The baseline template's §08 scheduled-tasks block used
+          Format-Table -AutoSize which elided the Principal column at
+          terminal width. The DESKTOP-2JJ3187 baseline ran without a
+          blocking issue (presence inferred from path SIDs), but the
+          template should be amended to use
+          `Format-Table -Property Principal,TaskPath,TaskName,State`
+          + `Out-String -Width 240` before the next Windows-host
+          instantiation. Not blocking for DESKTOP-2JJ3187.
+
+      - item: desktop-2jj3187-build-26200-vs-26100-noted
+        owner: documented
+        notes: >-
+          Phase 0 baseline confirmed OS build 26200 (24H2/25H2 era),
+          not 26100 from the 2026-05-12 intake. Benign; OpenSSH.Server
+          capability still ships. Captured here for the apply-record
+          trail.
 
     approval_required:
       - action: desktop-2jj3187-terminal-admin-baseline
-        state: approval-required
-        approval_phrase: "See docs/device-admin/desktop-2jj3187-terminal-admin-baseline-2026-05-15.md 'Approval Phrase' section. Read-only Phase 0 from elevated PowerShell on the host. No live change."
+        state: applied
+        applied_at: 2026-05-15T03:26:52Z
+        notes: "See applied_packets[]."
 
       - action: desktop-2jj3187-ssh-lane-install
         state: approval-required
-        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md v0.2.0 'Approval Phrase' section. Greenfield Windows OpenSSH install + admin key (pinned inline, fingerprint SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s) + Match block + firewall rule. 1Password item prerequisite is satisfied."
+        packet_version: 0.3.0
+        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md v0.3.0 'Approval Phrase' section. Launch from Windows PowerShell 5.1 (powershell.exe), NOT pwsh 7. Greenfield Windows OpenSSH install + admin key (pinned inline, fingerprint SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s) + Match block + firewall rule. §S1 routes DISM-backed cmdlets through WinPS 5.1 defensively to work around the Class-not-registered issue under pwsh 7 on build 26200."
 
       - action: macbook-ssh-conf-d-desktop-2jj3187
         state: applied
@@ -655,30 +699,26 @@ devices:
 
     next_recommended_action:
       summary: >-
-        MacBook-side prep complete (1P item minted, chezmoi conf.d
-        applied, ssh -G resolves correctly, on-disk public-key
-        fingerprint matches 1P-source). Next: hand off
-        desktop-2jj3187-terminal-admin-baseline (read-only Phase 0)
-        and desktop-2jj3187-ssh-lane-install (Phase 3 greenfield)
-        to an agent or operator running on the DESKTOP-2JJ3187
-        Windows host. Baseline first so install assumptions are
-        confirmed against actual state. WARP enrollment is blocked
-        on cloudflare-dns Windows multi-user rebaseline and is
-        independent of the SSH lane work.
-      preferred_packet: desktop-2jj3187-terminal-admin-baseline
+        Phase 0 baseline applied and verified clean against
+        windows-pc.md / install-packet §Expected Findings. MacBook
+        side prep is complete (1P item minted, chezmoi conf.d
+        applied). Install packet is bumped to v0.3.0 with §Shell
+        Choice (use Windows PowerShell 5.1, not pwsh 7) and §S1
+        defensive shell-out for DISM cmdlets. Hand-off green-lights
+        the DESKTOP-2JJ3187 agent to proceed with Step 2 (Phase 3
+        SSH lane install) from a fresh elevated WinPS 5.1 session.
+        After §S7 completes on the host, operator MacBook runs the
+        real-auth probe.
+      preferred_packet: desktop-2jj3187-ssh-lane-install
       preferred_packet_status: approval-required
+      preferred_packet_version: 0.3.0
       preferred_packet_blockers:
-        - slug: hand-off-to-windows-side-agent
-          note: "Run from elevated PowerShell on DESKTOP-2JJ3187. Read-only; no Windows host change."
-      secondary_packet: desktop-2jj3187-ssh-lane-install
-      secondary_packet_status: approval-required
-      secondary_packet_blockers:
-        - slug: baseline-apply-record-pending
-          note: "Phase 0 baseline apply record should be committed before this lane install applies."
+        - slug: launch-from-winps-5-1
+          note: "Launch from Windows PowerShell 5.1 (powershell.exe), not pwsh 7. Packet's defensive shell-out works either way, but WinPS 5.1 is the canonical choice."
       handback_to_human: true
 
-    last_verified: 2026-05-15T03:08:00Z
-    latest_system_config_commit: f0fb9c1
+    last_verified: 2026-05-15T03:35:00Z
+    latest_system_config_commit: pending
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns

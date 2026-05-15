@@ -3,7 +3,7 @@ title: DESKTOP-2JJ3187 SSH Lane Install Packet - 2026-05-15
 category: operations
 component: device_admin
 status: prepared
-version: 0.2.0
+version: 0.3.0
 last_updated: 2026-05-15
 tags: [device-admin, desktop-2jj3187, windows, openssh, admin-key, firewall, sshd-config, phase-3]
 priority: high
@@ -90,6 +90,37 @@ Confirm before scheduling apply:
 Not touched: accounts, groups, ACLs outside the two SSH paths, BitLocker,
 Defender, RDP rules, WinRM, scheduled tasks, codex sandbox accounts,
 network profile, DNS, DHCP, OPNsense, Cloudflare, WARP, 1Password.
+
+## Shell Choice (v0.3.0)
+
+**Launch this packet from Windows PowerShell 5.1 (`powershell.exe`),
+not PowerShell 7 (`pwsh.exe`).**
+
+The Phase 0 baseline on 2026-05-15 confirmed that DISM-backed
+cmdlets (`Get-WindowsCapability`, `Add-WindowsCapability`) throw
+`Class not registered` under pwsh 7.6.1 on Windows build 26200.
+The MAMAWORK 2026-05-13 intake hit the same problem. §S1 below
+shells the DISM calls through `powershell.exe` defensively so the
+packet works either way, but launching from WinPS 5.1 from the
+start avoids the indirection and is the canonical choice.
+
+Open elevated PowerShell:
+
+1. Start menu → search `Windows PowerShell` (NOT PowerShell 7).
+2. Right-click → **Run as administrator**.
+3. Confirm:
+
+```powershell
+$PSVersionTable.PSVersion
+```
+
+Expected: `Major=5  Minor=1  Build=...` (a 5.1.x line). If you see
+7.x, close the window and re-open Windows PowerShell.
+
+The rest of the packet uses cmdlets available in both WinPS 5.1 and
+pwsh 7 (`Set-Service`, `New-NetFirewallRule`, `Get-Acl`/`Set-Acl`,
+`sshd.exe -T`, etc.) and runs identically in either shell once §S1
+clears.
 
 ## Preflight
 
@@ -184,31 +215,64 @@ Get-NetFirewallRule -DisplayName 'Jefahnierocks SSH LAN TCP 22' -ErrorAction Sil
 
 ## Step S1 — Install OpenSSH.Server Windows Capability
 
-```powershell
-"step:      S1 install OpenSSH.Server" | Write-Evidence -File '00-run.txt'
+DISM-backed cmdlets are routed through Windows PowerShell 5.1 via
+`powershell.exe -Command` so the call succeeds whether the operator
+launched this packet from WinPS 5.1 or from pwsh 7. The Phase 0
+baseline on 2026-05-15 confirmed the `Class not registered` failure
+mode under pwsh 7.6.1 on build 26200; this shell-out works around it.
 
+```powershell
+"step:      S1 install OpenSSH.Server (DISM via WinPS 5.1)" | Write-Evidence -File '00-run.txt'
+
+$winPS = 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+
+# Capability state query — single-quoted here-string, no outer
+# interpolation needed.
+$queryJson = & $winPS -NoProfile -NoLogo -Command @'
+$ErrorActionPreference = 'Stop'
 $cap = Get-WindowsCapability -Online -Name 'OpenSSH.Server*' |
          Select-Object -First 1
-
 if (-not $cap) {
-  "no OpenSSH.Server capability returned by DISM — halt" | Write-Evidence -File '00-run.txt'
+  Write-Error 'no OpenSSH.Server capability returned by DISM'
+  exit 1
+}
+$cap | Select-Object Name, State | ConvertTo-Json -Compress
+'@ 2>&1
+
+if ($LASTEXITCODE -ne 0 -or -not $queryJson) {
+  "WinPS 5.1 Get-WindowsCapability failed: $queryJson" | Write-Evidence -File '00-run.txt'
   throw "OpenSSH.Server capability not enumerable on this host."
 }
 
+$cap = $queryJson | ConvertFrom-Json
+"capability:   $($cap.Name)" | Write-Evidence -File '00-run.txt'
+"state:        $($cap.State)" | Write-Evidence -File '00-run.txt'
+
 if ($cap.State -eq 'Installed') {
-  "OpenSSH.Server already Installed — skip" | Write-Evidence -File '00-run.txt'
+  "OpenSSH.Server already Installed — skip Add-WindowsCapability" | Write-Evidence -File '00-run.txt'
 } elseif ($cap.State -eq 'NotPresent') {
   "installing $($cap.Name) ..." | Write-Evidence -File '00-run.txt'
-  $r = Add-WindowsCapability -Online -Name $cap.Name
-  $r | Format-List | Out-String | Write-Evidence -File '00-run.txt'
+  # Double-quoted here-string: outer expands $($cap.Name), inner
+  # interprets escaped `$ErrorActionPreference literally.
+  $addJson = & $winPS -NoProfile -NoLogo -Command @"
+`$ErrorActionPreference = 'Stop'
+Add-WindowsCapability -Online -Name '$($cap.Name)' | ConvertTo-Json -Compress
+"@ 2>&1
+  if ($LASTEXITCODE -ne 0 -or -not $addJson) {
+    "WinPS 5.1 Add-WindowsCapability failed: $addJson" | Write-Evidence -File '00-run.txt'
+    throw "Add-WindowsCapability failed."
+  }
+  $addResult = $addJson | ConvertFrom-Json
+  "Add-WindowsCapability result: RestartNeeded=$($addResult.RestartNeeded)" | Write-Evidence -File '00-run.txt'
 } else {
   "OpenSSH.Server in unexpected state $($cap.State) — halt" | Write-Evidence -File '00-run.txt'
   throw "Unexpected OpenSSH.Server state: $($cap.State)"
 }
 
-Get-WindowsCapability -Online -Name 'OpenSSH.Server*' |
-  Select-Object Name,State | Format-Table -AutoSize | Out-String |
-  Write-Evidence -File '00-run.txt'
+# Post-install verification — also via WinPS 5.1.
+$verify = & $winPS -NoProfile -NoLogo -Command `
+  "Get-WindowsCapability -Online -Name 'OpenSSH.Server*' | Select-Object Name,State | Format-Table -AutoSize | Out-String" 2>&1
+$verify | Write-Evidence -File '00-run.txt'
 ```
 
 ## Step S2 — Configure `sshd` Service
