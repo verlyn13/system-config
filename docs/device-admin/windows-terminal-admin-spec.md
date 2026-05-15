@@ -3,9 +3,9 @@ title: Windows Terminal Administration Spec
 category: operations
 component: device_admin
 status: active
-version: 0.3.0
+version: 0.4.0
 last_updated: 2026-05-15
-tags: [device-admin, windows, openssh, powershell, terminal-admin, evidence]
+tags: [device-admin, windows, openssh, powershell, terminal-admin, evidence, lifecycle]
 priority: high
 ---
 
@@ -30,6 +30,45 @@ Authoritative state lives in:
 This spec defines procedure. It does not authorize a live change by itself.
 Live host changes still require a scoped packet or a clearly approved terminal
 session with evidence capture.
+
+## Invariants And Future-State
+
+### Invariants
+
+These do not vary across Windows hosts in this fleet:
+
+- **One operator admin user per device.** Do not share an admin identity
+  across hosts. MAMAWORK uses `MAMAWORK\jeffr`; another host will have its
+  own intentional admin account name.
+- **One device-scoped 1Password SSH key per host.** The canonical item
+  pattern is `op://Dev/jefahnierocks-device-<device>-admin-ssh-verlyn13`.
+  Reusing a key across devices breaks rotation, incident scope, and the
+  per-device audit trail.
+- **Private key material stays in 1Password on the operator MacBook.** The
+  private half is never installed on a managed Windows host. Only the public
+  key body reaches Windows.
+- **No public WAN exposure for SSH, RDP, WinRM, or any remote-admin
+  service.** LAN or private-overlay only; Cloudflare Access in front of a
+  Tunnel is the only sanctioned off-LAN path and is owned by `cloudflare-dns`.
+
+### Future-State (Deferred)
+
+These are intentionally out of scope for the current household-scale fleet.
+They become candidate work only if the fleet scales materially or a
+managed-device policy requires them:
+
+- **Windows LAPS / Intune LAPS** for local admin password rotation. The
+  current model is 1Password-held local admin credentials with manual
+  rotation. LAPS is the right direction only if Entra/Intune is adopted.
+- **Microsoft Entra / Intune join** for centralized policy and managed-device
+  enrollment. Not justified at 2–3 devices.
+- **Native PowerShell remoting over SSH subsystem** (Mode B,
+  `New-PSSession -HostName ... -SSHTransport`). Mode A
+  (`ssh host 'pwsh -Command ...'`) covers all current needs and avoids the
+  WindowsApps-versioned `pwsh.exe` path stability problem.
+- **Cloudflare Tunnel + Access for SSH** as the off-LAN admin path. Recorded
+  as the target architecture in `cloudflare-dns-handback-ingest-2026-05-14.md`;
+  not implemented.
 
 ## Management Lanes
 
@@ -65,6 +104,49 @@ Current fleet posture:
 | MAMAWORK | SSH over LAN works from the MacBook as `MAMAWORK\jeffr`; `ssh mamawork` is streamlined and explicit PowerShell command execution is ready. | Continue with scoped read-only baselines and hardening packets. |
 | DESKTOP-2JJ3187 | LAN RDP is verified; OpenSSH Server is intentionally not installed or active. | If shell administration is needed, draft a Windows OpenSSH packet that follows this spec rather than copying MAMAWORK artifacts blindly. |
 | future Windows PC | Not onboarded. | Start from the intake/handoff pattern, then converge on this same lane naming, evidence, and stop rules. |
+
+## Device Lifecycle
+
+Each Windows host moves through the same seven phases. Phase status per
+device lives in `current-status.yaml.devices[].lifecycle_phase`, and the
+classification label lives in `current-status.yaml.devices[].classification`.
+
+| Phase | Name | Goal | Typical packet shape |
+|---|---|---|---|
+| 0 | `intake` | Capture non-secret current state under a `read-only-probe` session. Identify Windows edition/version/build, accounts, services, firewall profile and rules, OpenSSH state, scheduled tasks by principal, BitLocker/Defender state, optional features. | `<device>-terminal-admin-baseline` |
+| 1 | `classify` | Assign a `classification` label and decide whether the host converges on the MAMAWORK SSH model or stays GUI-only. | Decision recorded in `current-status.yaml`; no live change. |
+| 2 | `normalize-network` | Confirm hostname, DNS, DHCP, network profile (Private), and firewall scope (LAN/private only). HomeNetOps owns DHCP and Unbound; this repo owns Windows profile and firewall rule names. | HomeNetOps handback for DHCP/DNS; Windows packet for profile and scoped firewall rules. |
+| 3 | `install-shell-lane` | Install/verify OpenSSH Server, install the device-scoped admin public key into `administrators_authorized_keys`, restore the standard `Match Group administrators` block, and prove MacBook auth as the intended admin user. | `<device>-ssh-key-bootstrap`, `<device>-sshd-admin-match-block`, `macbook-ssh-conf-d-streamline` |
+| 4 | `harden` | Clean stale `sshd_config`, decide `StrictModes` / `AllowGroups` / `LogLevel`, remove legacy SSH and firewall surface, reconcile per-user `authorized_keys`, and decide per-user privilege cleanup. | `<device>-ssh-hardening`, `<device>-privilege-cleanup` |
+| 5 | `off-lan` | Enroll in Cloudflare WARP under the Windows multi-user model (admin / adult / kid profile separation). Optional: front SSH with a Cloudflare Tunnel + Access app. | Blocked on `cloudflare-dns` Pulumi rebaseline; packet draft only. |
+| 6 | `recovery` | Decide BitLocker / Secure Boot stance, define backup target and restore drill, document a local-admin break-glass path. | `<device>-bitlocker-securboot`, `<device>-backup-plan`, `<device>-defender-exclusions-audit` |
+
+### Classification Labels
+
+| Label | Meaning |
+|---|---|
+| `reference-ssh-host` | Converged on the MAMAWORK SSH model. SSH is the primary admin lane; RDP is fallback. |
+| `rdp-only-host` | GUI/RDP is the primary admin lane by intentional decision. SSH is not installed and is not the next packet. |
+| `not-yet-onboarded` | No `system-config` per-device record yet. Pre-intake. |
+| `legacy-risk-host` | Host has known unmanaged admin surface or legacy credentials that block convergence; needs a remediation packet before any normal phase work. |
+| `cloudflare-ready` | Phase 5 can start; `cloudflare-dns` policy supports the host's profile assignment. |
+| `cloudflare-blocked` | Phase 5 is gated on `cloudflare-dns` work (typically Windows multi-user rebaseline). |
+
+### Phase Completion And Skipping
+
+A phase is "complete" when the named packet for that phase is applied
+and its apply record is committed. A phase can be explicitly skipped —
+for example DESKTOP-2JJ3187 phase 3 is intentionally not started
+because the host is RDP-only — but the skip must be recorded as a note
+on the device's `current-status.yaml` block.
+
+Current per-device phase (2026-05-15):
+
+| Device | `lifecycle_phase` | `classification` | Notes |
+|---|---|---|---|
+| MAMAWORK | 3 complete; entering 4 | `reference-ssh-host` | Cloudflare phase 5 `cloudflare-blocked` pending multi-user rebaseline. |
+| DESKTOP-2JJ3187 | 2 complete; 3 intentionally skipped | `rdp-only-host` | Reclassify to `reference-ssh-host` only if an OpenSSH packet is explicitly drafted. |
+| future Windows PC | 0 | `not-yet-onboarded` | Phase 0 read-only intake first; do not copy MAMAWORK artifacts blindly. |
 
 ## Session Classes
 
