@@ -174,7 +174,7 @@ Keep the same source-of-truth split used by the rest of `system-config`.
 | Scope | Owner | Examples | Rules |
 |---|---|---|---|
 | System-level host posture | Human/operator plus macOS and installed apps; documented here when durable | Firewall, Sharing, WARP, OrbStack, Wireshark ChmodBPF, LaunchDaemons | Verify live state before changing. Avoid persisting secrets. Prefer reversible changes with artifact-backed before/after evidence. |
-| User-level managed config | `system-config` | `home/`, `home/dot_config/1Password/ssh/agent.toml.tmpl`, `home/dot_ssh/`, `home/dot_local/bin/`, `scripts/sync-mcp.sh`, user-level MCP baseline | Store structure and `op://` references only. Never store resolved secret values. Run `chezmoi apply --dry-run` before apply. |
+| User-level managed config | `system-config` | `home/`, `home/dot_config/1Password/ssh/agent.toml.tmpl`, `home/private_dot_ssh/`, `home/dot_local/bin/`, `scripts/sync-mcp.sh`, user-level MCP baseline | Store structure and `op://` references only. Never store resolved secret values. Run `chezmoi apply --dry-run` before apply. |
 | User-level secret store | 1Password account `my.1password.com`, vault `Dev` | SSH Key items, `github-mcp`, `github-dev-tools`, MCP API keys | Item and field names are stable contracts once referenced. Agents may verify and read when needed; creating/reorganizing items remains human-directed. The `op` CLI cannot import or edit existing SSH Key items — that is a desktop-app workflow. |
 | Project-level config | Each project repo | `.mise.toml`, `.envrc`, `.env.1p`, `.mcp.json`, compose files, project docs | Project-specific runtime, env, and service exposure belong in the project. Do not solve project-local service exposure by broadening global host config. |
 | Machine/service identities | Owning infra repo or platform | deploy keys, GitHub Apps, OIDC, workload identities, service tokens | Do not reuse the human workstation 1Password SSH agent as unattended automation identity. |
@@ -252,7 +252,7 @@ already exists.
   `ssh.onepassword.vaults`. To add a vault, add it to the YAML list and
   re-apply chezmoi. Stanza order is the order keys are offered.
 - **`.1password.pub` file rendering.** Pattern at
-  `home/dot_ssh/id_ed25519_happy_patterns.1password.pub.tmpl`:
+  `home/private_dot_ssh/id_ed25519_happy_patterns.1password.pub.tmpl`:
   ```go
   {{ onepasswordRead "op://Dev/<item-name>/public key" -}}
   ```
@@ -265,7 +265,7 @@ already exists.
   — this is the staged-cutover behavior, not a bug. Add an entry, render
   the `.pub` template, then re-apply.
 - **`allowed_signers` list.** `home/.chezmoidata.yaml` `ssh.allowed_signers`
-  is rendered through `home/dot_ssh/allowed_signers.tmpl`. Append-only on
+  is rendered through `home/private_dot_ssh/allowed_signers.tmpl`. Append-only on
   rotation: keep old entries so historical signed commits stay verifiable.
   Each entry has `principal`, `public_key`, optional `comment`.
 - **`op://` env manifests.** `home/dot_config/mcp/private_common.env`
@@ -363,7 +363,7 @@ The desired sequence is:
      key; still requires desktop-app workflow for importing private material)
    - **Archive and remove** (stale / unknown after provenance review)
 4. Stage nonsecret public-key paths in `home/.chezmoidata.yaml` and
-   `home/dot_ssh/conf.d/*.conf.tmpl`.
+   `home/private_dot_ssh/private_conf.d/*.conf.tmpl`.
 5. Apply only after `chezmoi apply --dry-run`.
 6. Verify auth and signing behavior.
 7. Remove or archive local private-key files only after they are no longer
@@ -593,7 +593,7 @@ Task order:
      not required immediately: **import via 1Password desktop** as SSH Key
      items.
 3. **Render `.1password.pub` files** from 1Password only where needed by a
-   matching `home/dot_ssh/*.1password.pub.tmpl`.
+   matching `home/private_dot_ssh/*.1password.pub.tmpl`.
 4. **Add `ssh.host_migrations` entries** one host category at a time. The
    existing entries in `chezmoidata.yaml` reference `.pub` files that may
    not exist yet — those entries are inert until the corresponding `.pub`
@@ -620,7 +620,7 @@ primitive it touches. Do not skip step 1 — it is the rollback session.
    the 1Password desktop app (CLI cannot import private material).
 
 3. **Add the `.pub` template** at
-   `home/dot_ssh/<filename>.1password.pub.tmpl` containing:
+   `home/private_dot_ssh/<filename>.1password.pub.tmpl` containing:
    ```go
    {{ onepasswordRead "op://Dev/<item-title>/public key" -}}
    ```
@@ -683,7 +683,7 @@ primitive it touches. Do not skip step 1 — it is the rollback session.
 
 If any step fails, do not advance. The rollback session retains full
 access; restoring chezmoi state is `git checkout -- home/.chezmoidata.yaml
-home/dot_ssh/<filename>.1password.pub.tmpl && chezmoi apply`.
+home/private_dot_ssh/<filename>.1password.pub.tmpl && chezmoi apply`.
 
 Multi-vault `agent.toml` pattern (if SSH Key items end up split across
 vaults):
@@ -704,7 +704,7 @@ the most-frequently-used identity first.
 `allowed_signers` lifecycle:
 
 - 1Password does not maintain `~/.ssh/allowed_signers` automatically. It
-  is user-maintained, and `home/dot_ssh/allowed_signers.tmpl` is the
+  is user-maintained, and `home/private_dot_ssh/allowed_signers.tmpl` is the
   managed source.
 - On rotation: **append** the new key to `allowed_signers`. Do not delete
   old entries — old commits remain verifiable only as long as the old

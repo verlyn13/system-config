@@ -77,7 +77,7 @@ The base `~/.ssh/config` managed by this repo should remain small and should
 continue to include `~/.ssh/conf.d/*.conf` for host-specific modules.
 
 Nonsecret host-specific modules may be managed by this repo under
-`home/dot_ssh/conf.d/`. Machine-local or secret-bearing SSH state remains
+`home/private_dot_ssh/private_conf.d/`. Machine-local or secret-bearing SSH state remains
 unmanaged.
 
 The managed baseline is intentionally staged:

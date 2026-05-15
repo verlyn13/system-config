@@ -41,7 +41,7 @@ system-config/
 │   │   ├── mcp/                # op-backed MCP secrets manifest (common.env)
 │   │   ├── 1Password/          # 1P SSH agent config
 │   │   └── starship.toml.tmpl
-│   ├── dot_ssh/                # SSH client policy (config, conf.d, allowed_signers)
+│   ├── private_dot_ssh/        # SSH client policy (config, private_conf.d/, allowed_signers); private_ prefix preserves 0700
 │   └── dot_local/bin/          # ng-doctor, system-update, MCP wrappers
 ├── iterm2/
 │   ├── profiles/               # Dynamic profile JSONs
