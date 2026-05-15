@@ -2,23 +2,39 @@
 title: MAMAWORK LAN RDP Implementation Packet - 2026-05-14
 category: operations
 component: device_admin
-status: applied-host-side-lan-unreachable
-version: 0.2.0
+status: applied
+version: 0.3.0
 last_updated: 2026-05-14
 tags: [device-admin, mamawork, windows, rdp, firewall, lan, power]
 priority: high
 ---
 
+> **2026-05-14 v0.3.0 changes**:
+> - The v0.2.0 `Write-Evidence` patch fixed the writer (Add-Content
+>   atomic write replacing the Tee-Object piping) but left the
+>   call-site form `Format-List | Out-String | Write-Evidence`
+>   broken because the function's `$Message` parameter had no
+>   `ValueFromPipeline` binding. The 2026-05-14 evening apply on
+>   MAMAWORK reproduced the gap. Function now declares
+>   `ValueFromPipeline=$true` with a `process` block so both
+>   positional and piped call forms capture the body correctly.
+> - Status moved from `applied-host-side-lan-unreachable` to
+>   `applied`. The LAN-inbound-TCP blackhole that was the gating
+>   issue at v0.2.0 was closed by
+>   [mamawork-inbound-tcp-blackhole-remediation-packet-2026-05-14.md](./mamawork-inbound-tcp-blackhole-remediation-packet-2026-05-14.md)
+>   (applied 2026-05-14T14:47:40 AKDT). LAN nc probes pending
+>   operator side; will be recorded in the remediation's apply
+>   record when returned.
+>
 > **2026-05-14 v0.2.0 changes**:
 > - Applied live on 2026-05-14T08:56:39-08:00. Host-side state PASS;
 >   LAN inbound TCP times out from MacBook + fedora-top. See
 >   [mamawork-lan-rdp-implementation-apply-2026-05-14.md](./mamawork-lan-rdp-implementation-apply-2026-05-14.md).
-> - `Write-Evidence` helper patched: previously
->   `Tee-Object -FilePath ... -Append` silently dropped piped
->   multi-line strings; replaced with a `Write-Evidence` function
->   that uses `Add-Content` with `-Value` carrying the
->   pre-formatted string. The packet text below shows the patched
->   form so the same bug does not recur on the next Windows host.
+> - `Write-Evidence` writer patched (incomplete; see v0.3.0 above):
+>   previously `Tee-Object -FilePath ... -Append` silently dropped
+>   piped multi-line strings; replaced with a `Write-Evidence`
+>   function that uses `Add-Content` with `-Value` carrying the
+>   pre-formatted string.
 
 # MAMAWORK LAN RDP Implementation Packet - 2026-05-14
 
@@ -170,13 +186,25 @@ $EvidencePath = Join-Path $EvidenceDir "mamawork-rdp-lan-$Timestamp.txt"
 New-Item -ItemType Directory -Path $EvidenceDir -Force | Out-Null
 
 function Write-Evidence {
-  # Patched v0.2.0: pipe-via-Tee-Object silently dropped multi-line
-  # strings during the 2026-05-14 apply on MAMAWORK. Switch to
-  # Add-Content with the full pre-formatted string as -Value so the
-  # write happens atomically and preserves all lines.
-  param([string]$Message)
-  Add-Content -Path $EvidencePath -Value $Message
-  Write-Host $Message
+  # Pipeline-aware (v0.3.0): the v0.2.0 patch fixed the writer
+  # (Add-Content replaces Tee-Object piping) but the documented
+  # call sites use `... | Format-List | Out-String | Write-Evidence`,
+  # which still dropped the piped state body because $Message had
+  # no ValueFromPipeline binding. The 2026-05-14 14:47 MAMAWORK
+  # apply confirmed the gap. Function now declares
+  # ValueFromPipeline=$true with a process block so both invocation
+  # forms (positional and piped) capture the body.
+  [CmdletBinding()]
+  param(
+    [Parameter(ValueFromPipeline = $true, Position = 0)]
+    [AllowEmptyString()]
+    [AllowNull()]
+    [string]$Message
+  )
+  process {
+    Add-Content -Path $EvidencePath -Value $Message
+    Write-Host $Message
+  }
 }
 
 Write-Evidence "timestamp: $(Get-Date -Format o)"
