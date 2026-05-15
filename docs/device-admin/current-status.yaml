@@ -163,28 +163,37 @@ devices:
 
       - name: fedora-top-power-policy-baseline
         packet_doc: docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md
-        executable: scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh
-        executable_sha256: 680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094
+        executable: scripts/device-admin/fedora-top-power-policy-baseline-v0.3.0.sh
+        executable_sha256: 05a8a6f90d82a2e155f9064e982f1d250480342f0518fa6a53ea743a64ea41ef
         executable_encoding: ASCII
         executable_shell: bash on fedora-top
         prepared_at: 2026-05-15T22:30:00Z
-        revised_at: 2026-05-15T16:30:00Z
+        revised_at: 2026-05-15T17:00:00Z
         state: approval-required
-        packet_version: 0.2.0
-        supersedes_version: 0.1.0
+        packet_version: 0.3.0
+        supersedes_version: 0.2.0
         supersession_reason: >-
-          v0.1.0 failed first run on fedora-top with
-          `jq: Argument list too long` (E2BIG) in step 10. The 7-day
-          journalctl -u systemd-logind output was passed whole as a
-          single `jq --arg raw "$events_raw"` and exceeded
-          getconf ARG_MAX. v0.2.0 truncates events_raw to the last
-          500 lines in shell BEFORE passing to jq. Counts still come
-          from the full output and remain accurate. Partial v0.1.0
-          evidence preserved on host at
-          /var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-20260515T162313Z/.
+          v0.2.0 ran end-to-end on fedora-top but captured all-empty
+          strings for every logind manager property
+          (HandleLidSwitch, HandleLidSwitchExternalPower,
+          HandleLidSwitchDocked, IdleAction, etc.). Root cause:
+          step 03 used `systemctl show systemd-logind --no-pager`
+          which on systemd 259 (Fedora 44) returns ONLY service-unit
+          properties (Id, ActiveState, FragmentPath, ...) and NOT
+          org.freedesktop.login1.Manager properties. Even
+          `systemctl show systemd-logind --property HandleLidSwitch --value`
+          returns empty. v0.3.0 switches get_prop to busctl
+          (org.freedesktop.login1 / /org/freedesktop/login1 /
+          org.freedesktop.login1.Manager) with a type-aware
+          extractor for `s "value"`, `t N`, `b true|false`. Same
+          defect existed in fedora-top-power-policy-apply-v0.1.0.sh
+          step S4 read-back; apply bumped to v0.2.0 in parallel.
+          v0.2.0 evidence (full run, broken values) preserved on
+          host at
+          /var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-20260515T164224Z/.
           Per linux-terminal-admin-spec.md §Packet-Defect Halt Rule:
-          serialization failure -> halt -> hand back for new packet
-          version.
+          state-normalization defect -> halt -> hand back for new
+          packet version.
         session_class: read-only-probe
         prerequisite: >-
           fedora-top must be online (TCP/22 reachable). Currently
@@ -192,7 +201,7 @@ devices:
           physically. First packet under linux-terminal-admin-spec.md
           v0.1.0.
         approval_phrase_excerpt: >-
-          Run fedora-top-power-policy-baseline-v0.2.0.sh via SSH from
+          Run fedora-top-power-policy-baseline-v0.3.0.sh via SSH from
           MacBook as verlyn13. Read-only; writes structured JSON
           evidence to /var/tmp/jefahnierocks-device-admin/.../. Return
           08-summary.json verbatim. Captures effective logind config,
@@ -202,13 +211,26 @@ devices:
 
       - name: fedora-top-power-policy-apply
         packet_doc: docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md
-        executable: scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh
-        executable_sha256: 98063978b27246823682cf155c4fde20cb92096f14943282571e883cbc36fdd3
+        executable: scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh
+        executable_sha256: a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2
         executable_encoding: ASCII
         executable_shell: bash on fedora-top
         prepared_at: 2026-05-15T22:30:00Z
+        revised_at: 2026-05-15T17:00:00Z
         state: approval-required-blocked-on-baseline
-        packet_version: 0.1.0
+        packet_version: 0.2.0
+        supersedes_version: 0.1.0
+        supersession_reason: >-
+          v0.1.0's step S4 read-back used
+          `systemctl show systemd-logind --property X --value` which
+          on systemd 259 (Fedora 44) returns empty for every
+          org.freedesktop.login1.Manager property. v0.1.0 was never
+          run end-to-end against a real host; the defect was
+          surfaced by the parallel baseline v0.2.0 -> v0.3.0
+          investigation. v0.2.0 switches read_logind_prop to the
+          same busctl helper used in baseline v0.3.0. Drop-in body,
+          target values, snapshot, reload (SIGHUP), and GNOME apply
+          logic are unchanged.
         session_class: scoped-live-change
         prerequisite: >-
           fedora-top-power-policy-baseline apply record committed,
@@ -217,12 +239,12 @@ devices:
           Mutates /etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf
           + per-user gsettings for wyn and verlyn13.
         approval_phrase_excerpt: >-
-          Apply fedora-top-power-policy-apply-v0.1.0.sh via SSH from
+          Apply fedora-top-power-policy-apply-v0.2.0.sh via SSH from
           MacBook as verlyn13. Drops logind config to ignore lid-close
           on AC and never idle-suspend; battery lid-close keeps the
           default suspend behavior. systemctl reload systemd-logind
-          (SIGHUP, no session drop). Read-back validation. Snapshot-
-          backed rollback.
+          (SIGHUP, no session drop). Read-back validation via busctl.
+          Snapshot-backed rollback.
 
     blocked_items:
       - item: fedora-top-suspend-mid-ssh-incident-2026-05-14
@@ -335,12 +357,12 @@ devices:
           Packet to be drafted separately.
       - action: fedora-top-power-policy-baseline
         state: approval-required
-        packet_version: 0.1.0
-        approval_phrase: "See docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md 'Approval Phrase' section. Read-only via SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh (sha256 680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094). Returns 08-summary.json. Prerequisite: fedora-top reachable (currently suspended; operator wakes physically)."
+        packet_version: 0.3.0
+        approval_phrase: "See docs/device-admin/fedora-top-power-policy-baseline-2026-05-15.md 'Approval Phrase' section. Read-only via SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-baseline-v0.3.0.sh (sha256 05a8a6f90d82a2e155f9064e982f1d250480342f0518fa6a53ea743a64ea41ef). Returns 08-summary.json. Prerequisite: fedora-top reachable (currently suspended; operator wakes physically)."
       - action: fedora-top-power-policy-apply
         state: approval-required-blocked-on-baseline
-        packet_version: 0.1.0
-        approval_phrase: "See docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md 'Approval Phrase' section. SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh (sha256 98063978b27246823682cf155c4fde20cb92096f14943282571e883cbc36fdd3). Drops logind no-suspend config; idempotent; snapshot-backed."
+        packet_version: 0.2.0
+        approval_phrase: "See docs/device-admin/fedora-top-power-policy-apply-2026-05-15.md 'Approval Phrase' section. SSH from MacBook; runs scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh (sha256 a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2). Drops logind no-suspend config; idempotent; snapshot-backed."
 
     next_recommended_action:
       summary: >-
@@ -367,13 +389,13 @@ devices:
         packet can be authored.
       preferred_packet: fedora-top-power-policy-baseline
       preferred_packet_status: approval-required
-      preferred_packet_version: 0.1.0
+      preferred_packet_version: 0.3.0
       preferred_packet_blockers:
         - slug: host-suspended-since-2026-05-14
           note: "fedora-top has been off the LAN since 2026-05-14T19:23:29 AKDT. Operator wakes physically before the baseline can run."
       secondary_packet: fedora-top-power-policy-apply
       secondary_packet_status: approval-required-blocked-on-baseline
-      secondary_packet_version: 0.1.0
+      secondary_packet_version: 0.2.0
       secondary_packet_blockers:
         - slug: baseline-apply-record-required
           note: "Apply only after fedora-top-power-policy-baseline-apply-2026-05-15.md is committed and the 08-summary.json review confirms expected state."

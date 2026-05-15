@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
-# fedora-top-power-policy-apply-v0.1.0.sh
+# fedora-top-power-policy-apply-v0.2.0.sh
+#
+# v0.2.0 (2026-05-15): Fix logind property reader. v0.1.0 used
+# `systemctl show systemd-logind --property X --value` in the S4
+# read-back step. On systemd 259 (Fedora 44) that path returns
+# empty for every org.freedesktop.login1.Manager property; the
+# read-back would have hard-stopped with a snapshot restore on
+# every host. v0.2.0 switches read_logind_prop to busctl with a
+# type-aware extractor (`s "value"`, `t N`, `b true|false`).
+# Drop-in body, target values, snapshot, reload, GNOME apply
+# logic are unchanged.
 #
 # Phase 4 (harden) apply for fedora-top: stop systemd-logind from
 # triggering suspend on lid-close while on AC, and stop it from
@@ -94,7 +104,7 @@ if [ "$(hostname -s 2>/dev/null || hostname)" != 'fedora-top' ]; then
     exit 1
 fi
 
-for t in jq systemctl install; do
+for t in jq systemctl install busctl; do
     if ! command -v "$t" >/dev/null 2>&1; then
         log "missing required tool: $t"
         exit 1
@@ -136,9 +146,28 @@ fi
 systemctl show systemd-logind --no-pager > "$snapdir/logind-effective.preinstall.txt" 2>&1 || true
 
 # -------- helper: read effective logind property ----------------
-# systemctl show is world-readable; no sudo needed.
+# v0.2.0: busctl D-Bus query against org.freedesktop.login1.Manager.
+# v0.1.0 used `systemctl show systemd-logind --property X --value`
+# which returns empty on systemd 259+ for logind manager props.
+# No sudo needed; busctl reads via the system bus and the
+# org.freedesktop.login1.Manager properties are world-readable.
 read_logind_prop() {
-    systemctl show systemd-logind --property "$1" --value 2>/dev/null || echo ''
+    local raw v
+    raw=$(busctl get-property org.freedesktop.login1 \
+            /org/freedesktop/login1 \
+            org.freedesktop.login1.Manager "$1" 2>/dev/null) || { echo ''; return; }
+    case "$raw" in
+        's "'*'"')
+            v=${raw#s \"}
+            v=${v%\"}
+            printf '%s' "$v" ;;
+        't '*)
+            printf '%s' "${raw#t }" ;;
+        'b '*)
+            printf '%s' "${raw#b }" ;;
+        *)
+            printf '%s' "$raw" ;;
+    esac
 }
 
 before_lid_ac=$(read_logind_prop HandleLidSwitchExternalPower)

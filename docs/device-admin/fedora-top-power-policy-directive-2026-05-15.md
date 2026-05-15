@@ -91,10 +91,10 @@ The packet:
 
 ```bash
 # From the MacBook, in the system-config checkout:
-script='scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh'
+script='scripts/device-admin/fedora-top-power-policy-baseline-v0.3.0.sh'
 
 # 1. Verify the local copy matches the declared sha256.
-expected='680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094'
+expected='05a8a6f90d82a2e155f9064e982f1d250480342f0518fa6a53ea743a64ea41ef'
 actual=$(shasum -a 256 "$script" | awk '{print $1}')
 [ "$actual" = "$expected" ] || { echo "local sha256 mismatch"; exit 1; }
 
@@ -105,13 +105,13 @@ scp "$script" fedora-top:/var/tmp/
 ssh fedora-top <<'EOF'
 set -euo pipefail
 cd /var/tmp
-expected='680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094'
-actual=$(sha256sum fedora-top-power-policy-baseline-v0.2.0.sh | awk '{print $1}')
+expected='05a8a6f90d82a2e155f9064e982f1d250480342f0518fa6a53ea743a64ea41ef'
+actual=$(sha256sum fedora-top-power-policy-baseline-v0.3.0.sh | awk '{print $1}')
 if [ "$actual" != "$expected" ]; then
     echo "host sha256 mismatch: $actual vs $expected" >&2
     exit 1
 fi
-bash fedora-top-power-policy-baseline-v0.2.0.sh
+bash fedora-top-power-policy-baseline-v0.3.0.sh
 EOF
 ```
 
@@ -162,8 +162,8 @@ The packet:
 
 ```bash
 # From the MacBook:
-script='scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh'
-expected='98063978b27246823682cf155c4fde20cb92096f14943282571e883cbc36fdd3'
+script='scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh'
+expected='a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2'
 actual=$(shasum -a 256 "$script" | awk '{print $1}')
 [ "$actual" = "$expected" ] || { echo "local sha256 mismatch"; exit 1; }
 
@@ -172,13 +172,13 @@ scp "$script" fedora-top:/var/tmp/
 ssh fedora-top <<'EOF'
 set -euo pipefail
 cd /var/tmp
-expected='98063978b27246823682cf155c4fde20cb92096f14943282571e883cbc36fdd3'
-actual=$(sha256sum fedora-top-power-policy-apply-v0.1.0.sh | awk '{print $1}')
+expected='a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2'
+actual=$(sha256sum fedora-top-power-policy-apply-v0.2.0.sh | awk '{print $1}')
 if [ "$actual" != "$expected" ]; then
     echo "host sha256 mismatch: $actual vs $expected" >&2
     exit 1
 fi
-bash fedora-top-power-policy-apply-v0.1.0.sh
+bash fedora-top-power-policy-apply-v0.2.0.sh
 EOF
 ```
 

@@ -3,7 +3,7 @@ title: fedora-top Power Policy Apply Packet - 2026-05-15
 category: operations
 component: device_admin
 status: prepared
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-05-15
 tags: [device-admin, fedora-top, linux, power, suspend, logind, harden]
 priority: high
@@ -21,6 +21,25 @@ This is the apply for the baseline at
 [fedora-top-power-policy-baseline-2026-05-15.md](./fedora-top-power-policy-baseline-2026-05-15.md).
 It conforms to
 [linux-terminal-admin-spec.md](./linux-terminal-admin-spec.md) v0.1.0.
+
+## Version History
+
+- **v0.2.0 (2026-05-15)**: Fix step S4 logind property reader.
+  v0.1.0's `read_logind_prop` used
+  `systemctl show systemd-logind --property X --value`. On systemd 259
+  (Fedora 44) that returns empty for every
+  `org.freedesktop.login1.Manager` property, so the read-back step
+  would have compared `""` against `"ignore"` and triggered the
+  hard-stop snapshot-restore on every run. v0.2.0 switches to
+  `busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager <Prop>`
+  with a type-aware extractor (`s "value"`, `t N`, `b true|false`).
+  Drop-in body, target values, snapshot, reload (SIGHUP), and GNOME
+  apply logic are unchanged. Same defect was visible in
+  `fedora-top-power-policy-baseline-v0.2.0.sh`; baseline bumped to
+  v0.3.0 in parallel.
+- **v0.1.0 (2026-05-15)**: Initial drop. Never run end-to-end against
+  a real host; superseded by v0.2.0 once baseline-v0.2.0 surfaced
+  the systemctl/busctl issue.
 
 ## Policy
 
@@ -42,12 +61,13 @@ DNS, DHCP, OPNsense, Cloudflare, WARP, Tailscale, 1Password.
 ## Executable Artifact
 
 ```text
-script:     scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh
-sha256:     98063978b27246823682cf155c4fde20cb92096f14943282571e883cbc36fdd3
-encoding:   ASCII (python: 13068 bytes, 0 bytes > 0x7F; 362 lines)
+script:     scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh
+sha256:     a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2
+encoding:   ASCII (python: 14266 bytes, 0 bytes > 0x7F; 391 lines)
 shell:      /usr/bin/bash on fedora-top
 session:    SSH from MacBook as verlyn13
 sudo:       required (verlyn13 NOPASSWD via /etc/sudoers.d/ansible-automation)
+tools:      jq, systemctl, install, busctl
 ```
 
 ## Prerequisites
@@ -74,7 +94,7 @@ sudo:       required (verlyn13 NOPASSWD via /etc/sudoers.d/ansible-automation)
 
 ## Approval Phrase
 
-> Apply the `fedora-top-power-policy-apply-v0.1.0` script on
+> Apply the `fedora-top-power-policy-apply-v0.2.0` script on
 > fedora-top via SSH from the MacBook as `verlyn13`. The script
 > installs `/etc/systemd/logind.conf.d/20-jefahnierocks-no-suspend.conf`
 > with `HandleLidSwitchExternalPower=ignore`, `HandleLidSwitchDocked=ignore`,
@@ -99,26 +119,26 @@ sudo:       required (verlyn13 NOPASSWD via /etc/sudoers.d/ansible-automation)
 
 ```bash
 # From the MacBook, in the system-config checkout:
-scp scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh \
+scp scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh \
     fedora-top:/var/tmp/
 
 ssh fedora-top
 # On the host:
 cd /var/tmp
-expected='98063978b27246823682cf155c4fde20cb92096f14943282571e883cbc36fdd3'
-actual=$(sha256sum fedora-top-power-policy-apply-v0.1.0.sh | awk '{print $1}')
+expected='a1e3bf5da90b763648064d2dd8961ccfd11fcb4f560d9bdb5a255d40133ab4c2'
+actual=$(sha256sum fedora-top-power-policy-apply-v0.2.0.sh | awk '{print $1}')
 if [ "$actual" != "$expected" ]; then
     echo "sha256 mismatch: $actual vs $expected" >&2
     exit 1
 fi
-bash fedora-top-power-policy-apply-v0.1.0.sh
+bash fedora-top-power-policy-apply-v0.2.0.sh
 ```
 
 Stdin-piped form is also acceptable for this packet because the
 script is idempotent and produces evidence regardless:
 
 ```bash
-ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-apply-v0.1.0.sh
+ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-apply-v0.2.0.sh
 ```
 
 ## What The Script Does

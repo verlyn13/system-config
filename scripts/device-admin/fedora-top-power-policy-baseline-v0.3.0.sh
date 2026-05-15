@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
-# fedora-top-power-policy-baseline-v0.2.0.sh
+# fedora-top-power-policy-baseline-v0.3.0.sh
 #
 # Read-only baseline of fedora-top power/suspend posture, prompted by
 # the 2026-05-14 19:23:29 AKDT suspend mid-SSH-session that dropped
 # an in-progress shelltutor edit. No host mutation.
+#
+# v0.3.0 (2026-05-15): Fix logind property reader. v0.2.0 used
+# `systemctl show systemd-logind --no-pager` and parsed `key=value`
+# lines for HandleLidSwitch, IdleAction, etc. On systemd 259 (Fedora
+# 44), `systemctl show` for the systemd-logind unit returns ONLY the
+# service-unit properties (Id, ActiveState, ...) and NOT the
+# org.freedesktop.login1.Manager properties. Even
+# `systemctl show systemd-logind --property HandleLidSwitch --value`
+# returns empty. The canonical mechanism is busctl against
+# org.freedesktop.login1 / /org/freedesktop/login1 /
+# org.freedesktop.login1.Manager. v0.3.0 switches get_prop to
+# busctl with a small type-aware extractor for `s "value"`, `t N`,
+# `b true|false`. SuspendState is now an unknown property in
+# systemd 259 and silently extracts as empty.
 #
 # v0.2.0 (2026-05-15): Fix step 10 ARG_MAX overflow. v0.1.0 passed
 # the full 7-day `journalctl -u systemd-logind` output as a single
@@ -57,7 +71,7 @@ emit_json() {
 }
 
 # -------- check tools we depend on --------------------------------
-need=(jq systemctl loginctl)
+need=(jq systemctl loginctl busctl)
 for t in "${need[@]}"; do
     if ! command -v "$t" >/dev/null 2>&1; then
         log "missing required tool: $t"
@@ -134,14 +148,28 @@ emit_json 02-logind-conf.json --argjson files "$logind_records" \
 # -------- 03-logind-effective.json: runtime effective config -----
 log "03: logind effective runtime config"
 
-# Pull every property; jq parses key=value lines from `systemctl show`.
-# Only the lid/idle/handle keys matter for the power-policy decision,
-# but capturing everything makes the evidence forward-compatible.
-logind_props=$(systemctl show systemd-logind --no-pager 2>/dev/null || echo "")
-
-# Extract the keys we actually decide on.
+# Read each logind manager property via busctl (D-Bus). v0.2.0 used
+# `systemctl show systemd-logind` which on systemd 259 (Fedora 44)
+# does NOT return manager-level properties for the logind service,
+# yielding empty strings for every key. busctl is the canonical
+# mechanism and works on every systemd version this packet targets.
 get_prop() {
-    printf '%s\n' "$logind_props" | awk -F= -v k="$1" '$1==k {print substr($0, length($1)+2); exit}'
+    local raw v
+    raw=$(busctl get-property org.freedesktop.login1 \
+            /org/freedesktop/login1 \
+            org.freedesktop.login1.Manager "$1" 2>/dev/null) || return 0
+    case "$raw" in
+        's "'*'"')
+            v=${raw#s \"}
+            v=${v%\"}
+            printf '%s' "$v" ;;
+        't '*)
+            printf '%s' "${raw#t }" ;;
+        'b '*)
+            printf '%s' "${raw#b }" ;;
+        *)
+            printf '%s' "$raw" ;;
+    esac
 }
 
 handle_lid_switch=$(get_prop HandleLidSwitch)

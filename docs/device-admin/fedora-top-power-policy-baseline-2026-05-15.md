@@ -3,7 +3,7 @@ title: fedora-top Power Policy Baseline Packet - 2026-05-15
 category: operations
 component: device_admin
 status: prepared
-version: 0.2.0
+version: 0.3.0
 last_updated: 2026-05-15
 tags: [device-admin, fedora-top, linux, power, suspend, logind, baseline, read-only]
 priority: high
@@ -11,9 +11,32 @@ priority: high
 
 ## Version History
 
+- **v0.3.0 (2026-05-15)**: Fix logind property reader. v0.2.0's step 03
+  used `systemctl show systemd-logind --no-pager` and parsed `key=value`
+  lines from the output. On systemd 259 (Fedora 44), `systemctl show`
+  against the systemd-logind unit returns ONLY service-unit properties
+  (`Id`, `ActiveState`, `FragmentPath`, ...) and NOT the
+  `org.freedesktop.login1.Manager` properties (`HandleLidSwitch`,
+  `IdleAction`, etc.). Even
+  `systemctl show systemd-logind --property HandleLidSwitch --value`
+  returns empty. Effective state across the JSON evidence was therefore
+  all-empty-string, and all three diagnostic booleans
+  (`lid_close_on_ac_will_suspend`, etc.) computed `false` regardless of
+  the actual policy. v0.3.0 switches `get_prop` to
+  `busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager <Prop>`
+  with a small type-aware extractor for `s "value"`, `t N`, and
+  `b true|false`. busctl is the canonical D-Bus path and works on every
+  systemd version this packet targets. The same defect was latent in
+  `fedora-top-power-policy-apply-v0.1.0.sh` (step S4 read-back); apply
+  bumped in parallel to v0.2.0. `SuspendState` is no longer a valid
+  manager property in systemd 259 and silently extracts as empty;
+  acceptable since it was informational. Postmortem evidence (v0.2.0
+  successful end-to-end run with all-empty manager fields): on-host
+  directory
+  `/var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-20260515T164224Z/`.
 - **v0.2.0 (2026-05-15)**: Fix step 10 ARG_MAX overflow. v0.1.0 failed
   on first run on fedora-top with
-  `fedora-top-power-policy-baseline-v0.2.0.sh: line 47: /usr/bin/jq: Argument list too long`.
+  `fedora-top-power-policy-baseline-v0.3.0.sh: line 47: /usr/bin/jq: Argument list too long`.
   Root cause: step 10 captures `journalctl -u systemd-logind --since '7 days ago'`
   into `events_raw`, then passes it whole as a single `jq --arg raw "$events_raw"`.
   On a laptop that suspends frequently the journal exceeds
@@ -86,12 +109,13 @@ The agent runs the named script directly. Do not transcribe content
 from this Markdown into a separate file.
 
 ```text
-script:     scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh
-sha256:     680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094
-encoding:   ASCII (python: 18372 bytes, 0 bytes > 0x7F; 455 lines)
+script:     scripts/device-admin/fedora-top-power-policy-baseline-v0.3.0.sh
+sha256:     05a8a6f90d82a2e155f9064e982f1d250480342f0518fa6a53ea743a64ea41ef
+encoding:   ASCII (python: 19542 bytes, 0 bytes > 0x7F; 483 lines)
 shell:      /usr/bin/bash on fedora-top (any modern bash)
 session:    SSH from MacBook as verlyn13
 sudo:       only for journalctl -u systemd-logind (optional)
+tools:      jq, systemctl, loginctl, busctl
 ```
 
 The script can be transferred to the host via either of two
@@ -101,26 +125,26 @@ spec-conforming flows:
 
 ```bash
 # From the MacBook, in the system-config checkout:
-scp scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh \
+scp scripts/device-admin/fedora-top-power-policy-baseline-v0.3.0.sh \
     fedora-top:/var/tmp/
 
 ssh fedora-top
 # On the host:
 cd /var/tmp
-expected='680d1f2454897be71849a942921002de93797ca859af3a64dce0f0ceaf3a5094'
-actual=$(sha256sum fedora-top-power-policy-baseline-v0.2.0.sh | awk '{print $1}')
+expected='05a8a6f90d82a2e155f9064e982f1d250480342f0518fa6a53ea743a64ea41ef'
+actual=$(sha256sum fedora-top-power-policy-baseline-v0.3.0.sh | awk '{print $1}')
 if [ "$actual" != "$expected" ]; then
     echo "sha256 mismatch: $actual vs $expected" >&2
     exit 1
 fi
-bash fedora-top-power-policy-baseline-v0.2.0.sh
+bash fedora-top-power-policy-baseline-v0.3.0.sh
 ```
 
 **Option B — pipe via stdin (no on-host persistence):**
 
 ```bash
 # From the MacBook:
-ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-baseline-v0.2.0.sh
+ssh fedora-top 'bash -s' < scripts/device-admin/fedora-top-power-policy-baseline-v0.3.0.sh
 ```
 
 Both are read-only. Option A leaves an inspectable copy on the host;
@@ -141,7 +165,7 @@ mutating packet.
 
 ## Approval Phrase
 
-> Run the `fedora-top-power-policy-baseline-v0.2.0` script on
+> Run the `fedora-top-power-policy-baseline-v0.3.0` script on
 > fedora-top via SSH from the MacBook as `verlyn13`. The script is
 > read-only and writes a JSON evidence directory under
 > `/var/tmp/jefahnierocks-device-admin/fedora-top-power-policy-baseline-<timestamp>/`.
