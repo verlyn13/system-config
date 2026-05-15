@@ -46,7 +46,7 @@
 #                             stays in `blocked_items`.
 
 schema_version: 1
-last_updated: 2026-05-15T03:40:00Z
+last_updated: 2026-05-15T04:05:00Z
 
 devices:
   - device: fedora-top
@@ -580,42 +580,80 @@ devices:
     # YAML's packet shape and are not back-filled.
 
     prepared_packets:
-      - name: desktop-2jj3187-ssh-lane-install
-        packet_doc: docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md
-        prepared_at: 2026-05-15T02:30:00Z
-        last_updated: 2026-05-15T03:35:00Z
+      - name: desktop-2jj3187-reconciliation
+        packet_doc: docs/device-admin/desktop-2jj3187-reconciliation-2026-05-15.md
+        executable: scripts/device-admin/desktop-2jj3187-reconciliation-v0.1.0.ps1
+        executable_sha256: 4cd75bcb8f31857d53a02a2de29fa94f73700c882ebb6b739154f26261dc8b43
+        executable_encoding: ASCII
+        executable_shell: Windows PowerShell 5.1 (powershell.exe)
+        prepared_at: 2026-05-15T04:00:00Z
         state: approval-required
-        packet_version: 0.3.0
+        packet_version: 0.1.0
+        session_class: read-only-probe
         prerequisite: >-
-          1Password item
-          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
-          exists (1P-generated ED25519, fingerprint
-          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s, created
-          2026-05-14T19:05:13-08:00). Public key body pinned inline in
-          §S5. Phase 0 baseline apply record committed
-          (desktop-2jj3187-terminal-admin-baseline-apply-2026-05-15.md).
-        shell_choice: >-
-          v0.3.0 adds a §Shell Choice section directing operators to
-          launch from Windows PowerShell 5.1 (powershell.exe), not pwsh
-          7. The Phase 0 baseline confirmed Get-WindowsCapability and
-          Add-WindowsCapability throw "Class not registered" under
-          pwsh 7.6.1 on build 26200. §S1 rewritten to shell DISM-backed
-          cmdlets through powershell.exe defensively so the packet
-          works regardless of which shell the operator launched.
+          v0.3.0 install halted in S1 due to packet defects (encoding
+          + enum serialization). v0.3.0 packet marked superseded. This
+          reconciliation packet must apply and its apply record must
+          commit before v0.4.0 install runs. Preserve v0.3.0 evidence
+          directories untouched.
         approval_phrase_excerpt: >-
-          Apply the desktop-2jj3187-ssh-lane-install v0.3.0 packet on
-          DESKTOP-2JJ3187 from an elevated Windows PowerShell 5.1
-          session as jeffr. Installs OpenSSH.Server capability via
-          WinPS 5.1, starts sshd Automatic, ensures the Match Group
-          administrators block, installs the hardening drop-in, pastes
-          the pinned public key into administrators_authorized_keys
-          with the Administrators+SYSTEM ACL, fingerprint match
-          verified against the 1P-source value, adds Jefahnierocks SSH
-          LAN TCP 22 Private rule, sshd -t passes, sshd restarted.
-          Operator MacBook then runs ssh desktop-2jj3187 'cmd /c
-          "hostname && whoami"' for the real-auth probe.
+          Run desktop-2jj3187-reconciliation-v0.1.0.ps1 on
+          DESKTOP-2JJ3187 from elevated Windows PowerShell 5.1 as
+          jeffr. Read-only; writes structured JSON evidence. Return
+          08-summary.json verbatim. Confirms OpenSSH.Server state,
+          all SSH paths absent, sshd service absent, no SSH firewall
+          rule, RDP unchanged.
+
+      - name: desktop-2jj3187-ssh-lane-install
+        packet_doc: docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-2026-05-15.md
+        executable: scripts/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0.ps1
+        executable_sha256: 8bc1b29bb0391ca55c2262a0847c546e0252347c93e784e1c9358085bc474e0c
+        executable_encoding: ASCII
+        executable_shell: Windows PowerShell 5.1 (powershell.exe)
+        supersedes: docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md (v0.3.0)
+        prepared_at: 2026-05-15T04:00:00Z
+        state: approval-required-blocked-on-reconciliation
+        packet_version: 0.4.0
+        session_class: scoped-live-change
+        prerequisite: >-
+          (1) desktop-2jj3187-reconciliation packet applied and apply
+          record committed, summary confirms OpenSSH.Server=NotPresent
+          and no v0.3.0 mutation. (2) 1Password item
+          op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
+          exists (fingerprint
+          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s). (3)
+          MacBook conf.d already applied (commit f0fb9c1).
+        approval_phrase_excerpt: >-
+          Apply desktop-2jj3187-ssh-lane-install-v0.4.0.ps1 on
+          DESKTOP-2JJ3187 from elevated Windows PowerShell 5.1 as
+          jeffr. Greenfield OpenSSH.Server install + Match block +
+          hardening drop-in + admin key (pinned body, fingerprint
+          gate) + scoped firewall rule. Idempotent, snapshot-backed,
+          sshd -t and conditional sshd -T gates. Return
+          08-summary.json verbatim. Operator MacBook then runs
+          ssh desktop-2jj3187 'cmd /c "hostname && whoami"' for the
+          real-auth probe.
 
     blocked_items:
+      - item: desktop-2jj3187-v030-install-superseded-postmortem
+        owner: documented
+        notes: >-
+          The 2026-05-15 v0.3.0 install attempt halted in S1 with
+          "Unexpected OpenSSH.Server state: 0" due to two packet
+          defects: (1) em-dashes in the embedded PowerShell strings
+          combined with UTF-8-without-BOM encoding caused WinPS 5.1
+          to read mojibake and parser-fail on first run, and (2)
+          ConvertTo-Json -Compress serialized the
+          Microsoft.Dism.Commands.PackageFeatureState enum as integer
+          0 which the outer script compared against the string
+          'NotPresent' and rejected. Host state did not mutate
+          (sshd absent, no firewall rule, no service start, no key
+          install). v0.3.0 packet marked status=superseded; preserved
+          for postmortem. Spec bumped to v0.5.0 with new sections on
+          packet-defect halts, encoding contract, cross-shell data
+          normalization, and packet artifact separation
+          (docs/ markdown + scripts/device-admin/ .ps1).
+
       - item: desktop-2jj3187-warp-enrollment-cutover-pending
         owner: cloudflare-dns + human
         notes: >-
@@ -679,10 +717,20 @@ devices:
         applied_at: 2026-05-15T03:26:52Z
         notes: "See applied_packets[]."
 
-      - action: desktop-2jj3187-ssh-lane-install
+      - action: desktop-2jj3187-ssh-lane-install-v0.3.0
+        state: superseded
+        superseded_by: desktop-2jj3187-ssh-lane-install-v0.4.0
+        notes: "Attempted 2026-05-15; halted in S1 with 'Unexpected OpenSSH.Server state: 0' (enum-as-integer serialization defect, after a UTF-8-without-BOM encoding defect). No host mutation. v0.3.0 markdown preserved with a SUPERSEDED notice at the top."
+
+      - action: desktop-2jj3187-reconciliation
         state: approval-required
-        packet_version: 0.3.0
-        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md v0.3.0 'Approval Phrase' section. Launch from Windows PowerShell 5.1 (powershell.exe), NOT pwsh 7. Greenfield Windows OpenSSH install + admin key (pinned inline, fingerprint SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s) + Match block + firewall rule. §S1 routes DISM-backed cmdlets through WinPS 5.1 defensively to work around the Class-not-registered issue under pwsh 7 on build 26200."
+        packet_version: 0.1.0
+        approval_phrase: "See docs/device-admin/desktop-2jj3187-reconciliation-2026-05-15.md 'Approval Phrase' section. Read-only WinPS 5.1; runs scripts/device-admin/desktop-2jj3187-reconciliation-v0.1.0.ps1 (sha256 4cd75bcb8f31857d53a02a2de29fa94f73700c882ebb6b739154f26261dc8b43). Returns 08-summary.json. Confirms host state has not drifted from Phase 0 baseline; no v0.3.0 mutation."
+
+      - action: desktop-2jj3187-ssh-lane-install
+        state: approval-required-blocked-on-reconciliation
+        packet_version: 0.4.0
+        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-2026-05-15.md 'Approval Phrase' section. WinPS 5.1; runs scripts/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0.ps1 (sha256 8bc1b29bb0391ca55c2262a0847c546e0252347c93e784e1c9358085bc474e0c). Blocked on reconciliation apply record landing; once committed and summary confirms OpenSSH.Server=NotPresent, this becomes approval-required."
 
       - action: macbook-ssh-conf-d-desktop-2jj3187
         state: applied
@@ -691,7 +739,7 @@ devices:
 
       - action: desktop-2jj3187-ssh-hardening
         state: planned-after-install
-        approval_phrase: "Phrase will be drafted with the packet, after the install apply record is landed."
+        approval_phrase: "Phrase will be drafted with the packet, after the v0.4.0 install apply record is landed."
 
       - action: desktop-2jj3187-known-hosts-reconciliation
         state: planned-after-install
@@ -699,26 +747,36 @@ devices:
 
     next_recommended_action:
       summary: >-
-        Phase 0 baseline applied and verified clean against
-        windows-pc.md / install-packet §Expected Findings. MacBook
-        side prep is complete (1P item minted, chezmoi conf.d
-        applied). Install packet is bumped to v0.3.0 with §Shell
-        Choice (use Windows PowerShell 5.1, not pwsh 7) and §S1
-        defensive shell-out for DISM cmdlets. Hand-off green-lights
-        the DESKTOP-2JJ3187 agent to proceed with Step 2 (Phase 3
-        SSH lane install) from a fresh elevated WinPS 5.1 session.
-        After §S7 completes on the host, operator MacBook runs the
-        real-auth probe.
-      preferred_packet: desktop-2jj3187-ssh-lane-install
+        v0.3.0 install was attempted and halted in S1 due to packet
+        defects (encoding + enum serialization). No host mutation
+        occurred. Two new packets are prepared on top of spec v0.5.0
+        which now formalizes script/markdown separation, ASCII
+        encoding contract, cross-shell normalization, and the
+        packet-defect halt rule. Next steps for the Windows-side
+        agent: (1) run the read-only reconciliation packet from
+        elevated Windows PowerShell 5.1, return 08-summary.json,
+        wait for system-config to commit the apply record;
+        (2) once reconciliation confirms OpenSSH.Server=NotPresent
+        and no v0.3.0 mutation, run the v0.4.0 install packet
+        directly via `powershell.exe -File`. Both packets reference
+        executable artifacts in scripts/device-admin/ by sha256;
+        agent does not transcribe scripts from Markdown.
+      preferred_packet: desktop-2jj3187-reconciliation
       preferred_packet_status: approval-required
-      preferred_packet_version: 0.3.0
+      preferred_packet_version: 0.1.0
       preferred_packet_blockers:
         - slug: launch-from-winps-5-1
-          note: "Launch from Windows PowerShell 5.1 (powershell.exe), not pwsh 7. Packet's defensive shell-out works either way, but WinPS 5.1 is the canonical choice."
+          note: "Launch from Windows PowerShell 5.1 (powershell.exe), not pwsh 7. Verify script sha256 before run."
+      secondary_packet: desktop-2jj3187-ssh-lane-install
+      secondary_packet_status: approval-required-blocked-on-reconciliation
+      secondary_packet_version: 0.4.0
+      secondary_packet_blockers:
+        - slug: reconciliation-apply-record-required
+          note: "v0.4.0 install applies only after the reconciliation apply record commits and confirms OpenSSH.Server=NotPresent."
       handback_to_human: true
 
     last_verified: 2026-05-15T03:35:00Z
-    latest_system_config_commit: 00ee787
+    latest_system_config_commit: pending
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns

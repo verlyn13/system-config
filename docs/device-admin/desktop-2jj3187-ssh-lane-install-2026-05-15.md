@@ -2,12 +2,77 @@
 title: DESKTOP-2JJ3187 SSH Lane Install Packet - 2026-05-15
 category: operations
 component: device_admin
-status: prepared
-version: 0.3.0
+status: superseded
+version: 0.3.0-superseded
 last_updated: 2026-05-15
-tags: [device-admin, desktop-2jj3187, windows, openssh, admin-key, firewall, sshd-config, phase-3]
+tags: [device-admin, desktop-2jj3187, windows, openssh, admin-key, firewall, sshd-config, phase-3, superseded]
 priority: high
 ---
+
+> **SUPERSEDED 2026-05-15** by
+> [desktop-2jj3187-ssh-lane-install-v0.4.0-2026-05-15.md](./desktop-2jj3187-ssh-lane-install-v0.4.0-2026-05-15.md).
+>
+> The v0.3.0 packet was attempted on DESKTOP-2JJ3187 from elevated
+> Windows PowerShell 5.1 and halted in §S1 with
+> `Unexpected OpenSSH.Server state: 0`. Root-cause analysis identified
+> **two packet defects** (not host defects):
+>
+> 1. **Encoding defect.** The procedure required the operating agent
+>    to transcribe the §S1 script out of a Markdown code block into a
+>    standalone `.ps1`. The agent initially saved the file UTF-8
+>    without BOM. v0.3.0 contained non-ASCII punctuation (em-dashes,
+>    smart quotes) which Windows PowerShell 5.1 (Windows-1252 default)
+>    read as mojibake. The first run failed with a `ParserError`. The
+>    agent re-encoded the file as UTF-8 with BOM and re-ran. **That
+>    repair was not authorized by the packet.** Per
+>    [windows-terminal-admin-spec.md](./windows-terminal-admin-spec.md)
+>    v0.5.0 §Packet-Defect Halt Rule, the correct response would have
+>    been to halt and hand back for a new packet version.
+> 2. **Enum serialization defect.** §S1 of v0.3.0 shelled
+>    `Get-WindowsCapability` through `powershell.exe -Command` with
+>    `ConvertTo-Json -Compress`. The `State` property is a
+>    `Microsoft.Dism.Commands.PackageFeatureState` enum;
+>    `ConvertTo-Json` serializes enums as their backing integer.
+>    `NotPresent` arrived as `0`. The outer script compared `0`
+>    against the string `'NotPresent'` and threw
+>    `Unexpected OpenSSH.Server state: 0`. The actual host state
+>    (`OpenSSH.Server = NotPresent`) was correct and consistent with
+>    the Phase 0 baseline; the script defect manufactured a false
+>    failure.
+>
+> **No host mutation is presumed from the v0.3.0 attempt.** The Phase
+> 0 baseline confirmed `OpenSSH.Server = NotPresent` and the v0.3.0
+> run halted before §S2 (service start), §S5 (key install), §S6
+> (firewall rule), or §S7 (sshd restart) ran. The
+> `desktop-2jj3187-reconciliation-2026-05-15` packet (read-only)
+> confirms the same state before v0.4.0 is allowed to apply.
+>
+> **What v0.4.0 changes** to prevent recurrence:
+>
+> - **Executable artifact lives in `scripts/device-admin/`**, not
+>   embedded in this Markdown. The agent runs the named `.ps1`
+>   directly via `powershell.exe -NoProfile -ExecutionPolicy Bypass
+>   -File ...`. No transcription, no re-encoding, no nested
+>   `-Command` quoting.
+> - **Script is ASCII-only.** Validated with `LC_ALL=C grep -Pn
+>   '[^\x00-\x7F]'` returning empty before commit. Typographic
+>   punctuation lives only in this prose runbook.
+> - **Capability state normalized in the producing shell**:
+>   `$cap.State.ToString()` (and `[int]$cap.State` captured
+>   separately for diagnostics). Outer comparison is against the
+>   normalized string only.
+> - **Idempotent and resumable** from the confirmed
+>   `OpenSSH.Server = NotPresent` state. Each step reads back before
+>   mutating; backup-before-edit on `sshd_config` and
+>   `administrators_authorized_keys`; explicit `sshd -t` gate before
+>   service restart.
+> - **Spec rules updated** in v0.5.0 (§Packet Artifact Separation,
+>   §Encoding Contract, §Cross-Shell Data Normalization, §Structured
+>   Evidence, §Packet-Defect Halt Rule).
+>
+> The historical v0.3.0 content below is preserved verbatim for the
+> postmortem trail. Do **not** apply this packet. Apply the v0.4.0
+> successor instead.
 
 # DESKTOP-2JJ3187 SSH Lane Install Packet - 2026-05-15
 

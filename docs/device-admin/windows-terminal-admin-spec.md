@@ -3,9 +3,9 @@ title: Windows Terminal Administration Spec
 category: operations
 component: device_admin
 status: active
-version: 0.4.0
+version: 0.5.0
 last_updated: 2026-05-15
-tags: [device-admin, windows, openssh, powershell, terminal-admin, evidence, lifecycle]
+tags: [device-admin, windows, openssh, powershell, terminal-admin, evidence, lifecycle, packet-defect, encoding]
 priority: high
 ---
 
@@ -263,6 +263,135 @@ Do not bundle unrelated risk classes. Network identity, firewall, SSH auth,
 account cleanup, Cloudflare enrollment, BitLocker, and backup should be
 separate packets unless there is a specific reason to join them.
 
+## Packet Artifact Separation
+
+Mutating packets must separate the **prose runbook** (Markdown, for
+humans and reviewers) from the **executable artifact** (a `.ps1`
+script the operator launches). The DESKTOP-2JJ3187 v0.3.0 failure on
+2026-05-15 demonstrated why: when the operator was expected to
+"transcribe" the script out of a Markdown code block to a `.ps1` and
+run it, the round-trip introduced both an encoding defect (non-ASCII
+punctuation under WinPS 5.1) and a re-saved-file mutation that was
+not authorized by the packet.
+
+Layout for any mutating Windows packet:
+
+```text
+docs/device-admin/<device>-<purpose>-YYYY-MM-DD.md     # prose runbook
+scripts/device-admin/<device>-<purpose>-vX.Y.Z.ps1     # executable
+scripts/device-admin/<device>-<purpose>-validate-vX.Y.Z.ps1   # optional read-only validator
+```
+
+The Markdown runbook **references** the script by stable identity:
+
+```text
+script:    scripts/device-admin/<device>-<purpose>-vX.Y.Z.ps1
+sha256:    <hex digest>
+encoding:  ASCII or UTF-8 with BOM
+shell:     C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+invocation: powershell.exe -NoProfile -ExecutionPolicy Bypass -File <script>
+```
+
+Read-only-probe packets (Phase 0 baselines, reconciliation packets)
+may keep their script inline in Markdown because the operator
+extracting them carries no host-mutation risk. Mutating packets
+must not.
+
+The operating agent runs the named `.ps1`. The agent does not
+reconstruct, re-encode, or otherwise re-author the script. If the
+script does not match its declared sha256 or encoding, halt.
+
+## Encoding Contract
+
+PowerShell shell defaults differ:
+
+- **Windows PowerShell 5.1** defaults to Windows-1252 on machines
+  with a Western-locale default. A `.ps1` saved as UTF-8 without BOM
+  containing non-ASCII bytes (em-dashes, smart quotes, special
+  spaces) is read as mojibake and fails to parse.
+- **PowerShell 7+** defaults to UTF-8 without BOM. ASCII bytes are
+  identical either way.
+
+Contract for `.ps1` files in `scripts/device-admin/`:
+
+- **Prefer ASCII-only.** Use `--` not `—`, `'...'` not `'...'`,
+  regular space not non-breaking space. Reserve typographic
+  punctuation for prose docs.
+- If non-ASCII is necessary, save the file as **UTF-8 with BOM**
+  and state `encoding: UTF-8 with BOM` in the Markdown runbook's
+  script reference.
+- Validate ASCII-only with `LC_ALL=C grep -Pn '[^\x00-\x7F]'
+  <script>.ps1` from the MacBook before committing; the line should
+  return no matches.
+
+Reload an existing UTF-8-without-BOM script as UTF-8-with-BOM only
+under an explicit re-encode packet — not as an ad hoc fix during a
+mutating run.
+
+## Cross-Shell Data Normalization
+
+Whenever PowerShell objects cross a process boundary via JSON, CLIXML,
+or any text serialization, normalize complex types in the **producing**
+shell first. `ConvertTo-Json` serializes enums as their integer
+backing value; an outer shell that compares against the string name
+will misclassify the state.
+
+The DESKTOP-2JJ3187 v0.3.0 failure was exactly this:
+`Get-WindowsCapability` returned a `WindowsCapability` whose `State`
+is a `Microsoft.Dism.Commands.PackageFeatureState` enum.
+`ConvertTo-Json -Compress` produced `"State":0` for `NotPresent`,
+which the outer script compared against `'NotPresent'` and rejected.
+
+Canonical pattern for cross-process boundaries:
+
+```powershell
+$cap = Get-WindowsCapability -Online -Name 'OpenSSH.Server*' |
+  Select-Object -First 1
+
+[pscustomobject]@{
+  Name       = [string]$cap.Name
+  State      = $cap.State.ToString()
+  StateInt   = [int]$cap.State
+  StateType  = $cap.State.GetType().FullName
+} | ConvertTo-Json -Compress
+```
+
+Then compare only against the normalized string:
+
+```powershell
+switch ($cap.State) {
+  'Installed'   { 'skip install' }
+  'NotPresent'  { 'run Add-WindowsCapability' }
+  default       { throw "Unexpected state: $($cap.State)" }
+}
+```
+
+Always capture both human-readable form and diagnostic form so a
+mismatch surfaces as data, not as a halt-with-no-context.
+
+## Structured Evidence
+
+Evidence files that drive decisions must be machine-readable.
+`Format-Table -AutoSize` elided the `Principal` column on the
+DESKTOP-2JJ3187 Phase 0 baseline because the terminal was narrower
+than the natural column width. This is fine for human-glance display
+but unacceptable for evidence that gates further packets.
+
+For each evidence concern, write a JSON or NDJSON file under the
+host evidence directory:
+
+```powershell
+Get-ScheduledTask |
+  Select-Object TaskPath, TaskName, State,
+    @{n='Principal'; e={ $_.Principal.UserId }} |
+  ConvertTo-Json -Depth 5 |
+  Set-Content -LiteralPath (Join-Path $EvidenceDir '08-scheduled-tasks.json') -Encoding utf8
+```
+
+Format-Table-rendered text files may accompany the JSON as a human
+summary, but the JSON is the canonical evidence the apply record
+should cite.
+
 ## Evidence Writer Pattern
 
 Use an evidence writer that handles pipeline input correctly. This exact bug
@@ -326,6 +455,51 @@ Stop and document rather than improvising if:
 - the command would modify `ahnie`, kid accounts, DadAdmin, BitLocker, WARP,
   Cloudflare, DNS, DHCP, OPNsense, or 1Password outside the current packet scope
 - RDP would disrupt the active console user and that impact was not accepted
+- a script's actual sha256 does not match the value declared in the Markdown
+  runbook's script reference
+- a `.ps1` file's encoding does not match its declared encoding (per
+  §Encoding Contract)
+- a cross-shell value's normalized type (string, int, enum name) does not
+  match the script's expected shape (per §Cross-Shell Data Normalization)
+
+## Packet-Defect Halt Rule
+
+A **mutating** administrative packet may not be locally repaired by the
+operating agent after any of:
+
+- parser error (PowerShell `ParserError`, syntax failure before any
+  mutation has occurred)
+- encoding mismatch (mojibake, BOM/no-BOM mismatch, non-ASCII bytes
+  the producing shell could not interpret)
+- quoting failure (nested `-Command`, here-string interpolation, escape
+  errors)
+- serialization mismatch (enum-to-int, string-to-bool, JSON round-trip
+  loss between producer and consumer shells)
+- state-normalization mismatch (e.g., a comparison against a string name
+  where the value arrived as an integer)
+- script-file sha256 or encoding does not match the Markdown runbook's
+  declared reference
+
+These are **packet defects**, not host defects. The agent must:
+
+1. Preserve evidence and the failed script verbatim. Do not overwrite,
+   re-encode, or re-author.
+2. Preserve the on-host evidence directory. Do not delete or rotate it.
+3. Halt the run.
+4. Return a hand-back to system-config naming the failure class.
+5. Wait for a new packet version. A patched live script is not an
+   approved packet.
+
+The presence of an "interactive patch and re-run" option in the
+operating environment does not authorize that path. The correct
+answer for any of the failure classes above is **halt and hand back**.
+
+This rule applies to packets in the `scoped-live-change` session
+class. `read-only-probe` packets may continue past a single command
+failure if the failed command is non-mutating and the rest of the
+evidence is still useful (the baseline's `Get-WindowsCapability`
+"Class not registered" was an example: the agent surfaced the issue,
+continued the rest of the read-only probe, and handed back).
 
 ## First MAMAWORK Lessons
 
