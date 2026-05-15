@@ -370,7 +370,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-15T06:28:12Z
-    latest_system_config_commit: pending
+    latest_system_config_commit: 2adb7d8
 
   - device: mamawork
     owner: Jefahnierocks
