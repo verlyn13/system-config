@@ -534,7 +534,7 @@ devices:
         packet_doc: docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-2026-05-15.md
         apply_record: docs/device-admin/macbook-ssh-conf-d-desktop-2jj3187-apply-2026-05-15.md
         packet_commit: 3eea6e1
-        apply_commit: pending
+        apply_commit: f0fb9c1
         applied_at: 2026-05-15T03:08:00Z
         outcome: >-
           MacBook-side only. Modified home/dot_ssh/conf.d/windows.conf.tmpl
@@ -678,7 +678,7 @@ devices:
       handback_to_human: true
 
     last_verified: 2026-05-15T03:08:00Z
-    latest_system_config_commit: pending
+    latest_system_config_commit: f0fb9c1
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns
