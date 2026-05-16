@@ -1,15 +1,57 @@
 ---
-title: DESKTOP-2JJ3187 SSH Service-Mode KEX-Reset Root Cause Analysis - 2026-05-16
+title: DESKTOP-2JJ3187 SSH Service-Mode KEX-Reset Root Cause Analysis - 2026-05-16 (REFUTED HYPOTHESIS)
 category: operations
 component: device_admin
-status: rca-recorded
-version: 0.1.0
+status: rca-hypothesis-refuted
+version: 0.2.0
 last_updated: 2026-05-16
-tags: [device-admin, desktop-2jj3187, windows, openssh, service-mode, rca, privsep, root-cause]
+tags: [device-admin, desktop-2jj3187, windows, openssh, service-mode, rca, privsep, refuted-hypothesis]
 priority: high
 ---
 
 # DESKTOP-2JJ3187 SSH Service-Mode KEX-Reset RCA - 2026-05-16
+
+> **2026-05-16 UPDATE — original Root Cause claim REFUTED.**
+>
+> The "## Root Cause" section below claimed the
+> service-mode KEX reset was caused by `Add-WindowsCapability`
+> on Win 11 24H2 not creating the `sshd` virtual local user +
+> NTFS ACL on `C:\ProgramData\ssh\` that privsep requires.
+>
+> That was a **hypothesis**, not a confirmed cause. It predicted
+> that running Microsoft's `install-sshd.ps1` +
+> `FixHostFilePermissions.ps1` would resolve the bug.
+>
+> **The prediction failed.** The operator ran the fix block
+> (Step 1, then Step 1b extension to recover from a missing-
+> manifest halt). The `sshd` virtual user was created;
+> NTFS ACLs were applied; sshd service restored. The KEX reset
+> **persists** identically on both LAN and loopback.
+>
+> Apply record:
+> [desktop-2jj3187-ssh-service-mode-fix-microsoft-repair-scripts-apply-2026-05-16.md](./desktop-2jj3187-ssh-service-mode-fix-microsoft-repair-scripts-apply-2026-05-16.md).
+>
+> The text below is preserved for trail. Read it as the
+> hypothesis at time of writing, NOT as a confirmed cause.
+> The hypothesis-discipline rule that should have been applied
+> from the start is now codified in
+> [windows-terminal-admin-spec.md `§Hypothesis vs Confirmed
+> Root Cause Discipline`](./windows-terminal-admin-spec.md).
+>
+> Current candidate hypotheses (all unconfirmed):
+> - H1: half-applied OpenSSH-Server-Package CBS servicing
+>   (`CbsPackageServicingFailure2` events 2026-05-16T00:02Z;
+>   binary version split 9.5.0.1 server vs 9.5.5.1 client).
+> - H2: SID / account-resolution failure in the service-mode
+>   child (`lookup_sid() failed: 1332` at sshd startup;
+>   foreground non-fatal, service-mode possibly fatal).
+> - H3: inbox/FOD/GitHub binary mismatch beyond just sshd.exe
+>   (low confidence; not yet tested).
+>
+> See the apply record for full hypothesis discussion + what
+> would confirm each.
+
+# DESKTOP-2JJ3187 SSH Service-Mode KEX-Reset RCA - 2026-05-16 (original text, REFUTED HYPOTHESIS — preserved for trail)
 
 Root-cause analysis for the service-mode SSH KEX reset that
 v0.4.0, v0.5.0, and the v0.1.0 diagnostic surfaced over the

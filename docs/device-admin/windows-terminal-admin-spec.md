@@ -743,6 +743,175 @@ evidence is still useful (the baseline's `Get-WindowsCapability`
 "Class not registered" was an example: the agent surfaced the issue,
 continued the rest of the read-only probe, and handed back).
 
+## Hypothesis vs Confirmed Root Cause Discipline
+
+Every Windows OpenSSH packet sequence in this fleet so far has
+produced at least one "smoking gun" or "root cause" claim that
+was subsequently refuted by the next packet's evidence. v0.3.0
+"em-dashes are the issue" was followed by v0.3.0 "enum-as-int
+is the issue" was followed by v0.4.0 "missing Include is the
+issue" was followed by v0.5.0 "missing privsep user is the
+issue" was followed by 2026-05-16 "CBS package servicing
+failure is the issue" — each labelled "root cause" at the time,
+each refuted by the next test. The pattern is bad epistemics,
+not bad investigation skill: the evidence at each stage was
+real, but the *causal* claim was over-confident.
+
+This section codifies the discipline that should have been
+applied from the start.
+
+### Terminology
+
+- **Evidence**: an observed fact captured in evidence files.
+  Example: "Application log has three `CbsPackageServicingFailure2`
+  events from 2026-05-16T00:02Z."
+- **Hypothesis**: a candidate explanation for the observed
+  behavior. Example: "The CBS failure left the OpenSSH-Server-
+  Package in an Absent / Superseded state, which is the cause
+  of the service-mode KEX reset."
+- **Confirmed root cause**: a hypothesis that has been tested
+  by a controlled intervention that varies only the proposed
+  cause and produces the predicted outcome. Example: "After
+  `Remove-WindowsCapability` + `Add-WindowsCapability` of
+  `OpenSSH.Server`, the package state is `Installed` (not
+  Absent), no new `CbsPackageServicingFailure*` events appear,
+  binaries are at matching versions, and the MacBook real-auth
+  probe succeeds. The intervention varied only this one
+  factor."
+
+### Rules
+
+1. **"Root cause" is a status, not a label of confidence.**
+   Findings are evidence. Explanations are hypotheses.
+   Only a controlled test produces a confirmed root cause.
+2. **No "smoking gun", "decisive finding", "the actual root
+   cause", "found it" framing in packet docs or apply records
+   before confirmation.** These phrasings imply a closed loop
+   that has not been closed.
+3. **Keep multiple competing hypotheses alive** until at least
+   one is confirmed AND the others are refuted. A single
+   high-confidence hypothesis is not a closed loop; it's a
+   selection bias risk.
+4. **Every diagnostic packet pre-registers its hypothesis
+   test.** The packet markdown must state:
+   - Which hypothesis (or set of hypotheses) the packet tests.
+   - The intervention or measurement.
+   - The predicted result for "confirmed", "refuted", and
+     "inconclusive".
+5. **Refutation is valuable.** A packet that runs as designed
+   and refutes the working hypothesis is a successful packet.
+   The next packet picks the next-strongest hypothesis from
+   the candidate list.
+6. **Apply records use strict language.** Sections labelled
+   "Findings" hold evidence. Sections labelled "Hypotheses"
+   hold candidate explanations with confidence. A section
+   labelled "Confirmed Root Cause" only appears once the
+   controlled test has run and the prediction has held.
+7. **Prior over-confident framings get retroactively reframed.**
+   When a hypothesis is refuted, the doc that asserted it
+   should be marked with a top-of-file note pointing at the
+   refutation, AND a status frontmatter field that surfaces
+   the refuted state. The original text is preserved as the
+   hypothesis at time of writing.
+
+### Why this matters here
+
+Windows OpenSSH has been an environment where each layer of
+the install / config / runtime / service-mode model has
+violated assumptions imported from POSIX OpenSSH. Each
+violation was "obvious in hindsight" only after a test
+refuted the prior working hypothesis. The cost of over-
+confident labelling is iteration cost: every refuted "root
+cause" is at minimum one extra packet round trip + apply
+record + retroactive reframing.
+
+The remedy is cheap: write hypothesis-status language from
+the start. The discipline does not slow investigation; it
+slows premature closure.
+
+### Concrete pre-registration template
+
+For a diagnostic packet:
+
+```yaml
+hypothesis_tested: |
+  H1 (CBS package servicing failure caused the service-mode
+  KEX reset). Specifically: half-applied OpenSSH-Server-Package
+  CBS commit left sshd.exe at version 9.5.0.1 from an older
+  payload, and the service-mode child spawn path in that
+  version cannot complete on a Win 11 24H2 host that has the
+  newer 9.5.5.1 client-side state.
+intervention: |
+  Remove-WindowsCapability OpenSSH.Server~~~~0.0.1.0; reboot
+  or dism /Cleanup-Image /StartComponentCleanup; re-add.
+predictions:
+  confirmed: |
+    Get-WindowsPackage shows OpenSSH-Server-Package state
+    Installed (NOT Absent / Superseded); no new
+    CbsPackageServicingFailure* events appear; sshd.exe
+    version matches client binary version; MacBook real-
+    auth probe succeeds.
+  refuted: |
+    The above predictions hold AND the MacBook real-auth
+    probe still RSTs at SSH_MSG_KEXINIT. H1 refuted; move
+    to H2 (SID lookup).
+  inconclusive: |
+    Some predictions hold and others don't (e.g., package
+    state Installed but version mismatch persists). Capture
+    the partial pattern as a new finding; do NOT collapse
+    to "confirmed" or "refuted".
+```
+
+For a fix packet, replace "intervention" with the fix steps
+and add a "rollback" prediction set.
+
+## Windows-Sudo Is Not Linux-Sudo
+
+Microsoft's Windows 11 `sudo.exe` is a small utility that
+elevates a single command. It is **not** a port of POSIX
+`sudo`. Several Linux `sudo` idioms do not work and will
+produce confusing error output:
+
+| Linux `sudo` idiom | Windows `sudo.exe` |
+|---|---|
+| `sudo --status` | Not supported. Produces `error: unexpected argument '--status'`. |
+| `sudo -v` (refresh credential cache) | Not supported. There is no credential cache; Windows elevation is per-invocation. |
+| `sudo -l` (list allowed commands) | Not supported. |
+| `sudo -u <user> <cmd>` (run as another user) | Not supported. Use `runas` for that. |
+| `sudo -i` / `sudo -s` (interactive shell as root) | Not supported in the same form. Launch an elevated terminal directly. |
+
+What `sudo.exe` does support:
+- `sudo <command>` (elevate a single command in the current
+  console)
+- `sudo --version`
+
+### Inline-execution quoting trap
+
+Passing multi-line or complex PowerShell into
+`sudo powershell.exe -Command "..."` is fragile. The quote
+escaping between three layers — `cmd.exe` invocation of `sudo`,
+`sudo.exe` invocation of `powershell.exe`, and `powershell.exe`
+parsing of the `-Command` string — almost always misfires.
+WinPS 5.1's parser is especially strict; multi-line scripts
+that work in pwsh 7 often fail under WinPS 5.1 when invoked
+this way.
+
+Recommended pattern for elevated multi-line PowerShell from
+a non-elevated context:
+
+1. Write the script to a `.ps1` file (proper file with proper
+   encoding per `§Encoding Contract`).
+2. Verify the `.ps1` sha256 if it is a packet artifact.
+3. Invoke with `sudo powershell.exe -NoProfile
+   -ExecutionPolicy Bypass -File <path>`.
+4. The `-File` invocation reads the script from disk and
+   avoids quote-string pitfalls entirely.
+
+This is the same pattern the device-admin packets already use
+(per `§Packet Artifact Separation`). The note here exists so
+the operating agent does not inadvertently use the wrong
+pattern for ad-hoc commands during diagnostic work.
+
 ## First MAMAWORK Lessons
 
 Captured during the first MacBook terminal-admin session on 2026-05-14
