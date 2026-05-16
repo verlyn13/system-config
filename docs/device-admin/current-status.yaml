@@ -1017,10 +1017,10 @@ devices:
         packet_version: 0.1.0
         notes: "See applied_packets[]. Decisive finding: sshd-process-internal cause (loopback reset reproduces). Config + ACLs + LAN-path all proven correct. Follow-up manual foreground test by operator proved end-to-end SSH works under jeffr-context sshd; bug narrowed to service-mode-only."
 
-      - action: desktop-2jj3187-service-mode-restart-test
+      - action: desktop-2jj3187-service-mode-fix-microsoft-repair-scripts
         state: approval-required
         packet_version: inline
-        approval_phrase: "Operator runs on DESKTOP-2JJ3187 from elevated WinPS 5.1: `Start-Service sshd`. Then operator runs from MacBook: `ssh desktop-2jj3187 'hostname'`. If returns DESKTOP-2JJ3187, Phase 3 done. If returns Connection reset, the bug persists across plain restarts and fix-packet desktop-2jj3187-sshd-service-reinstall (install-sshd.ps1) is next."
+        approval_phrase: "Run the operator fix block quoted verbatim in docs/device-admin/desktop-2jj3187-ssh-service-mode-rca-2026-05-16.md (§Fix path) on DESKTOP-2JJ3187 from elevated WinPS 5.1. Block: Stop-Service sshd; Remove-LocalUser sshd (if half-configured from prior manual debugging); strip SyslogFacility/LogLevel ad-hoc debug lines from sshd_config; fetch install-sshd.ps1 + FixHostFilePermissions.ps1 + OpenSSHUtils.psm1/psd1 from PowerShell/openssh-portable branch latestw_all path contrib/win32/openssh/; run install-sshd.ps1; run FixHostFilePermissions.ps1 -Confirm:$false; Restart-Service sshd. Then from MacBook: ssh desktop-2jj3187 'cmd /c \"hostname && whoami\"'. Expected: DESKTOP-2JJ3187 + desktop-2jj3187\\jeffr. The fix block addresses the canonical root cause: Add-WindowsCapability on Win 11 24H2 does not create the sshd virtual user or apply NTFS ACL on C:\\ProgramData\\ssh\\ that privsep requires. Note: this is the immediate operator-driven fix. v0.5.1 install packet (forthcoming) codifies the same fix with supply-chain hygiene (pinned commit SHA + sha256 verification + real-loopback test before declaring success)."
 
       - action: desktop-2jj3187-ssh-kex-reset-diagnostic-v0.2.0
         state: prepared-fallback
@@ -1033,83 +1033,120 @@ devices:
         notes: "See applied_packets[]."
 
       - action: desktop-2jj3187-ssh-hardening
-        state: planned-after-install
-        approval_phrase: "Phrase will be drafted with the packet, after the v0.5.0 install apply record is landed and the MacBook real-auth probe succeeds."
+        state: planned-after-service-mode-fix
+        approval_phrase: "Phrase will be drafted after the operator's service-mode fix block resolves the KEX reset and the v0.5.1 install packet codifies the fix permanently. Hardening tightening is meaningless until the lane is verified working end-to-end via MacBook real-auth probe."
 
       - action: desktop-2jj3187-known-hosts-reconciliation
-        state: planned-after-install
-        approval_phrase: "Phrase will be drafted; MacBook-side reconciliation to drop HostKeyAlias 192.168.0.217 once FQDN known_hosts entry is added."
+        state: planned-after-service-mode-fix
+        approval_phrase: "Phrase will be drafted after the service-mode fix resolves and the MacBook real-auth probe succeeds (host ED25519 key SHA256:OFNLsVw4RJlChJef1Db+eelKZnqJfPsVYLkNPVED6V8 is already in MacBook ~/.ssh/known_hosts from the foreground sshd probe; the conf.d HostKeyAlias 192.168.0.217 directive can be dropped once a stable service-mode SSH lane is verified)."
 
     next_recommended_action:
       summary: >-
         SSH lane FUNCTIONALLY PROVEN end-to-end 2026-05-16. v0.5.0
-        install applied cleanly, then v0.1.0 diagnostic confirmed
-        sshd-process-internal cause for the initial KEX reset.
-        Follow-up manual foreground test (operator ran
-        Stop-Service sshd + sshd.exe -ddd; MacBook ssh succeeded
-        with full KEX + auth + command exec + clean disconnect)
-        proved the entire SSH infrastructure correct: drop-in
-        directives in effect via Include, Match block routes
-        admins to administrators_authorized_keys, ED25519 admin
-        key fingerprint matches, AllowGroups administrators
-        passes, firewall rule accepts the connection. The host
-        ED25519 key SHA256:OFNLsVw4RJlChJef1Db+eelKZnqJfPsVYLkNPVED6V8
-        is now in MacBook ~/.ssh/known_hosts.
+        install applied cleanly; foreground sshd test (operator
+        ran Stop-Service sshd + sshd.exe -ddd; MacBook ssh
+        succeeded with full KEX + auth + command exec + clean
+        disconnect) proved the entire SSH infrastructure correct.
+        Host ED25519 key
+        SHA256:OFNLsVw4RJlChJef1Db+eelKZnqJfPsVYLkNPVED6V8 is now
+        in MacBook ~/.ssh/known_hosts.
 
-        Remaining blocker is SERVICE-MODE-ONLY. The bug only
-        manifests when sshd runs under the Windows Service
-        Control Manager (expected default account
-        NT AUTHORITY\SYSTEM). Foreground sshd under jeffr's
-        interactive admin token works perfectly. The
-        SYSTEM-context code path (which loads the user profile
-        via LSA APIs) is the candidate failure point;
-        foreground-sshd-as-jeffr skips that path
-        (`debug1: Not running as SYSTEM: skipping loading user
-        profile`) and succeeds.
+        ROOT CAUSE IDENTIFIED for the service-mode-only KEX reset
+        (full RCA in
+        docs/device-admin/desktop-2jj3187-ssh-service-mode-rca-2026-05-16.md):
+        Add-WindowsCapability OpenSSH.Server* on Win 11 24H2
+        installs binaries but does NOT (1) create the `sshd`
+        virtual local user that privsep requires, (2) grant LSA
+        privileges to that account, (3) apply NTFS ACL on
+        C:\ProgramData\ssh\ that the privsep child reads.
+        Result: per-connection child (sshd.exe -y) gets Access
+        Denied on first config read and crashes before any log
+        emission. Microsoft's repair scripts (install-sshd.ps1,
+        FixHostFilePermissions.ps1, OpenSSHUtils.psm1/psd1) are
+        stripped from the Win 11 24H2 native capability payload
+        and must be fetched from upstream
+        PowerShell/openssh-portable branch latestw_all.
+
+        Spec gained §Windows OpenSSH Capability Install Gaps
+        (the fourth lessons-learned section after §Encoding
+        Contract, §Cross-Shell Data Normalization, §Windows
+        OpenSSH Defaults). Future install packets must verify
+        the privsep user exists after capability install, fetch
+        the repair scripts with pinned commit SHA + sha256
+        verification, and include a real-loopback test before
+        declaring success.
 
         sshd service is currently stopped on the host (operator
-        ran Stop-Service for the foreground test). Immediate
-        next step is the simplest possible: on the host from
-        elevated WinPS 5.1 run `Start-Service sshd`, then from
-        MacBook run `ssh desktop-2jj3187 'hostname'`. If the
-        probe returns DESKTOP-2JJ3187, Phase 3 is done (the
-        previous service-mode failure may have been a transient
-        state issue cleaned up by Stop+Start). If KEX reset
-        returns, run Microsoft's `install-sshd.ps1` to reset
-        the service account + permissions. Only after both
-        simple fixes fail should v0.2.0 diagnostic packet run.
+        ran Stop-Service for the foreground test; service was
+        last seen Started but Connection-Reset-broken). Port 22
+        has no listener as of 2026-05-16T~04:00Z. MacBook ssh
+        probe currently TCP-times-out.
 
-        Spec gap recorded for future install-packet versions:
-        v0.5.0's S7 (`sshd -T -C addr=127.0.0.1`) proves the
-        config parses but does not exercise a real incoming TCP
-        connection. Future versions will add Test-NetConnection
-        plus actual loopback ssh inside S7 so the install
-        acceptance gate matches what the operator actually
-        needs.
+        IMMEDIATE NEXT STEP (operator-driven, RCA-anchored): run
+        the operator fix block quoted verbatim in the RCA doc
+        §Fix path. The block resets state (remove half-
+        configured sshd user from prior manual debugging, strip
+        ad-hoc debug lines from sshd_config), fetches the four
+        Microsoft repair scripts from
+        PowerShell/openssh-portable branch latestw_all, runs
+        install-sshd.ps1 and FixHostFilePermissions.ps1, and
+        restarts sshd. Then operator runs MacBook ssh
+        desktop-2jj3187 'hostname' as the proof point. The
+        canonical bundle for the operator is
+        docs/device-admin/dsj-service-mode-restart-handoff/.
+
+        After the fix block succeeds, system-config will: capture
+        the latestw_all commit SHA + sha256 of each downloaded
+        script (for v0.5.1 supply-chain pin); write the v0.5.0
+        install apply addendum confirming the lane is live; flip
+        the device to lifecycle_phase: 3 / classification:
+        reference-ssh-host; draft v0.5.1 install packet that
+        codifies the fix permanently with pinned commit +
+        checksums + real-loopback test; drop the
+        desktop-2jj3187-service-mode-sshd-kex-reset blocked
+        item; queue ssh-hardening +
+        known-hosts-reconciliation as the next approval-eligible
+        packets.
+
+        If the fix block does NOT resolve the service-mode reset,
+        v0.2.0 diagnostic packet (sha256
+        cbe8294f0da5f0ff9d63f677069a8c51ac06ba599892996f7621ab5f56788eb1)
+        is the deep-investigation fallback. Captures binary
+        inventory + Authenticode signatures, Defender state +
+        threats + ASR rules, WER crash dumps, Application log
+        entries, and foreground sshd -ddd output as structured
+        JSON evidence.
 
         desktop-2jj3187 remains lifecycle_phase: 2 and
-        classification: rdp-only-host UNTIL service-mode sshd is
-        confirmed working end-to-end via MacBook probe. RDP is
-        intact and operational.
-      preferred_packet: desktop-2jj3187-service-mode-restart-test
+        classification: rdp-only-host UNTIL service-mode sshd
+        passes the MacBook real-auth probe. RDP is intact and
+        operational; daily admin via RDP is unaffected.
+      preferred_packet: desktop-2jj3187-service-mode-fix-microsoft-repair-scripts
       preferred_packet_status: approval-required
       preferred_packet_version: inline
       preferred_packet_blockers:
-        - slug: simplest-first
-          note: "Try `Start-Service sshd` + MacBook ssh probe before any further packet ceremony. The previous service-mode failure may have been a transient state issue. If MacBook ssh works, Phase 3 is done with no further packet."
-        - slug: install-sshd-ps1-fallback
-          note: "If Start-Service + probe still resets at KEX, the standard Microsoft recovery is `cd C:\\Windows\\System32\\OpenSSH; .\\install-sshd.ps1; Start-Service sshd`. This re-creates the sshd service with default account + permissions."
-        - slug: v020-diagnostic-deep-fallback
-          note: "If install-sshd.ps1 does not fix it, v0.2.0 diagnostic packet (drafted at docs/device-admin/desktop-2jj3187-ssh-kex-reset-diagnostic-v0.2.0-2026-05-16.md, sha256 cbe8294f0da5f0ff9d63f677069a8c51ac06ba599892996f7621ab5f56788eb1) captures binary inventory + Defender + WER + foreground sshd -ddd as structured evidence."
-      secondary_packet: desktop-2jj3187-ssh-hardening
-      secondary_packet_status: planned-after-service-mode-fix
+        - slug: rca-anchored-fix-block
+          note: "The fix block is quoted verbatim in docs/device-admin/desktop-2jj3187-ssh-service-mode-rca-2026-05-16.md §Fix path. It addresses the canonical root cause directly. Pre-RCA speculation (just-try-Start-Service-first) has been retired -- the RCA shows the install is incomplete; plain restart cannot help."
+        - slug: launch-from-winps-5-1
+          note: "Launch from Windows PowerShell 5.1 (powershell.exe), not pwsh 7. Run elevated (Administrator) so the LSA privileges can be granted."
+        - slug: supply-chain-note
+          note: "For this immediate operator-driven fix, fetching from latestw_all branch tip is acceptable -- the operator inspects the scripts on disk before running them. v0.5.1 packet (forthcoming) will pin to a specific commit SHA and verify sha256 checksums of the four downloaded files. Operator capture (post-fix-block): latestw_all commit SHA + sha256 of each downloaded script for the v0.5.1 pin."
+        - slug: real-auth-probe-is-the-gate
+          note: "Per spec §Windows OpenSSH Capability Install Gaps and feedback_auth_packet_success_criterion: the completion gate is the MacBook ssh probe (real-auth + command exec + clean disconnect), NOT sshd -t / sshd -T / sshd_config-parses-fine. Config-parse checks were necessary but not sufficient (v0.5.0 verification gap)."
+      secondary_packet: desktop-2jj3187-ssh-lane-install-v0.5.1
+      secondary_packet_status: planned-after-fix-block-success
       secondary_packet_blockers:
-        - slug: service-mode-success-required
-          note: "ssh-hardening packet will be drafted after service-mode sshd passes the MacBook real-auth probe. Until then, lane works only manually."
+        - slug: capture-supply-chain-pin
+          note: "v0.5.1 packet drafted after fix block confirmed working; needs latestw_all commit SHA + sha256 of each of the four repair scripts (captured by operator post-fix-block run). v0.5.1 will codify the fix permanently with those pinned values + a real-loopback test inside S7."
+      tertiary_packet: desktop-2jj3187-ssh-hardening
+      tertiary_packet_status: planned-after-v0.5.1-applied
+      tertiary_packet_blockers:
+        - slug: v051-apply-success
+          note: "ssh-hardening packet will be drafted after v0.5.1 install apply lands and the MacBook real-auth probe succeeds against a fresh service-mode sshd."
       handback_to_human: true
 
-    last_verified: 2026-05-16T04:00:00Z
-    latest_system_config_commit: 3e2b810
+    last_verified: 2026-05-16T19:30:00Z
+    latest_system_config_commit: 5059185
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns

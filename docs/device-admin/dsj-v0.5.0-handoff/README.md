@@ -1,15 +1,33 @@
 ---
-title: DESKTOP-2JJ3187 v0.5.0 SSH Lane Install - Handoff Bundle
+title: DESKTOP-2JJ3187 v0.5.0 SSH Lane Install - Handoff Bundle (SUPERSEDED)
 category: operations
 component: device_admin
-status: active
+status: superseded
 version: 0.1.0
-last_updated: 2026-05-15
-tags: [device-admin, desktop-2jj3187, windows, openssh, handoff, bundle]
+last_updated: 2026-05-16
+tags: [device-admin, desktop-2jj3187, windows, openssh, handoff, bundle, superseded]
 priority: high
 ---
 
-# DESKTOP-2JJ3187 v0.5.0 SSH Lane Install - Handoff Bundle
+# DESKTOP-2JJ3187 v0.5.0 SSH Lane Install - Handoff Bundle (SUPERSEDED)
+
+> **SUPERSEDED 2026-05-16** by
+> `../dsj-service-mode-restart-handoff/`.
+>
+> The v0.5.0 install packet ran successfully (all 23 acceptance-
+> gate fields true; apply record committed in
+> `docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.5.0-apply-2026-05-16.md`).
+> The MacBook real-auth probe then failed at SSH KEX. Diagnostics
+> traced the cause to `Add-WindowsCapability` not creating the
+> `sshd` virtual user / NTFS ACL that privsep requires on
+> Win 11 24H2. Full RCA:
+> `docs/device-admin/desktop-2jj3187-ssh-service-mode-rca-2026-05-16.md`.
+>
+> **Do not use this bundle for new work.** Use
+> `../dsj-service-mode-restart-handoff/` instead — it contains
+> the RCA-anchored fix block + the v0.2.0 diagnostic fallback.
+> This bundle is preserved as historical reference for the v0.5.0
+> install attempt only.
 
 This folder is a **transient snapshot** of the documents and the
 executable script that the Windows-side agent or operator on

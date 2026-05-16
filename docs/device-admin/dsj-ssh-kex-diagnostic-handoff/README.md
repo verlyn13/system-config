@@ -1,15 +1,35 @@
 ---
-title: DESKTOP-2JJ3187 SSH KEX Reset Diagnostic - Handoff Bundle
+title: DESKTOP-2JJ3187 SSH KEX Reset Diagnostic - Handoff Bundle (SUPERSEDED)
 category: operations
 component: device_admin
-status: active
+status: superseded
 version: 0.1.0
 last_updated: 2026-05-16
-tags: [device-admin, desktop-2jj3187, windows, openssh, diagnostic, read-only-probe, handoff, bundle]
+tags: [device-admin, desktop-2jj3187, windows, openssh, diagnostic, handoff, bundle, superseded]
 priority: high
 ---
 
-# DESKTOP-2JJ3187 SSH KEX Reset Diagnostic - Handoff Bundle
+# DESKTOP-2JJ3187 SSH KEX Reset Diagnostic - Handoff Bundle (SUPERSEDED)
+
+> **SUPERSEDED 2026-05-16** by
+> `../dsj-service-mode-restart-handoff/`.
+>
+> The v0.1.0 diagnostic packet ran successfully on the host;
+> evidence is preserved at
+> `C:\Users\Public\Documents\jefahnierocks-device-admin\desktop-2jj3187-ssh-kex-diagnostic-20260516T024628Z\`.
+> The diagnostic's Decisive Finding (loopback reset reproduces ->
+> sshd-process-internal cause) was followed by the operator's
+> manual foreground sshd test which proved SSH works end-to-end,
+> then by browser/manual analysis identifying the canonical root
+> cause (Win 11 24H2 incomplete capability install). The full
+> RCA is at
+> `docs/device-admin/desktop-2jj3187-ssh-service-mode-rca-2026-05-16.md`.
+>
+> **Do not use this bundle for new work.** Use
+> `../dsj-service-mode-restart-handoff/` instead — it contains
+> the RCA-anchored fix block + the v0.2.0 diagnostic as a deeper
+> fallback. This bundle is preserved as historical reference for
+> the v0.1.0 diagnostic only.
 
 This folder is a **transient snapshot** of the diagnostic packet
 and references that the Windows-side agent or operator on
