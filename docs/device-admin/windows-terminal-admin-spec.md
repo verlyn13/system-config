@@ -514,6 +514,150 @@ was designed against the Linux-distro `Include` convention without
 this verification step. The post-mortem is
 `docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-incident-2026-05-15.md`.
 
+## Windows OpenSSH Capability Install Gaps
+
+`Add-WindowsCapability -Online -Name OpenSSH.Server*` is
+**necessary but not sufficient** to produce a working sshd
+service on Windows 11 24H2. The capability install copies the
+OpenSSH binaries into `C:\Windows\System32\OpenSSH\` and creates
+the sshd service entry, but on Win 11 24H2 it does **not** also
+run the privsep setup that Microsoft's upstream
+`PowerShell/openssh-portable` install scripts perform.
+
+The DESKTOP-2JJ3187 v0.5.0 install applied cleanly per its own
+acceptance gate (all 23 effective-config fields green, sshd
+service Running+Automatic, listener on TCP/22) but the service-
+mode sshd reset every incoming connection at SSH_MSG_KEXINIT
+with no log entries. Foreground `sshd.exe -d -d -d` under an
+interactive admin token worked end-to-end against the same
+configuration. The bisection (foreground works, service fails)
+is the canonical signature of the privsep gap. Full RCA:
+[desktop-2jj3187-ssh-service-mode-rca-2026-05-16.md](./desktop-2jj3187-ssh-service-mode-rca-2026-05-16.md).
+
+### What the capability install misses
+
+Microsoft Win32-OpenSSH uses a `sshd` virtual local account as
+the privsep target — the unprivileged account under which the
+per-connection child runs. For privsep to work, the install
+must also:
+
+1. **Create the `sshd` local user account** (no password,
+   account-disabled-for-interactive-logon shape; service can
+   still impersonate it).
+2. **Grant the `sshd` account specific LSA privileges**
+   (`SeAssignPrimaryTokenPrivilege`,
+   `SeIncreaseQuotaPrivilege`, others).
+3. **Apply an NTFS ACL on `C:\ProgramData\ssh\`** that gives
+   the `sshd` account read access to its own config files,
+   host keys (for the parts privsep is allowed to read), and
+   logs subdirectory.
+
+On Win 11 24H2 with the OpenSSH capability install path, none
+of those three steps run. The service starts, the listener
+binds, but the per-connection child crashes immediately on
+first config read (`Access Denied` against `sshd_config` from
+the privsep context) and the connection RSTs before any log
+emission.
+
+### The missing repair scripts
+
+Microsoft maintains the install + repair tooling in their
+`PowerShell/openssh-portable` upstream:
+
+- `install-sshd.ps1` — creates the `sshd` service AND the
+  virtual `sshd` user, grants the required LSA privileges,
+  configures service startup. Idempotent.
+- `FixHostFilePermissions.ps1` — applies the correct NTFS ACL
+  on `C:\ProgramData\ssh\` and its child files. Idempotent.
+- `OpenSSHUtils.psm1` / `OpenSSHUtils.psd1` — supporting
+  PowerShell module used by both scripts.
+
+These scripts ship with the older MSI install path (from the
+OpenSSH GitHub Releases page). On Win 11 24H2 systems where
+OpenSSH was installed via `Add-WindowsCapability`, **the
+scripts are stripped from the native payload**. They must be
+fetched from upstream and run after the capability install.
+
+Authoritative source:
+
+```text
+https://raw.githubusercontent.com/PowerShell/openssh-portable/latestw_all/contrib/win32/openssh/
+  install-sshd.ps1
+  FixHostFilePermissions.ps1
+  OpenSSHUtils.psm1
+  OpenSSHUtils.psd1
+```
+
+### Spec requirement for future install packets
+
+Any packet that installs the OpenSSH.Server capability on Win
+11 24H2 must:
+
+1. After `Add-WindowsCapability` succeeds, check whether the
+   `sshd` local user exists (`Get-LocalUser sshd -ErrorAction
+   SilentlyContinue`). If absent, the privsep setup did not
+   run.
+2. If the privsep user is absent, fetch the four upstream
+   scripts. **Pin to a specific commit SHA**, not the
+   `latestw_all` branch tip — `latestw_all` is a moving target
+   and silent upstream changes would violate the spec's
+   §Encoding Contract / determinism intent. The packet
+   markdown must include the pinned commit SHA and the sha256
+   checksums of all four files.
+3. Verify the sha256 of each downloaded file before placing
+   it under `C:\Windows\System32\OpenSSH\`. Halt on mismatch
+   (per §Packet-Defect Halt Rule).
+4. Run `install-sshd.ps1` and `FixHostFilePermissions.ps1
+   -Confirm:$false`. Both are idempotent.
+5. Restart the sshd service.
+6. Run a **real-loopback test** before declaring success:
+   `Test-NetConnection 127.0.0.1 -Port 22` followed by
+   `ssh -i <pinned-pubkey-path> -o BatchMode=yes -o
+   ConnectTimeout=5 -o StrictHostKeyChecking=accept-new
+   <admin-user>@127.0.0.1 hostname`. The probe must return the
+   hostname. A failure here means the install is incomplete
+   even if all config readbacks pass; halt with explicit
+   "v0.5.0 verification gap reproduced" diagnostic. This
+   closes the gap recorded in the DSJ v0.5.0 install apply
+   record.
+
+### Alternative: vendor the scripts into the repo
+
+Long-term, embedding Microsoft's repair scripts directly in
+the `system-config` repo (with proper attribution + license
+preservation; `PowerShell/openssh-portable` is MIT-licensed)
+is preferable to runtime downloads. The packet then copies
+them locally without supply-chain hits at apply time. Trade-
+off: we accept a known maintenance burden of refreshing the
+vendored copies when Microsoft updates them.
+
+A future spec revision will pick one approach (runtime
+download with commit pin vs. vendored copies) as canonical.
+For DESKTOP-2JJ3187 v0.5.1, runtime download with commit pin
+is the immediate path.
+
+### Verification before drafting
+
+Before drafting any Windows OpenSSH install packet, the
+operator or agent must:
+
+1. Read the upstream Microsoft `sshd_config` (per
+   §Windows OpenSSH Defaults).
+2. Read the upstream Microsoft `install-sshd.ps1` and
+   `FixHostFilePermissions.ps1` (THIS section).
+3. Confirm the host's Windows build (24H2, 25H2, etc.) and
+   whether the capability install includes or strips the
+   repair scripts on that build. If unknown, assume strip.
+
+The DESKTOP-2JJ3187 v0.4.0 -> v0.5.0 -> v0.5.1 sequence is the
+canonical case study. The original v0.4.0 packet assumed the
+capability install was complete; v0.5.0 added the
+`Include sshd_config.d/*.conf` directive after discovering it
+was missing from Microsoft's default `sshd_config`; v0.5.1 adds
+the privsep-setup-and-NTFS-ACL recovery after discovering the
+capability install is incomplete on Win 11 24H2. Each iteration
+narrowed what "consult upstream" means.
+
 ## Chezmoi Workstation Changes
 
 MacBook-side setup is part of the admin lane, but it is still a live
