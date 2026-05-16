@@ -711,40 +711,84 @@ devices:
 
     prepared_packets:
       - name: desktop-2jj3187-ssh-lane-install
-        packet_doc: docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-2026-05-15.md
-        executable: scripts/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0.ps1
-        executable_sha256: 8bc1b29bb0391ca55c2262a0847c546e0252347c93e784e1c9358085bc474e0c
+        packet_doc: docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.5.0-2026-05-15.md
+        executable: scripts/device-admin/desktop-2jj3187-ssh-lane-install-v0.5.0.ps1
+        executable_sha256: a4df7f944ba87bce439af03698ba715c6a4e871e7887ebfa49aa39ad1240928c
         executable_encoding: ASCII
         executable_shell: Windows PowerShell 5.1 (powershell.exe)
-        supersedes: docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md (v0.3.0)
-        prepared_at: 2026-05-15T04:00:00Z
+        supersedes: >-
+          docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-2026-05-15.md
+          (v0.4.0; partial apply through S6 then halted at S7) and
+          docs/device-admin/desktop-2jj3187-ssh-lane-install-2026-05-15.md
+          (v0.3.0; no host mutation)
+        prepared_at: 2026-05-15T23:55:00Z
         state: approval-required
-        # Was approval-required-blocked-on-reconciliation until the
-        # reconciliation apply record landed (2026-05-15T23:36:40Z;
-        # see applied_packets[].desktop-2jj3187-reconciliation).
-        packet_version: 0.4.0
+        packet_version: 0.5.0
         session_class: scoped-live-change
+        change_from_v040: >-
+          Adds step S3b: ensure Include sshd_config.d/*.conf at top
+          of C:\ProgramData\ssh\sshd_config, idempotent, snapshot-
+          backed, sshd -t gated, read-back confirmed. Required
+          because Microsoft's default sshd_config does NOT contain
+          an Include directive — the v0.4.0 drop-in was silently
+          ignored by sshd. Root cause: spec was missing a Windows-
+          OpenSSH-Defaults section; v0.4.0 was designed against the
+          Linux-distro Include convention without consulting the
+          upstream Microsoft source. Now codified in
+          docs/device-admin/windows-terminal-admin-spec.md
+          §Windows OpenSSH Defaults.
         prerequisite: >-
-          (1) desktop-2jj3187-reconciliation packet applied and apply
-          record committed (DONE 2026-05-15T23:36:40Z; all 20 expected
-          fields matched, no v0.3.0 mutation, no drift from Phase 0
-          baseline). (2) 1Password item
+          (1) v0.4.0 packet markdown SUPERSEDED with notice; v0.4.0
+          on-host evidence dir preserved untouched (DONE; see
+          incident record
+          docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-incident-2026-05-15.md).
+          (2) desktop-2jj3187-reconciliation packet applied and apply
+          record committed (DONE 2026-05-15T23:36:40Z, commit 4fef412;
+          all 20 expected fields matched, no v0.3.0 mutation, no
+          drift from Phase 0 baseline). (3) 1Password item
           op://Dev/jefahnierocks-device-desktop-2jj3187-admin-ssh-verlyn13
           exists (fingerprint
-          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s). (3)
+          SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s). (4)
           MacBook conf.d already applied (commit f0fb9c1).
         approval_phrase_excerpt: >-
-          Apply desktop-2jj3187-ssh-lane-install-v0.4.0.ps1 on
+          Apply desktop-2jj3187-ssh-lane-install-v0.5.0.ps1 on
           DESKTOP-2JJ3187 from elevated Windows PowerShell 5.1 as
-          jeffr. Greenfield OpenSSH.Server install + Match block +
-          hardening drop-in + admin key (pinned body, fingerprint
-          gate) + scoped firewall rule. Idempotent, snapshot-backed,
+          jeffr. Idempotent OpenSSH.Server install + Match block +
+          Include directive injection (S3b, new) + hardening drop-in
+          + admin key (pinned body, fingerprint gate) + scoped
+          firewall rule. v0.4.0's S1-S6 mutations are still in place
+          and idempotent; v0.5.0 reads them as already-done and only
+          S3b + S7 (restart + readback) do new work. Snapshot-backed,
           sshd -t and conditional sshd -T gates. Return
           08-summary.json verbatim. Operator MacBook then runs
           ssh desktop-2jj3187 'cmd /c "hostname && whoami"' for the
           real-auth probe.
 
     blocked_items:
+      - item: desktop-2jj3187-v040-install-superseded-partial-apply
+        owner: documented
+        notes: >-
+          The 2026-05-15 v0.4.0 install attempt halted at S7 because
+          Microsoft's default sshd_config has NO Include directive,
+          so the v0.4.0 drop-in at
+          C:\ProgramData\ssh\sshd_config.d\20-jefahnierocks-admin.conf
+          was silently ignored. The S7 effective-config readback
+          missed passwordauth_off (and would have missed
+          kbdinteractive_off, allow_groups_admin); script halted on
+          the first false. v0.4.0 mutated through S6 cleanly
+          (capability installed, sshd Running/Automatic, Match block
+          confirmed, drop-in written, admin key in
+          administrators_authorized_keys, Jefahnierocks SSH LAN TCP
+          22 firewall rule active). On-host v0.4.0 evidence dir
+          preserved per spec §Packet-Defect Halt Rule. v0.4.0 packet
+          markdown carries a SUPERSEDED notice. v0.5.0 adds step
+          S3b (Include injection) and inherits v0.4.0's idempotent
+          gates so it can resume against the partial-apply state.
+          Spec bumped with §Windows OpenSSH Defaults section citing
+          Microsoft's upstream sshd_config as the authoritative
+          reference. Full postmortem at
+          docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-incident-2026-05-15.md.
+
       - item: desktop-2jj3187-v030-install-superseded-postmortem
         owner: documented
         notes: >-
@@ -832,15 +876,20 @@ devices:
         superseded_by: desktop-2jj3187-ssh-lane-install-v0.4.0
         notes: "Attempted 2026-05-15; halted in S1 with 'Unexpected OpenSSH.Server state: 0' (enum-as-integer serialization defect, after a UTF-8-without-BOM encoding defect). No host mutation. v0.3.0 markdown preserved with a SUPERSEDED notice at the top."
 
+      - action: desktop-2jj3187-ssh-lane-install-v0.4.0
+        state: superseded-after-partial-apply
+        superseded_by: desktop-2jj3187-ssh-lane-install-v0.5.0
+        notes: "Attempted 2026-05-15; applied S1-S6 cleanly (OpenSSH capability installed, sshd Running+Automatic, Match block confirmed, drop-in 20-jefahnierocks-admin.conf written with Admins+SYSTEM ACL, admin key fingerprint SHA256:0oDYmXRFrGuT4yyd0NLAAVyk0l/Aygu+iV88W2eq+/s in administrators_authorized_keys, Jefahnierocks SSH LAN TCP 22 firewall rule active). Halted at S7 (effective-config readback) because Microsoft's default sshd_config has NO Include directive — drop-in was silently ignored by sshd. Per spec §Packet-Defect Halt Rule the agent did not attempt local repair; v0.4.0 markdown carries a SUPERSEDED notice; v0.4.0 on-host evidence directory preserved untouched. Full postmortem at docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-incident-2026-05-15.md. Spec bumped with §Windows OpenSSH Defaults section citing the upstream Microsoft sshd_config as the authoritative reference."
+
       - action: desktop-2jj3187-reconciliation
         state: applied
         applied_at: 2026-05-15T23:36:40Z
-        notes: "See applied_packets[]. All 20 expected hand-back fields matched; no v0.3.0 mutation; gate released for v0.4.0 install."
+        notes: "See applied_packets[]. All 20 expected hand-back fields matched; no v0.3.0 mutation; gate released for v0.4.0 install (which subsequently halted at S7 — see v0.4.0 entry above)."
 
       - action: desktop-2jj3187-ssh-lane-install
         state: approval-required
-        packet_version: 0.4.0
-        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0-2026-05-15.md 'Approval Phrase' section. WinPS 5.1; runs scripts/device-admin/desktop-2jj3187-ssh-lane-install-v0.4.0.ps1 (sha256 8bc1b29bb0391ca55c2262a0847c546e0252347c93e784e1c9358085bc474e0c). Reconciliation apply record landed 2026-05-15T23:36:40Z — packet is now unblocked."
+        packet_version: 0.5.0
+        approval_phrase: "See docs/device-admin/desktop-2jj3187-ssh-lane-install-v0.5.0-2026-05-15.md 'Approval Phrase' section. WinPS 5.1; runs scripts/device-admin/desktop-2jj3187-ssh-lane-install-v0.5.0.ps1 (sha256 a4df7f944ba87bce439af03698ba715c6a4e871e7887ebfa49aa39ad1240928c). v0.4.0 partial-apply state on host expected; v0.5.0 reads S1-S6 as already-done idempotently and only S3b (Include directive injection) + S7 (restart + readback) do new work."
 
       - action: macbook-ssh-conf-d-desktop-2jj3187
         state: applied
@@ -849,7 +898,7 @@ devices:
 
       - action: desktop-2jj3187-ssh-hardening
         state: planned-after-install
-        approval_phrase: "Phrase will be drafted with the packet, after the v0.4.0 install apply record is landed."
+        approval_phrase: "Phrase will be drafted with the packet, after the v0.5.0 install apply record is landed and the MacBook real-auth probe succeeds."
 
       - action: desktop-2jj3187-known-hosts-reconciliation
         state: planned-after-install
@@ -857,39 +906,51 @@ devices:
 
     next_recommended_action:
       summary: >-
-        Reconciliation applied 2026-05-15T23:36:40Z; all 20 expected
-        hand-back fields matched, no drift from Phase 0 baseline, no
-        v0.3.0 mutation (apply record
-        docs/device-admin/desktop-2jj3187-reconciliation-apply-2026-05-15.md).
-        Next step: run the v0.4.0 SSH lane install on DESKTOP-2JJ3187
-        from elevated Windows PowerShell 5.1, sha256
-        8bc1b29b...4e0c, invoked via
+        Reconciliation applied 2026-05-15T23:36:40Z. v0.4.0 install
+        attempted next; halted at S7 because Microsoft's default
+        sshd_config has no Include directive (the v0.4.0 drop-in
+        was silently ignored). Per spec §Packet-Defect Halt Rule
+        the operating agent did not attempt local repair; v0.4.0
+        evidence preserved on host. Spec gained a new §Windows
+        OpenSSH Defaults section citing the upstream Microsoft
+        sshd_config as authoritative. v0.5.0 issued: identical to
+        v0.4.0 plus a new step S3b that injects
+        `Include sshd_config.d/*.conf` at the top of sshd_config
+        (idempotent, snapshot-backed, sshd -t gate, read-back).
+        v0.4.0's S1-S6 mutations remain on host; v0.5.0's
+        idempotent gates read them as already-done. Next step:
+        run v0.5.0 on DESKTOP-2JJ3187 from elevated Windows
+        PowerShell 5.1, sha256
+        a4df7f944ba87bce439af03698ba715c6a4e871e7887ebfa49aa39ad1240928c,
+        invoked via
         `powershell.exe -NoProfile -ExecutionPolicy Bypass -File <path>`.
-        Idempotent, snapshot-backed, sshd -t + sshd -T gates;
-        evidence at
-        C:\Users\Public\Documents\jefahnierocks-device-admin\desktop-2jj3187-ssh-install-<UTC-timestamp>\.
-        Returns 08-summary.json verbatim. After the install apply
+        Evidence at
+        C:\Users\Public\Documents\jefahnierocks-device-admin\desktop-2jj3187-ssh-install-<UTC-timestamp>\
+        (new dir alongside the preserved v0.4.0 dir). Returns
+        08-summary.json verbatim. After the v0.5.0 install apply
         record lands, the operator MacBook runs
         `ssh desktop-2jj3187 'cmd /c "hostname && whoami"'` as the
         real-auth probe; on success, lifecycle_phase becomes 3 and
         classification flips to reference-ssh-host.
       preferred_packet: desktop-2jj3187-ssh-lane-install
       preferred_packet_status: approval-required
-      preferred_packet_version: 0.4.0
+      preferred_packet_version: 0.5.0
       preferred_packet_blockers:
         - slug: launch-from-winps-5-1
-          note: "Launch from Windows PowerShell 5.1 (powershell.exe), not pwsh 7. Verify script sha256 8bc1b29b...4e0c before run."
+          note: "Launch from Windows PowerShell 5.1 (powershell.exe), not pwsh 7. Verify script sha256 a4df7f944ba87bce439af03698ba715c6a4e871e7887ebfa49aa39ad1240928c before run."
+        - slug: preserve-v040-evidence
+          note: "Do not delete, rename, or modify the v0.4.0 on-host evidence directory or the v0.4.0 .ps1 file. The v0.4.0 packet markdown carries a SUPERSEDED notice and stays preserved per spec §Packet-Defect Halt Rule."
         - slug: packet-defect-halt-rule
-          note: "Per spec v0.5.0 §Packet-Defect Halt Rule: if the script throws on encoding, capability enum, sshd -t, fingerprint, or any documented halt class — do not edit, do not retry. Preserve evidence directory and hand back for a new packet version."
+          note: "Per spec §Packet-Defect Halt Rule: if the script throws on encoding, capability enum, sshd -t, fingerprint, S3b read-back failure, S7 effective-config readback, or any documented halt class — do not edit, do not retry. Preserve evidence directory and hand back for a new packet version."
       secondary_packet: desktop-2jj3187-ssh-hardening
       secondary_packet_status: planned-after-install
       secondary_packet_blockers:
         - slug: install-apply-record-required
-          note: "ssh-hardening packet will be drafted after the v0.4.0 install apply record lands and the MacBook real-auth probe succeeds."
+          note: "ssh-hardening packet will be drafted after the v0.5.0 install apply record lands and the MacBook real-auth probe succeeds."
       handback_to_human: true
 
-    last_verified: 2026-05-15T23:36:40Z
-    latest_system_config_commit: 95e0c94
+    last_verified: 2026-05-15T23:55:00Z
+    latest_system_config_commit: 4fef412
 
 outbound_handback_requests:
   - target_repo: cloudflare-dns
