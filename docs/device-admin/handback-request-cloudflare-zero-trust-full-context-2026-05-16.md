@@ -888,7 +888,344 @@ that answers, at minimum:
 
 ---
 
-## 8. Cross-References
+## 8. Cross-Device Admin + Business Continuity Considerations
+
+This section pre-plans the planning. The operator does not yet
+have a full BC/DR plan and is **not asking the Cloudflare
+designer to produce one**. The ask is: enumerate the scenarios
+the Cloudflare design must accommodate (or fail gracefully in)
+so future BC/DR work can build on it.
+
+The system-config-side claim that "1Password is MacBook-only"
+is a load-bearing invariant for the SSH custody model — and it
+is also a single point of failure that the rest of this section
+unpacks.
+
+### 8.1 Cross-device admin matrix (today + planned)
+
+Rows = admin origin. Columns = admin target. Cell = lane.
+
+|                      | MacBook | MAMAWORK | DSJ     | fedora-top | Hetzner | Synology | OPNsense |
+|----------------------|---------|----------|---------|------------|---------|----------|----------|
+| **MacBook**          | n/a     | SSH+RDP  | SSH+RDP (1) | SSH        | SSH     | SMB+web  | web+SSH (2) |
+| **MAMAWORK**         | —       | n/a      | —       | —          | —       | SMB      | —        |
+| **DSJ**              | —       | —        | n/a     | —          | —       | SMB      | —        |
+| **fedora-top**       | —       | —        | —       | n/a        | —       | SMB      | —        |
+| **Hetzner**          | —       | —        | —       | —          | n/a     | —        | —        |
+| **iPad/iPhone (emergency)** | (3) | (3)    | (3)    | (3)        | (3)     | (3)      | (3)      |
+
+Notes:
+1. DSJ SSH lane is in progress today (this session); RDP is
+   stable since 2026-05-12.
+2. OPNsense SSH is HomeNetOps scope; not part of jefahnierocks
+   admin lanes.
+3. iPad/iPhone admin is **not designed today**. It's a known
+   gap the Cloudflare design influences (see §8.4 Backup admin
+   device options).
+
+Em-dash entries are intentional: **today, only the MacBook
+administers anything.** No device administers any other device
+except outbound from MacBook. This is the single-point-of-
+admin invariant.
+
+For Cloudflare-design purposes: every Access policy / Tunnel
+ingress shape must support the MacBook as the canonical client.
+If a future BC/DR plan adds iPad-emergency-admin or
+Hetzner-jump-host as alternative origins, the Access policies
+must accept those too — but designing for them now is
+premature. The Cloudflare design should be **structured so
+adding alternative origins later is cheap** (e.g., Access
+policies key off identity + WARP-enrollment, not off "this
+specific device hash").
+
+### 8.2 Single-point-of-failure inventory
+
+These are the things that, if they fail, take down the
+operator's admin capability — fully or partially.
+
+| Failure point | Blast radius | Recovery surface |
+|---|---|---|
+| **MacBook hardware death** | All admin lanes; 1P agent custody; chezmoi source; system-config working tree; Claude Code sessions; MCP integrations | New device + 1P recovery + GitHub re-clone of system-config + Cloudflare admin login + WARP enrollment of new device |
+| **MacBook physical loss / theft (non-compromise)** | Same as death; but with credential rotation as precaution | Same as death; plus pre-emptive 1P session invalidation + GitHub token rotation + Cloudflare session invalidation |
+| **MacBook stolen, awake, unlocked, 1P agent unlocked** | Catastrophic: everything reachable from MacBook is in adversarial hands until the operator-side blast radius is contained | Emergency session-invalidation from any other 1P-capable device; rotate every per-device admin SSH key (the agent could still be unlocked); rotate every API token in 1P that was last used recently |
+| **1Password account compromised (separate from MacBook)** | Every per-device admin SSH key is exposed; every API token in `Dev` vault is exposed | Full 1P recovery flow + Cloudflare/GitHub/Hetzner/every-provider rotation. Worse than MacBook theft. |
+| **Cloudflare account compromised** | WARP profiles can be re-pointed; Access policies can be modified; Gateway can be turned off; Tunnels can be created against any host; `jefahnierocks.com` DNS can be rewritten | Nash-Group escalation; Cloudflare support recovery; potentially zone re-transfer |
+| **Cloudflare account suspended (billing/TOS)** | All WARP+Access+Tunnel+Gateway features stop. `jefahnierocks.com` DNS stops. Family internet may stop (depending on DNS dependency). | Resolve with Cloudflare; meanwhile fall back to LAN-direct admin (no off-LAN admin available) |
+| **Google account suspended / lost (jeffrey@happy-patterns.com)** | Loss of Cloudflare OAuth login (sign in as that identity). Loss of Workspace email. Possible cascade to GitHub if linked. | Google recovery flow. Email OTP fallback for Cloudflare (if configured per-profile). |
+| **GitHub access lost (token rotation, account lock)** | system-config repo + every other repo become inaccessible from operator | GitHub recovery flow; 1P-stored GitHub PAT recovery |
+| **Home WAN outage** | LAN-direct admin unaffected (operator on LAN); off-LAN admin breaks (Cloudflare edge can't reach LAN connector if cloudflared is LAN-only); operator-away admin breaks | Wait for ISP. If cloudflared is also on Hetzner, off-LAN admin still works (assuming Hetzner-to-LAN transport is independent). |
+| **Hetzner outage** | If cloudflared is on Hetzner only, all off-LAN admin breaks. If LAN connector exists too, off-LAN admin still works. | Wait for Hetzner. |
+| **Home LAN power outage** | All on-LAN admin targets unreachable; Synology beacon down (no managed-network detection). WoL on UPS-fed devices could still wake them. | UPS for critical gear (Synology, OPNsense). Off-LAN admin not helpful unless devices come up on a battery-backed switch. |
+| **Synology beacon cert/disk failure** | WARP managed-network detection fails (devices think they're off-LAN even when home) | Re-deploy beacon (10-year cert is static; can be copied from backup). cloudflare-dns Pulumi state still has the fingerprint pin. |
+| **Operator (Jeff) incapacitated / unreachable** | No admin can happen until Jeff recovers or successor is empowered. No documented successor today (see §8.5). | Nash-Group governance; needs pre-planning. |
+
+### 8.3 MacBook loss / theft / death scenarios (three flavors)
+
+**Scenario A: MacBook dies (hardware, no compromise).**
+
+- Cause: SSD failure, motherboard, water damage at home.
+- 1P account state: intact upstream at `my.1password.com`.
+- SSH key custody state: intact upstream (private halves are
+  in 1P, not on the MacBook beyond the agent's working memory).
+- GitHub state: intact upstream.
+- Cloudflare state: intact upstream.
+- **What's lost:** the operator workspace state (chezmoi
+  pending changes if any; uncommitted local repo state; MCP
+  session history; Claude Code conversation memory if not
+  synced; iTerm2 customizations).
+- **Recovery path:** procure new MacBook (or boot fedora-top /
+  iPad / iPhone as emergency origin); sign into 1P with
+  recovery code (which **must be stored offline somewhere
+  non-MacBook**); WARP-enroll new device; GitHub clone
+  system-config; `chezmoi init`; `mise install`; resume.
+
+**Scenario B: MacBook physically lost (no evidence of
+compromise).**
+
+- Same as Scenario A, plus:
+  - Sign out all 1P sessions from another device IMMEDIATELY
+    (`my.1password.com` -> Security -> active sessions).
+  - Sign out Cloudflare from another device.
+  - Sign out GitHub from another device.
+  - Sign out Google from another device.
+  - Mark MacBook as lost in 1P; revoke its access.
+
+The recovery is the same; the prevention step is the
+session-invalidation. Cloudflare design implication: Access
+policies must support same-identity-different-device sign-in
+without IP-pinning or device-fingerprint-only posture.
+
+**Scenario C: MacBook stolen, potentially awake/unlocked.**
+
+This is the bad one. Until the operator confirms or fails to
+confirm compromise scope, assume **everything reachable from
+the MacBook is compromised**:
+
+- 1P agent could still be unlocked → every per-device admin
+  SSH key in `Dev` vault is effectively leaked → ROTATE ALL.
+  Every Windows + Linux device's `administrators_authorized_keys`
+  / `~/.ssh/authorized_keys` needs the leaked key removed and
+  a new key (newly generated in 1P) installed.
+- GitHub PAT in 1P → ROTATE.
+- Cloudflare API token in 1P → ROTATE.
+- Hetzner API token in 1P → ROTATE.
+- Any cached Google OAuth session in browser → invalidate.
+- Any cached Claude / Anthropic API key → invalidate.
+- iCloud Keychain → invalidate / change Apple ID password.
+
+Cloudflare design implication: the design should make
+**per-device admin key rotation cheap**. If rotating all admin
+keys is a 10-hour ordeal, the operator will delay it after a
+theft. If it's a single packet run per device, recovery is
+fast. (system-config-side: a `*-admin-key-rotation` packet
+template for each managed device, parameterized by new
+1P-generated pub key.)
+
+### 8.4 New-device bootstrap (what does fresh-MacBook setup require?)
+
+Today's implicit bootstrap is: install macOS, install Homebrew,
+install 1P + chezmoi + mise + git, clone system-config, run
+`chezmoi init` against the repo, `chezmoi apply`, enroll in
+WARP, log into Cloudflare/GitHub/etc.
+
+Inputs the operator needs **to even start that flow**:
+
+| Input | Where it lives today | Recovery requirement |
+|---|---|---|
+| 1Password account email + master password | Operator brain | Must be remembered |
+| 1Password Secret Key (account-bind) | 1P emergency kit PDF | Must be stored offline (printed in safe, encrypted USB, etc.) |
+| Apple ID password | Operator brain / iCloud Keychain | If iCloud Keychain was on the lost MacBook, Apple recovery flow |
+| GitHub recovery codes / 2FA backup | Should be in 1P (loop) and ALSO printed offline | Currently: TBD-operator |
+| Cloudflare account recovery / 2FA backup | Should be in 1P (loop) and ALSO printed offline | Currently: TBD-operator. Note Nash-Group scope. |
+| Hetzner account recovery / 2FA backup | Should be in 1P (loop) and ALSO printed offline | Currently: TBD-operator |
+| Domain registrar (where `jefahnierocks.com` and `happy-patterns.com` are registered) recovery | Should be in 1P + offline | Currently: TBD-operator |
+
+**The pattern:** every recovery flow relies on 1P, and 1P
+recovery itself relies on a single offline artifact (the
+Secret Key / Emergency Kit). If THAT is also on the MacBook
+(or in iCloud-only), the operator is locked out. Pre-BC/DR
+ask: **operator must confirm an offline copy of the 1P
+Emergency Kit exists and is geographically separated from the
+MacBook.** (System-config / jefahnierocks can't authoritatively
+verify; this is operator-action.)
+
+Cloudflare design implication: nothing direct, but the
+designer should know that recovery requires **the operator to
+sign into Cloudflare from a new device** as the operator
+identity. Access policies on critical admin lanes must accept
+a fresh-device sign-in by the operator identity (after WARP
+enrollment + 2FA), not require persistent device fingerprinting.
+
+### 8.5 Operator succession
+
+Jeff is sole admin. If Jeff is unavailable (vacation off-grid,
+incapacitated, unreachable for weeks, deceased), no one can
+currently administer the family fleet. The Nash Group parent
+scope owns this concern (it's an IAM-succession question
+beyond jefahnierocks), but jefahnierocks records it here so the
+Cloudflare design accounts for it:
+
+- **Who is Jeff's emergency successor?** TBD-operator. Likely
+  a Nash-Group-trusted party.
+- **What does the successor need access to?** At minimum:
+  - 1P vault `Dev` (read access; admin would need write).
+  - Cloudflare account (admin tier).
+  - GitHub system-config repo.
+  - Domain registrar.
+  - Hetzner account.
+- **What does the Cloudflare design need?** The Access
+  policies on operator-tier lanes (Admin/Operator profile)
+  should ideally support **adding a successor identity** as a
+  break-glass admin without re-architecting. This argues for
+  group-based Access policies (e.g., "members of
+  `family-admins` group") rather than email-pinned policies.
+
+Not a design BLOCKER for the current cutover work, but worth
+flagging now so the operator-tier profile isn't designed to
+hard-pin to a single email.
+
+### 8.6 Backup admin device options (pre-planning, not deciding)
+
+Candidates for "second admin origin" alongside the MacBook,
+ranked by current operator-side accessibility:
+
+1. **fedora-top (Fedora Linux laptop).** Currently a kid
+   laptop. Could be re-tasked as Jeff's backup admin origin
+   IF 1P-on-Linux is acceptable to the operator (1P does have
+   a Linux client; the system-config invariant "1P is
+   MacBook-only" was for the managed-Windows-fleet pattern,
+   not necessarily Linux laptops). Trade-off: fedora-top is
+   the only Linux laptop today; converting it to a backup
+   admin removes its kid-use availability.
+2. **iPad with Termius / Blink Shell + 1P client.** iOS 1P
+   supports SSH agent forwarding to Termius / Prompt 3 /
+   Blink Shell. WARP works on iOS. RDP works via Microsoft
+   Remote Desktop iOS app. Limitations: full chezmoi /
+   Claude Code / MCP workflow doesn't work; emergency-only.
+3. **iPhone with same toolkit as iPad.** Even more limited
+   form factor; truly break-glass-only.
+4. **Hetzner-hosted desktop / jump host.** Always on, full
+   Linux. Operator SSHes into Hetzner from anywhere with
+   any SSH client (even on a borrowed device — though that
+   reintroduces credential exposure risk). Trade-off: requires
+   1P agent forwarding from the borrowed device (or
+   alternative SSH key management), which is its own attack
+   surface.
+5. **Spare MacBook in a safe.** Pre-provisioned with 1P
+   loaded, WARP enrolled, system-config cloned. Cold spare.
+   Most expensive option but fastest recovery time.
+
+Cloudflare design implication: **option 4 (Hetzner jump host)
+deserves explicit thought.** If the SSH-over-Tunnel Access
+policy supports operator-identity-from-anywhere posture, the
+jump host can be reached from any IP, and from there the
+operator can SSH into LAN devices (Hetzner-to-LAN transport
+permitting). This makes Hetzner the "always-reachable bastion"
+in BC/DR scenarios where the MacBook is unavailable.
+
+### 8.7 Weird stuff (edge cases the design should anticipate)
+
+Not exhaustive. Documented so the designer doesn't accidentally
+architect them out:
+
+- **Captive portal interferes with WARP.** Hotel WiFi captive
+  portals often block WARP's tunnel until the user clicks
+  "I accept terms". Design should allow brief unprotected
+  bootstrap to get past the portal, then re-engage WARP.
+- **Restricted-internet country (China, etc.).** Operator
+  travels internationally. Cloudflare's edge may be blocked
+  or DPI'd. Access fall-back via raw SSH-over-https (Access
+  for Infrastructure) might survive better than `cloudflared
+  access ssh` over a deeply inspected network.
+- **Roaming Starlink in dead-zone.** No connectivity at all
+  for some hours; operator can't admin. Acceptable; just note
+  off-LAN admin is unavailable during outages.
+- **Fast user switching on Windows mid-admin.** Operator SSHes
+  into DSJ as `jeffr` while a kid is signed in interactively;
+  Cloudflare attributes traffic to whichever Windows user is
+  active. Design must ensure SSH admin lane is identified by
+  the SSH-side identity (admin key fingerprint), not the
+  Windows-desktop-side identity.
+- **Synology beacon TLS error (cert expiry in 2036, or earlier
+  if disk dies).** Rotation runbook needed before 2036; for
+  now, monitoring presence of beacon (Synology uptime) is the
+  signal.
+- **DNS DoH/DoT misroute when WARP is on.** Cloudflare Gateway
+  uses 1.1.1.1 / DoH; some restrictive networks block it.
+  Fall-back to system DNS while WARP is failed-closed needs
+  explicit design.
+- **Family member borrows operator MacBook for legitimate
+  reason.** Operator must NOT lend an unlocked MacBook to
+  any family member — kid use of operator session would
+  inherit Operator policy. Behavior expectation, not a
+  Cloudflare design issue, but the design shouldn't make a
+  borrowed-MacBook recoverable as "kid session" (i.e., the
+  WARP profile is bound to the device login user, not the
+  active foreground app).
+- **Operator forgets to lock MacBook in public.** Same
+  concern as theft, lower probability per event but higher
+  frequency. Cloudflare design implication: short Access
+  session lengths on critical admin policies (8h is the
+  fedora-top recommendation; consider shorter for
+  destructive-operations Access apps).
+- **Hetzner DC fire / region outage.** Long-tail. If
+  cloudflared is Hetzner-only and Hetzner is down for days,
+  off-LAN admin is gone. Multi-region Hetzner or hybrid
+  LAN+Hetzner connector mitigates.
+- **The cloudflared connector itself is the breach point.**
+  If cloudflared has a CVE, every Tunnel is exposed. Design
+  should encourage automated `cloudflared` updates on
+  whichever host runs it. system-config can package this.
+- **Operator forgets which Cloudflare account is which.** When
+  Nash-Group manages multiple entities' Cloudflare resources,
+  the operator working on jefahnierocks devices can't
+  accidentally mutate happy-patterns / litecky resources.
+  cloudflare-dns Pulumi state per-entity scoping helps;
+  Access policies tagged with entity name also helps.
+
+### 8.8 What this means for the Cloudflare design
+
+Translating the above into design constraints:
+
+1. **No IP-pinned Access policies on operator-tier lanes.**
+   The operator must reach admin lanes from any IP (Starlink,
+   hotel, foreign country, friend's house in emergency).
+   Posture = `WARP enrolled + Operator identity` is the right
+   shape; not IP allow-list.
+2. **No device-fingerprint-only posture on operator-tier lanes.**
+   A new device (post-loss) must be able to enroll and
+   authenticate as the operator. Same-identity-different-device
+   sign-in must work.
+3. **Group-based Access policies** (e.g., `family-admins`
+   group containing Jeff + future successor) rather than
+   email-pinned, so successor onboarding is one-row-add not
+   a re-architecture.
+4. **Short Access session lengths on critical admin lanes**
+   (8h or less) so a missed-lock leak is time-bounded.
+5. **Cheap per-device admin key rotation.** system-config
+   packages packets that take new-1P-pubkey -> install -> verify
+   per device. Cloudflare side: nothing changes; the new key
+   uses the same Access lane.
+6. **Hetzner connector as an explicit option.** Not solving it
+   now, but the Tunnel topology decision (Option A/B/C in §4)
+   has direct BC/DR implications.
+7. **2FA recovery codes documented as a manual operator
+   responsibility.** Cloudflare can't enforce that the operator
+   has stored their recovery codes offline, but the design
+   acknowledgement that fresh-device sign-in is a critical
+   path makes the design tolerant of that bootstrap.
+8. **Beacon cert rotation runbook.** 10-year self-signed today;
+   a 2036 calendar event for cloudflare-dns + system-config
+   joint rotation. Pre-pending it now means future-Jeff isn't
+   surprised.
+
+The Cloudflare designer is NOT asked to solve BC/DR. They are
+asked to architect such that BC/DR work later **is possible
+without re-architecting Cloudflare**.
+
+---
+
+## 9. Cross-References
 
 ### system-config (this repo)
 
